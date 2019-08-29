@@ -17,6 +17,7 @@ const dashManifestUrl = flaskServerUrl + 'output_files/output.mpd';
 const hlsManifestUrl = flaskServerUrl + 'output_files/master_playlist.m3u8';
 const TEST_DIR = 'test_assets/';
 let player;
+let video;
 
 async function startStreamer(inputConfig, pipelineConfig) {
   // Send a request to flask server to start Shaka Streamer.
@@ -45,8 +46,6 @@ async function stopStreamer() {
 }
 
 describe('Shaka Streamer', () => {
-  let video;
-
   beforeAll(() => {
     shaka.polyfill.installAll();
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 400 * 1000;
@@ -89,6 +88,14 @@ describe('Shaka Streamer', () => {
   // TODO: Redo this test with both 5.1 and stereo once 5.1 is supported.
   channelsTests(hlsManifestUrl, '(hls)');
   channelsTests(dashManifestUrl, '(dash)');
+  // The HLS manifest does not indicate the availability window, so only run a
+  // DASH test for this case.
+  availabilityTests(dashManifestUrl, '(dash)');
+  // There is no option supported by Packager to set a presentation delay with
+  // HLS, so only run a dash test for this case.
+  delayTests(dashManifestUrl, '(dash)');
+  durationTests(hlsManifestUrl, '(hls)');
+  durationTests(dashManifestUrl, '(dash)');
 });
 
 function resolutionTests(manifestUrl, format) {
@@ -386,7 +393,7 @@ function textTracksTests(manifestUrl, format) {
 }
 
 function vodTests(manifestUrl, format) {
-  it('has a vod streaming mode', async () => {
+  it('has a vod streaming mode ' + format, async () => {
     const inputConfigDict = {
       // List of inputs. Each one is a dictionary.
       'inputs': [
@@ -425,7 +432,7 @@ function vodTests(manifestUrl, format) {
 }
 
 function channelsTests(manifestUrl, format) {
-  it('outputs the correct number of channels', async () => {
+  it('outputs the correct number of channels ' + format, async () => {
     const inputConfigDict = {
       // List of inputs. Each one is a dictionary.
       'inputs': [
@@ -461,5 +468,127 @@ function channelsTests(manifestUrl, format) {
     const trackList = player.getVariantTracks();
     expect(trackList.length).toBe(1);
     expect(trackList[0].channelsCount).toBe(2);
+  });
+}
+
+function availabilityTests(manifestUrl, format) {
+  it('outputs the correct availability window ' + format, async() => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'input_type': 'looped_file',
+          'media_type': 'video',
+          'resolution': '720p',
+          'frame_rate': 24.0,
+          'track_num': 0,
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'live',
+      'transcoder': {
+        'resolutions': [
+          '144p',
+        ],
+        'video_codecs': [
+          'h264',
+        ],
+      },
+      'packager': {
+        'manifest_format': [
+          'dash',
+        ],
+        'segment_per_file': true,
+        'availability_window': 500,
+      },
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    const response = await fetch(manifestUrl);
+    const bodyText = await response.text();
+    const re = /timeShiftBufferDepth="([^"]*)"/;
+    const found = bodyText.match(re);
+    expect(found).not.toBe(null);
+    if (found)
+      expect(found[1]).toBe('PT500S');
+  });
+}
+
+function delayTests(manifestUrl, format) {
+  it('outputs the correct presentation delay ' + format, async() => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'input_type': 'looped_file',
+          'media_type': 'video',
+          'resolution': '720p',
+          'frame_rate': 24.0,
+          'track_num': 0,
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'live',
+      'transcoder': {
+        'resolutions': [
+          '144p',
+        ],
+        'video_codecs': [
+          'h264',
+        ],
+      },
+      'packager': {
+        'manifest_format': [
+          'dash',
+        ],
+        'segment_per_file': true,
+        'presentation_delay': 100,
+      },
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+    delay = player.getManifest().presentationTimeline.getDelay();
+    expect(delay).toBe(100);
+  });
+}
+
+function durationTests(manifestUrl, format) {
+  it('outputs the correct duration of video ' + format, async() => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'video',
+          'resolution': '720p',
+          'frame_rate': 24.0,
+          'track_num': 0,
+          'is_interlaced': false,
+          'start_time': '00:00:00',
+          'end_time': '00:00:10',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'transcoder': {
+        'resolutions': [
+          '144p',
+        ],
+        'video_codecs': [
+          'h264',
+        ],
+      },
+      'packager': {
+        'manifest_format': [
+          'dash',
+          'hls',
+        ],
+        'segment_per_file': false,
+      },
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+    expect(video.duration).toBeCloseTo(10);
   });
 }

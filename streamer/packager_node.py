@@ -82,9 +82,14 @@ class PackagerNode(node_base.NodeBase):
     if self._config.mode == 'live':
       args += [
           # Number of seconds the user can rewind through backwards.
-          '--time_shift_buffer_depth', '300',
+          '--time_shift_buffer_depth',
+          str(self._config.packager['availability_window']),
           # Number of segments preserved outside the current live window.
           '--preserved_segments_outside_live_window', '1',
+          # Number of seconds of content encoded/packaged that is ahead of the
+          # live edge.
+          '--suggested_presentation_delay',
+          str(self._config.packager['presentation_delay']),
       ]
 
     args += self._setup_manifest_format()

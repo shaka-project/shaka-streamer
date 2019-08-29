@@ -42,6 +42,10 @@ INPUT_DEFAULT_CONFIG = {
       # TODO: Add different default config input entries for audio, video and
       # text entries so that fields match up with each type of entry.
       'language': 'und',
+      # Start time of VOD input to encode.
+      'start_time': '',
+      # End time of VOD input to encode.
+      'end_time': '',
     },
   ],
 }
@@ -81,6 +85,10 @@ OUTPUT_DEFAULT_CONFIG = {
     'segment_size': 10,
     # Forces the use of SegmentTemplate in DASH.
     'segment_per_file': True,
+    # Availability window for live packaging.
+    'availability_window': 300,
+    # Presentation delay for live packaging.
+    'presentation_delay': 30,
     'encryption': {
       # Enables encryption.
       # If disabled, the following settings are ignored.

@@ -64,6 +64,17 @@ class TranscoderNode(node_base.NodeBase):
             '-i', input.get_name(),
         ]
 
+        if input.get_start_time():
+          args += [
+              # Encode from intended starting time of the VOD input.
+              '-ss', input.get_start_time(),
+          ]
+        if input.get_end_time():
+          args += [
+              # Encode until intended ending time of the VOD input.
+              '-to', input.get_end_time(),
+          ]
+
       # Check if the media type of the input is audio and if there are expected
       # outputs for the audio input.
       if input.get_media_type() == 'audio' and self._output_audios:

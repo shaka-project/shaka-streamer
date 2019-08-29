@@ -65,6 +65,16 @@ class Input():
       return self._input['language']
     return None
 
+  def get_start_time(self):
+    if 'start_time' in self._input:
+      return self._input['start_time']
+    return None
+
+  def get_end_time(self):
+    if 'end_time' in self._input:
+      return self._input['end_time']
+    return None
+
   def has_video(self):
     if 'input_type' in self._input:
       if (self._input['input_type'] == 'webcam' or
