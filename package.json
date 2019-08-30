@@ -1,0 +1,29 @@
+{
+  "name": "shaka-streamer",
+  "description": "Simple tool for live video streaming and VOD content preparation.",
+  "version": "1.0.0",
+  "homepage": "https://github.com/google/shaka-streamer",
+  "author": "Google",
+  "maintainers": [
+    {
+      "name": "Joey Parrish",
+      "email": "joeyparrish@google.com"
+    }
+  ],
+  "devDependencies": {
+    "karma": "^4.1.0",
+    "karma-chrome-launcher": "^3.0.0",
+    "karma-jasmine": "^2.0.1",
+    "karma-junit-reporter": "^1.2.0",
+    "karma-spec-reporter": "^0.0.32",
+    "shaka-player": "^2.5.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/shaka-streamer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/google/shaka-streamer/issues"
+  },
+  "license": "Apache-2.0"
+}

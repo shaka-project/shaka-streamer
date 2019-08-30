@@ -1,0 +1,6 @@
+*.pyc
+output_files/
+test_assets/
+node_modules/
+package-lock.json
+Sintel.*
