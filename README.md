@@ -11,6 +11,7 @@ We support common Linux distributions and macOS.
 
 Windows is not supported at this time due to our use of `os.mkfifo`, but we are
 accepting PRs if you'd like to add Windows support.
+See [issue #8](https://github.com/google/shaka-streamer/issues/8).
 
 
 ## Getting started
@@ -31,10 +32,10 @@ in the `config_files/` folder.
 ### Example command-line for live streaming to Google Cloud Storage:
 
 ```sh
-./main.py \
+python3 shaka_streamer.py \
   -i config_files/input_looped_file_config.yaml \
   -p config_files/pipeline_live_config.yaml \
-  -c my_cloud_bucket
+  -c gs://my_cloud_bucket/folder/
 ```
 
 ## Running tests
