@@ -52,3 +52,29 @@ python3 run_end_to_end_tests.py
 For details on hardware encoding support, see the file
 [HARDWARE_ENCODING.md](HARDWARE_ENCODING.md).
 
+
+## Technical details
+
+Shaka Streamer connects FFmpeg and Shaka Packager in a pipeline, such that
+output from FFmpeg is piped directly into the packager, and packaging and
+transcoding of all resolutions, bitrates, and languages occur in parallel.
+
+The overall pipeline is composed of several nodes.  At a minimum, these are
+`TranscoderNode` (which runs FFmpeg) and `PackagerNode` (which runs Shaka
+Packager).  They communicate via named pipes on Linux and macOS.
+
+If the input type is `looped_file`, then `LoopInputNode` is placed before
+`TranscoderNode` in the pipeline.  `LoopInputNode` runs another instance of
+FFmpeg to encode the input file in a never-ending loop, and output to a named
+pipe.  For all other input types, the input files are read directly by
+`TranscoderNode`.
+
+If the `-c` option is given with a Google Cloud Storage URL, then an additional
+node called `CloudNode` is added after `PackagerNode`.  It runs a thread which
+watches the output of the packager and pushes updated files to the cloud.
+
+The pipeline and the nodes in it are constructed by `ControllerNode` based on
+your config files.  If you want to write your own front-end or interface
+directly to the pipeline, you can create a `ControllerNode` and call the
+`start()`, `stop()`, and `is_running()` methods on it.  You can use
+`shaka_streamer.py` as an example of how to do this.
