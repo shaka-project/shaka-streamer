@@ -29,4 +29,16 @@ https://trac.ffmpeg.org/wiki/HWAccelIntro
 
 ## Configuration
 
-TODO
+To activate hardware encoding for any video codec, simply prefix the codec name with `hw:` in the pipeline config file.
+
+For example, see this snippet from [config_files/pipeline_live_hardware_config.yaml](config_files/pipeline_live_hardware_config.yaml):
+
+```yaml
+transcoder:
+  audio_codecs:
+    - aac
+    - opus
+  video_codecs:
+    - h264
+    - hw:vp9
+```
