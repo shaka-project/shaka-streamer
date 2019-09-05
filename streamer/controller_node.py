@@ -100,25 +100,10 @@ class ControllerNode(object):
     # will be input files/devices, while others will be named pipes.
     processed_inputs = []
 
-    # By default, assume there is no audio or video input. In the loop,
-    # these variables can only be set to True, to detect if there is at least
-    # one audio and video stream.
-    has_audio_input = False
-    has_video_input = False
-    has_text_input = False
-
     for i in input_config.inputs:
-      # Check (based on information from the configuration) if the input
-      # file has audio or video.
-      if not has_audio_input:
-        has_audio_input = i.has_audio()
-      if not has_video_input:
-        has_video_input = i.has_video()
-      if not has_text_input:
-        has_text_input = i.has_text()
 
       if pipeline_config.mode == 'live':
-        i.check_live_validity()
+        i.check_input_type()
         if i.get_input_type() == 'looped_file':
           loop_output = self._create_pipe()
           input_node = loop_input_node.LoopInputNode(i.get_name(), loop_output)
@@ -132,21 +117,31 @@ class ControllerNode(object):
           processed_inputs.append(i.get_name())
 
       elif pipeline_config.mode == 'vod':
-        i.check_vod_validity()
         processed_inputs.append(i.get_name())
 
+    media_outputs = {
+        'audio': [],
+        'video': [],
+        'text': [],
+    }
+
+    # Sorting the media by type.  So all the audio streams are in one list,
+    # all the video stream are in one list, etc.
+    for media in input_config.inputs:
+      media.check_entry()
+      media_type = media.get_media_type()
+      media_outputs[media_type].append(media)
+
     audio_outputs = []
-    if has_audio_input:
-      for i in input_config.inputs:
-        audio_outputs.extend(self._add_audio(i, pipeline_config.transcoder['channels'],
-                                             pipeline_config.transcoder['audio_codecs']))
+    for i in media_outputs['audio']:
+      audio_outputs.extend(self._add_audio(i, pipeline_config.transcoder['channels'],
+                                           pipeline_config.transcoder['audio_codecs']))
 
     video_outputs = []
-    if has_video_input:
-      for i in input_config.inputs:
-        video_outputs.extend(self._add_video(i,
-                                             pipeline_config.transcoder['resolutions'],
-                                             pipeline_config.transcoder['video_codecs']))
+    for i in media_outputs['video']:
+      video_outputs.extend(self._add_video(i,
+                                           pipeline_config.transcoder['resolutions'],
+                                           pipeline_config.transcoder['video_codecs']))
 
     # Process input through a transcoder node using ffmpeg.
     ffmpeg_node = transcoder_node.TranscoderNode(processed_inputs,
@@ -157,16 +152,10 @@ class ControllerNode(object):
 
     self._nodes.append(ffmpeg_node)
 
-    text_streams = []
-    if has_text_input:
-      for i in input_config.inputs:
-        if i.has_text():
-          text_streams.append(i)
-
     # Process input through a packager node using Shaka Packager.
     package_node = packager_node.PackagerNode(audio_outputs,
                                               video_outputs,
-                                              text_streams,
+                                              media_outputs['text'],
                                               output_dir,
                                               pipeline_config)
     self._nodes.append(package_node)
@@ -193,31 +182,29 @@ class ControllerNode(object):
 
   def _add_audio(self, input, channels, codecs):
     audio_outputs = []
-    if input.has_audio():
-      language = input.get_language() or self._probe_language(input)
-      for codec in codecs:
-        audio_outputs.append(metadata.Metadata(self._create_pipe(),
-                                               channels, audio_codec=codec,
-                                               lang=language))
+    language = input.get_language() or self._probe_language(input)
+    for codec in codecs:
+      audio_outputs.append(metadata.Metadata(self._create_pipe(),
+                                             channels, audio_codec=codec,
+                                             lang=language))
     return audio_outputs
 
   def _add_video(self, input, resolutions, codecs):
     video_outputs = []
-    if input.has_video():
-      for codec in codecs:
-        hardware_encoding_required = False
-        if codec.startswith('hw:'):
-          hardware_encoding_required = True
-          codec = codec.split(':')[1]
-        in_res = input.get_resolution()
-        for out_res in resolutions:
-          # Only going to output lower or equal resolution videos.
-          # Upscaling is costly and does not do anything.
-          if (metadata.RESOLUTION_MAP[in_res] >=
-              metadata.RESOLUTION_MAP[out_res]):
-            video_outputs.append(metadata.Metadata(self._create_pipe(),
-                res_string=out_res, video_codec=codec,
-                hardware=hardware_encoding_required))
+    for codec in codecs:
+      hardware_encoding_required = False
+      if codec.startswith('hw:'):
+        hardware_encoding_required = True
+        codec = codec.split(':')[1]
+      in_res = input.get_resolution()
+      for out_res in resolutions:
+        # Only going to output lower or equal resolution videos.
+        # Upscaling is costly and does not do anything.
+        if (metadata.RESOLUTION_MAP[in_res] >=
+            metadata.RESOLUTION_MAP[out_res]):
+          video_outputs.append(metadata.Metadata(self._create_pipe(),
+              res_string=out_res, video_codec=codec,
+              hardware=hardware_encoding_required))
     return video_outputs
 
   def _probe_language(self, input):
@@ -239,6 +226,7 @@ class ControllerNode(object):
     lang_match = re.search(r'\d+\|(.*$)', lang_str)
     if lang_match:
       return lang_match.group(1)
+    return 'und'
 
   def is_vod(self):
     return self.pipeline_config.mode == 'vod'

@@ -34,14 +34,17 @@ class Input():
     self._input = input
 
   def get_name(self):
+    self.check_name()
     return self._input['name']
 
   def get_input_type(self):
-    if 'input_type' in self._input:
-      return self._input['input_type']
-    return None
+    if 'input_type' not in self._input:
+      return None
+    return self._input['input_type']
 
   def get_media_type(self):
+    if 'media_type' not in self._input:
+      raise RuntimeError('media type must be specified for all inputs')
     return self._input['media_type']
 
   def get_frame_rate(self):
@@ -75,63 +78,21 @@ class Input():
       return self._input['end_time']
     return None
 
-  def has_video(self):
-    if 'input_type' in self._input:
-      if (self._input['input_type'] == 'webcam' or
-          self._input['input_type'] == 'raw_images'):
-        return True
-    if 'media_type' in self._input:
-      if self._input['media_type'] == 'video':
-        return True
-    return False
+  def check_entry(self):
+    self.check_name()
+    if self.get_media_type() == 'video':
+      self.check_video_entry()
 
-  def has_audio(self):
-    if 'media_type' in self._input:
-      if self._input['media_type'] == 'audio':
-        return True
-    return False
-
-  def has_text(self):
-    if 'media_type' in self._input:
-      if self._input['media_type'] == 'text':
-        return True
-    return False
-
-  def check_text_entry(self):
-    if 'language' not in self._input:
-      raise RuntimeError('language must be specified for text track')
-
-  def check_input_entry(self):
+  def check_name(self):
     if 'name' not in self._input:
       raise RuntimeError('name field must be in dictionary entry!')
-    elif 'media_type' not in self._input:
-      if (self._input['input_type'] != 'webcam' and
-          self._input['input_type'] != 'raw_images'):
-        raise RuntimeError('media_type field must be in dictionary entry!')
 
   def check_video_entry(self):
     if 'frame_rate' not in self._input:
       raise RuntimeError('frame_rate field must be in video dictionary entry!')
-    elif 'resolution' not in self._input:
+    if 'resolution' not in self._input:
       raise RuntimeError('resolution field must be in video dictionary entry!')
 
-  def check_live_validity(self):
-    if self.has_text():
-      self.check_text_entry()
-      return
-    if self.has_video():
-      self.check_video_entry()
-    self.check_input_entry()
+  def check_input_type(self):
     if 'input_type' not in self._input:
       raise RuntimeError('input_type field must be in dictionary entry!')
-
-  def check_vod_validity(self):
-    if self.has_text():
-      self.check_text_entry()
-      return
-    if self.has_video():
-      self.check_video_entry()
-    self.check_input_entry()
-    if 'track_num' not in self._input:
-      raise RuntimeError('track_num field must be in dictionary entry!')
-
