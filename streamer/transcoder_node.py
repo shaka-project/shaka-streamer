@@ -46,16 +46,17 @@ class TranscoderNode(node_base.NodeBase):
         '-y',
     ]
 
+    if any([output.hardware for output in self._output_videos]):
+      args += [
+          # Hardware acceleration args.
+          '-hwaccel', 'vaapi',
+          '-vaapi_device', '/dev/dri/renderD128',
+      ]
+
     for i in range(len(self._inputs)):
       input = self._input_config.inputs[i]
 
       if self._config.mode == 'live':
-        if any([output.hardware for output in self._output_videos]):
-          args += [
-              # Hardware acceleration args.
-              '-hwaccel', 'vaapi',
-              '-vaapi_device', '/dev/dri/renderD128',
-          ]
         args += self._live_input(input, self._inputs[i])
 
       elif self._config.mode == 'vod':
