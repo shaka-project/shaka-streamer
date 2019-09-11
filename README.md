@@ -27,7 +27,12 @@ prerequisites and optional dependencies.
 
 To use Shaka Streamer, you need two YAML config files: one to describe the
 input, and one to describe the encoding pipeline.  Sample configs can be found
-in the `config_files/` folder.
+in the `config_files/` folder.  Sample inputs referenced there can be downloaded
+individually over HTTPS or all at once through gsutil:
+
+```sh
+gsutil -m cp gs://shaka-streamer-assets/sample-inputs/* .
+```
 
 ### Example command-line for live streaming to Google Cloud Storage:
 
