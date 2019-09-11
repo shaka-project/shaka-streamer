@@ -117,7 +117,7 @@ class TranscoderNode(node_base.NodeBase):
           # Assumes the images are in ppm raw format.
           '-vcodec', 'ppm',
           # Set the frame rate to the one specified in the input config.
-          '-r', input_object.get_frame_rate(),
+          '-r', str(input_object.get_frame_rate()),
       ]
     elif input_object.get_input_type() == 'webcam':
       args += [
