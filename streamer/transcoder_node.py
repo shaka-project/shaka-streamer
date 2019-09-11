@@ -125,6 +125,8 @@ class TranscoderNode(node_base.NodeBase):
           '-f', 'video4linux2',
       ]
     args += [
+        # A larger queue to buffer input from the pipeline (default is 8).
+        '-thread_queue_size', '16000',
         # The input itself.
         '-i', input_path,
     ]
