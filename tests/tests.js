@@ -85,9 +85,10 @@ describe('Shaka Streamer', () => {
   textTracksTests(dashManifestUrl, '(dash)');
   vodTests(hlsManifestUrl, '(hls)');
   vodTests(dashManifestUrl, '(dash)');
-  // TODO: Redo this test with both 5.1 and stereo once 5.1 is supported.
-  channelsTests(hlsManifestUrl, '(hls)');
-  channelsTests(dashManifestUrl, '(dash)');
+  channelsTests(hlsManifestUrl, 2, '(hls)');
+  channelsTests(dashManifestUrl, 2, '(dash)');
+  channelsTests(hlsManifestUrl, 6, '(hls)');
+  channelsTests(dashManifestUrl, 6, '(dash)');
   // The HLS manifest does not indicate the availability window, so only run a
   // DASH test for this case.
   availabilityTests(dashManifestUrl, '(dash)');
@@ -431,8 +432,8 @@ function vodTests(manifestUrl, format) {
   });
 }
 
-function channelsTests(manifestUrl, format) {
-  it('outputs the correct number of channels ' + format, async () => {
+function channelsTests(manifestUrl, channels, format) {
+  it('outputs ' + channels + ' channels ' + format, async () => {
     const inputConfigDict = {
       // List of inputs. Each one is a dictionary.
       'inputs': [
@@ -457,7 +458,7 @@ function channelsTests(manifestUrl, format) {
         'video_codecs': [
           'h264',
         ],
-        'channels': 2,
+        'channels': channels,
       },
       'packager': {
         'segment_per_file': false,
@@ -467,7 +468,7 @@ function channelsTests(manifestUrl, format) {
     await player.load(manifestUrl);
     const trackList = player.getVariantTracks();
     expect(trackList.length).toBe(1);
-    expect(trackList[0].channelsCount).toBe(2);
+    expect(trackList[0].channelsCount).toBe(channels);
   });
 }
 

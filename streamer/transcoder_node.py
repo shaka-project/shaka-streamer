@@ -141,6 +141,14 @@ class TranscoderNode(node_base.NodeBase):
         # file.
         '-ac', str(channels),
     ]
+
+    if channels == 6:
+      args += [
+        # Work around for https://github.com/google/shaka-packager/issues/598,
+        # as seen on https://trac.ffmpeg.org/ticket/6974
+        '-af', 'channelmap=channel_layout=5.1',
+      ]
+
     if codec == 'aac':
       args += [
           # Format with MPEG-TS for a pipe.

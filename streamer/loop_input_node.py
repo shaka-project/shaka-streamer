@@ -17,11 +17,10 @@
 from . import node_base
 
 class LoopInputNode(node_base.NodeBase):
-  def __init__(self, input_path, output_path, downmix_to_stereo=True):
+  def __init__(self, input_path, output_path):
     node_base.NodeBase.__init__(self)
     self._input_path = input_path
     self._output_path = output_path
-    self._downmix_to_stereo = downmix_to_stereo
 
   def start(self):
     args = [
@@ -38,22 +37,9 @@ class LoopInputNode(node_base.NodeBase):
         '-f', 'mpegts',
         # Copy the video stream directly.
         '-c:v', 'copy',
+        # Copy the audio stream directly.
+        '-c:a', 'copy',
     ]
-
-    # FIXME: 5.1 surround sound in TS, as output by ffmpeg, is rejected by
-    # Shaka Packager.  https://github.com/google/shaka-packager/issues/598
-    if self._downmix_to_stereo:
-      args += [
-          # Re-encode audio as AAC at 192kbit.
-          '-c:a', 'aac', '-b:a', '192k',
-          # Downmix to 2 channels (stereo).
-          '-ac', '2',
-      ]
-    else:
-      args += [
-          # Copy the audio stream directly.
-          '-c:a', 'copy',
-      ]
 
     args += [
         # Do not prompt for output files that already exist.  Since we created
