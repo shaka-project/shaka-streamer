@@ -156,7 +156,7 @@ class TranscoderNode(node_base.NodeBase):
           # AAC audio codec.
           '-c:a', 'aac',
           # Set bitrate to the one specified in the VOD config file.
-          '-b:a', '{0}k'.format(audio.channel_data.aac_bitrate),
+          '-b:a', '{0}'.format(audio.channel_data.aac_bitrate),
       ]
     elif audio.codec == 'opus':
       args += [
@@ -165,7 +165,7 @@ class TranscoderNode(node_base.NodeBase):
           # Opus audio codec.
           '-c:a', 'libopus',
           # Set bitrate to the one specified in the VOD config file.
-          '-b:a', '{0}k'.format(audio.channel_data.opus_bitrate),
+          '-b:a', '{0}'.format(audio.channel_data.opus_bitrate),
           # DASH-compatible output format.
           '-dash', '1',
       ]

@@ -43,8 +43,8 @@ class ResolutionData():
 # bitrate information of a given channel.
 # TODO(joeyparrish): Break this down into a multi-level map involving codec.
 CHANNEL_MAP = {
-    2: ChannelData(128, 64),
-    6: ChannelData(192, 96),
+    2: ChannelData('128k', '64k'),
+    6: ChannelData('192k', '96k'),
 }
 
 # A map of resolutions to ResolutionData objects which contain

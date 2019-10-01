@@ -19,8 +19,8 @@ from . import node_base
 
 INIT_SEGMENT = {
   'audio': {
-    'mp4': '{dir}/audio_{channels}_{bitrate}_init.mp4',
-    'webm': '{dir}/audio_{channels}_{bitrate}_init.webm',
+    'mp4': '{dir}/audio_{language}_{channels}c_{bitrate}_init.mp4',
+    'webm': '{dir}/audio_{language}_{channels}c_{bitrate}_init.webm',
   },
   'video': {
     'mp4': '{dir}/video_{resolution_name}_{bitrate}_init.mp4',
@@ -31,8 +31,8 @@ INIT_SEGMENT = {
 
 MEDIA_SEGMENT = {
   'audio': {
-    'mp4': '{dir}/audio_{channels}_{bitrate}_$Number$.m4s',
-    'webm': '{dir}/audio_{channels}_{bitrate}_$Number$.webm',
+    'mp4': '{dir}/audio_{language}_{channels}c_{bitrate}_$Number$.m4s',
+    'webm': '{dir}/audio_{language}_{channels}c_{bitrate}_$Number$.webm',
   },
   'video': {
     'mp4': '{dir}/video_{resolution_name}_{bitrate}_$Number$.m4s',
@@ -43,8 +43,8 @@ MEDIA_SEGMENT = {
 
 SINGLE_SEGMENT = {
   'audio': {
-    'mp4': '{dir}/audio_{channels}_{bitrate}_output.mp4',
-    'webm': '{dir}/audio_{channels}_{bitrate}_output.webm',
+    'mp4': '{dir}/audio_{language}_{channels}c_{bitrate}_output.mp4',
+    'webm': '{dir}/audio_{language}_{channels}c_{bitrate}_output.webm',
   },
   'video': {
     'mp4': '{dir}/video_{resolution_name}_{bitrate}_output.mp4',
