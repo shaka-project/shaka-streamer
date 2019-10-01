@@ -29,13 +29,15 @@ profile_args = {
 
 class TranscoderNode(node_base.NodeBase):
 
-  def __init__(self, inputs, output_audios, output_videos, input_config, config):
+  def __init__(self, input_paths, output_audios, output_videos, input_config, config):
     node_base.NodeBase.__init__(self)
-    self._inputs = inputs
+    self._input_paths = input_paths
     self._output_audios = output_audios
     self._output_videos = output_videos
     self._input_config = input_config
     self._config = config
+
+    assert len(input_config.inputs) == len(input_paths)
 
   def start(self):
     args = [
@@ -53,8 +55,9 @@ class TranscoderNode(node_base.NodeBase):
           '-vaapi_device', '/dev/dri/renderD128',
       ]
 
-    for i in range(len(self._inputs)):
-      input = self._input_config.inputs[i]
+    # TODO(joeyparrish): put input paths into self._input_config.inputs
+    for i, input in enumerate(self._input_config.inputs):
+      input_path = self._input_paths[i]
 
       if self._config.mode == 'live':
         args += self._live_input(input)
@@ -73,32 +76,33 @@ class TranscoderNode(node_base.NodeBase):
       # The input name always comes after the applicable input arguments.
       args += [
           # The input itself.
-          '-i', self._inputs[i],
+          '-i', input_path,
       ]
 
-      # Check if the media type of the input is audio and if there are expected
-      # outputs for the audio input.
-      if input.get_media_type() == 'audio' and self._output_audios:
+    for i, input in enumerate(self._input_config.inputs):
+      map_args = [
+          # Map corresponding input stream to output file.
+          # The format is "<INPUT FILE NUMBER>:<TRACK NUMBER>", so "i" here is
+          # the input file number, and "input.get_track()" is the track number
+          # from that input file.  The output stream for this input is implied
+          # by where we are in the ffmpeg argument list.
+          '-map', '{0}:{1}'.format(i, input.get_track()),
+      ]
+
+      if input.get_media_type() == 'audio':
         for audio in self._output_audios:
-          if self._config.mode == 'vod':
-            args += [
-                # Map corresponding stream to output file.
-                '-map', '0:{0}'.format(input.get_track()),
-            ]
+          # Map arguments must be repeated for each output file.
+          args += map_args
           args += self._encode_audio(audio, audio.audio_codec, audio.channels,
                                      metadata.CHANNEL_MAP[audio.channels])
 
-      # Check if the media type of the input is video and if there are expected
-      # outputs for the video input.
-      if input.get_media_type() == 'video' and self._output_videos:
+      if input.get_media_type() == 'video':
+        group_of_pictures = int(self._config.packager['segment_size'] *
+                                input.get_frame_rate())
+
         for video in self._output_videos:
-          if self._config.mode == 'vod':
-            args += [
-                # Map corresponding stream to output file.
-                '-map', '0:{0}'.format(input.get_track()),
-            ]
-          group_of_pictures = int(self._config.packager['segment_size'] *
-                                  input.get_frame_rate())
+          # Map arguments must be repeated for each output file.
+          args += map_args
           args += self._encode_video(video, video.video_codec,
                                      group_of_pictures,
                                      metadata.RESOLUTION_MAP[video.res],
@@ -185,7 +189,7 @@ class TranscoderNode(node_base.NodeBase):
         # Full pelME compare function.
         '-cmp', 'chroma',
     ]
-    #TODO: auto detection of interlacing
+    # TODO: auto detection of interlacing
     if is_interlaced:
       # Sanity check: since interlaced files are made up of two interlaced
       # frames, the frame rate must be even and not too small.

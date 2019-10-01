@@ -70,36 +70,51 @@ describe('Shaka Streamer', () => {
 
   resolutionTests(hlsManifestUrl, '(hls)');
   resolutionTests(dashManifestUrl, '(dash)');
+
   liveTests(hlsManifestUrl, '(hls)');
   liveTests(dashManifestUrl, '(dash)');
+
   drmTests(hlsManifestUrl, '(hls)');
   drmTests(dashManifestUrl, '(dash)');
+
   codecTests(hlsManifestUrl, '(hls)');
   codecTests(dashManifestUrl, '(dash)');
+
   autoLanguageTests(hlsManifestUrl, '(hls)');
   autoLanguageTests(dashManifestUrl, '(dash)');
+
   languageTests(hlsManifestUrl, '(hls)');
   languageTests(dashManifestUrl, '(dash)');
+
   // TODO: Test is commented out until Packager outputs codecs for vtt in mp4.
   // textTracksTests(hlsManifestUrl, '(hls)');
   textTracksTests(dashManifestUrl, '(dash)');
+
   vodTests(hlsManifestUrl, '(hls)');
   vodTests(dashManifestUrl, '(dash)');
+
   channelsTests(hlsManifestUrl, 2, '(hls)');
   channelsTests(dashManifestUrl, 2, '(dash)');
   channelsTests(hlsManifestUrl, 6, '(hls)');
   channelsTests(dashManifestUrl, 6, '(dash)');
+
   // The HLS manifest does not indicate the availability window, so only test
   // this in DASH.
   availabilityTests(dashManifestUrl, '(dash)');
+
   // The HLS manifest does not indicate the presentation delay, so only test
   // this in DASH.
   delayTests(dashManifestUrl, '(dash)');
+
   // The HLS manifest does not indicate the update period, so only test this in
   // DASH.
   updateTests(dashManifestUrl, '(dash)');
+
   durationTests(hlsManifestUrl, '(hls)');
   durationTests(dashManifestUrl, '(dash)');
+
+  mapTests(hlsManifestUrl, '(hls)');
+  mapTests(dashManifestUrl, '(dash)');
 });
 
 function resolutionTests(manifestUrl, format) {
@@ -118,7 +133,6 @@ function resolutionTests(manifestUrl, format) {
       ]
     };
     const pipelineConfigDict = {
-      // Mode of streaming. Can either be live or vod.
       'transcoder': {
         // A list of resolutions to encode.
         'resolutions': [
@@ -156,7 +170,6 @@ function liveTests(manifestUrl, format) {
       ]
     };
     const pipelineConfigDict = {
-      // Mode of streaming. Can either be live or vod.
       'streaming_mode': 'live',
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -520,5 +533,55 @@ function durationTests(manifestUrl, format) {
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
     expect(video.duration).toBeCloseTo(10, 1 /* decimal points to check */);
+  });
+}
+
+function mapTests(manifestUrl, format) {
+  it('maps the correct inputs to outputs ' + format, async() => {
+    const inputConfigDict = {
+      'inputs': [
+        // The order of inputs here is sensitive.
+        // This is a regression test for a bug in which all VOD outputs were
+        // mapped to input file 0, so the order of inputs here is sensitive.
+        // Input #0 has only one track (0 for video).  Input #1 has more tracks
+        // (0 for video, 1 for audio, 2 for subs).  So we ask for input #1 track
+        // 1, and the bug would have mapped non-existent input #0 track 1.
+        {
+          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
+          'media_type': 'video',
+          'resolution': '720p',
+          'frame_rate': 24.0,
+          'track_num': 0,
+          'is_interlaced': false,
+          'start_time': '00:00:00',
+          'end_time': '00:00:10',
+        },
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'audio',
+          'track_num': 1,
+          'start_time': '00:00:00',
+          'end_time': '00:00:10',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'transcoder': {
+        'resolutions': [
+          '144p',
+        ],
+      },
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+
+    // The failure would happen at the ffmpeg level, so we can be sure now that
+    // the bug is fixed.  But let's go further and expect a single track with
+    // both audio and video.
+    const trackList = player.getVariantTracks();
+    expect(trackList.length).toBe(1);
+    expect(trackList[0].videoCodec).not.toBe(null);
+    expect(trackList[0].audioCodec).not.toBe(null);
   });
 }

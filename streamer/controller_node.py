@@ -96,28 +96,30 @@ class ControllerNode(object):
     self.pipeline_config = pipeline_config
 
     # Some inputs get processed by Shaka Streamer before being transcoded, so
-    # this array will keep track of the inputs to pass to the transcoder.  Some
-    # will be input files/devices, while others will be named pipes.
-    processed_inputs = []
+    # this array will keep track of the input paths to pass to the transcoder.
+    # Some will be input files/devices, while others will be named pipes.
+    # TODO(joeyparrish): put input paths into input_config.inputs
+    input_paths = []
 
     for i in input_config.inputs:
-
       if pipeline_config.mode == 'live':
         i.check_input_type()
         if i.get_input_type() == 'looped_file':
           loop_output = self._create_pipe()
           input_node = loop_input_node.LoopInputNode(i.get_name(), loop_output)
           self._nodes.append(input_node)
-          processed_inputs.append(loop_output)
+          input_paths.append(loop_output)
 
         elif i.get_input_type() == 'raw_images':
-          processed_inputs.append(i.get_name())
+          input_paths.append(i.get_name())
 
         elif i.get_input_type() == 'webcam':
-          processed_inputs.append(i.get_name())
+          input_paths.append(i.get_name())
 
       elif pipeline_config.mode == 'vod':
-        processed_inputs.append(i.get_name())
+        input_paths.append(i.get_name())
+
+    assert len(input_config.inputs) == len(input_paths)
 
     media_outputs = {
         'audio': [],
@@ -144,7 +146,7 @@ class ControllerNode(object):
                                            pipeline_config.transcoder['video_codecs']))
 
     # Process input through a transcoder node using ffmpeg.
-    ffmpeg_node = transcoder_node.TranscoderNode(processed_inputs,
+    ffmpeg_node = transcoder_node.TranscoderNode(input_paths,
                                                  audio_outputs,
                                                  video_outputs,
                                                  input_config,
