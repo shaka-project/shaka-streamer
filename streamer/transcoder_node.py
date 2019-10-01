@@ -113,12 +113,12 @@ class TranscoderNode(node_base.NodeBase):
       pass
     elif input_object.get_input_type() == 'raw_images':
       args += [
-          # Format the input as a stream of images fed into a pipe.
+          # Parse the input as a stream of images fed into a pipe.
           '-f', 'image2pipe',
-          # Assumes the images are in ppm raw format.
-          '-vcodec', 'ppm',
           # Set the frame rate to the one specified in the input config.
-          '-r', str(input_object.get_frame_rate()),
+          # Note that this is the input framerate for the image2 dexuxer, which
+          # is not what the similar '-r' option is meant for.
+          '-framerate', str(input_object.get_frame_rate()),
       ]
     elif input_object.get_input_type() == 'webcam':
       args += [
