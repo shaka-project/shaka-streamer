@@ -14,6 +14,8 @@
 
 """A module that feeds information from two named pipes into shaka-packager."""
 
+import os
+
 from . import metadata
 from . import node_base
 
@@ -53,9 +55,6 @@ SINGLE_SEGMENT = {
   'text': '{dir}/text_{language}_output.mp4',
 }
 
-DASH_OUTPUT = '/output.mpd'
-HLS_OUTPUT = '/master_playlist.m3u8'
-
 class SegmentError(Exception):
   """Raise when segment is incompatible with format."""
   pass
@@ -67,6 +66,8 @@ class PackagerNode(node_base.NodeBase):
     self._video_inputs = video_inputs
     self._text_inputs = text_inputs
     self._output_dir = output_dir
+    self._segment_dir = os.path.join(
+        output_dir, config.packager['segment_folder'])
     self._config = config
 
   def start(self):
@@ -131,20 +132,20 @@ class PackagerNode(node_base.NodeBase):
     # TODO: Generalize and combine with _create_audio_or_video
     if self._config.packager['segment_per_file']:
       dict['init_segment'] = INIT_SEGMENT['text'].format(
-          dir=self._output_dir, language=language)
+          dir=self._segment_dir, language=language)
       dict['segment_template'] = MEDIA_SEGMENT['text'].format(
-          dir=self._output_dir, language=language)
+          dir=self._segment_dir, language=language)
     else:
       dict['output'] = SINGLE_SEGMENT['text'].format(
-          dir=self._output_dir, language=language)
+          dir=self._segment_dir, language=language)
     return [_packager_stream_arg(dict)]
 
   def _create_audio_or_video(self, dict, input):
     if self._config.packager['segment_per_file']:
       dict['init_segment'] = input.fill_template(
-          INIT_SEGMENT[input.type][input.format], dir=self._output_dir)
+          INIT_SEGMENT[input.type][input.format], dir=self._segment_dir)
       dict['segment_template'] = input.fill_template(
-          MEDIA_SEGMENT[input.type][input.format], dir=self._output_dir)
+          MEDIA_SEGMENT[input.type][input.format], dir=self._segment_dir)
 
     else:
       if self._config.mode != 'vod':
@@ -152,7 +153,7 @@ class PackagerNode(node_base.NodeBase):
         raise SegmentError('Single-segment mode does not work with live!')
 
       dict['output'] = input.fill_template(
-          SINGLE_SEGMENT[input.type][input.format], dir=self._output_dir)
+          SINGLE_SEGMENT[input.type][input.format], dir=self._segment_dir)
 
     return [_packager_stream_arg(dict)]
 
@@ -165,14 +166,10 @@ class PackagerNode(node_base.NodeBase):
         ]
       args += [
           # Generate DASH manifest file.
-          '--mpd_output', self._output_dir + DASH_OUTPUT,
+          '--mpd_output',
+          os.path.join(self._output_dir, self._config.packager['dash_output']),
       ]
     if 'hls' in self._config.packager['manifest_format']:
-      args += [
-          # Generate HLS manifest file.
-          '--hls_master_playlist_output',
-          self._output_dir + HLS_OUTPUT,
-      ]
       if self._config.mode == 'live':
         args += [
             '--hls_playlist_type', 'LIVE',
@@ -181,6 +178,11 @@ class PackagerNode(node_base.NodeBase):
         args += [
             '--hls_playlist_type', 'VOD',
         ]
+      args += [
+          # Generate HLS playlist file(s).
+          '--hls_master_playlist_output',
+          os.path.join(self._output_dir, self._config.packager['hls_output']),
+      ]
     return args
 
   def _setup_encryption(self):

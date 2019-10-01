@@ -148,10 +148,10 @@ def send_file(filename):
   else:
     # If streaming mode is live, needs to wait for specific content in
     # manifest until it can be loaded by the player.
-    if filename == 'output.mpd':
-      waitDashManifest(OUTPUT_DIR + 'output.mpd')
-    elif filename == 'master_playlist.m3u8':
-      waitHlsManifest(OUTPUT_DIR + 'master_playlist.m3u8')
+    if filename.endswith('.mpd'):
+      waitDashManifest(OUTPUT_DIR + filename)
+    elif filename.endswith('.m3u8') and not filename.startswith('stream_'):
+      waitHlsManifest(OUTPUT_DIR + filename)
 
   # Sending over requested files.
   try:

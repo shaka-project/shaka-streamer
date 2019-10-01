@@ -84,6 +84,12 @@ OUTPUT_DEFAULT_CONFIG = {
       'dash',
       'hls',
     ],
+    # Output filenames for DASH manifest & HLS master playlist.
+    'dash_output': 'dash.mpd',
+    'hls_output': 'hls.m3u8',
+    # Sub-folder for segment output (or blank for none).
+    'segment_folder': '',
+
     # Length of each segment in seconds.
     'segment_size': 4,
     # Forces the use of SegmentTemplate in DASH.

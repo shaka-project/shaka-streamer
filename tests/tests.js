@@ -13,8 +13,8 @@
 // limitations under the License.
 
 const flaskServerUrl = 'http://localhost:5000/';
-const dashManifestUrl = flaskServerUrl + 'output_files/output.mpd';
-const hlsManifestUrl = flaskServerUrl + 'output_files/master_playlist.m3u8';
+const dashManifestUrl = flaskServerUrl + 'output_files/dash.mpd';
+const hlsManifestUrl = flaskServerUrl + 'output_files/hls.m3u8';
 const TEST_DIR = 'test_assets/';
 let player;
 let video;
