@@ -40,7 +40,7 @@ packager:
     - hls
   # Length of each segment in seconds.
   segment_size: 4
-  # Availability window for live packaging.
-  availability_window: 400
-  # Set the presentation delay for live packaging.
-  presentation_delay: 50
+  # Availability window, or the number of seconds a segment remains available.
+  availability_window: 300
+  # Presentation delay, or how far back from the edge the player should be.
+  presentation_delay: 30

@@ -82,13 +82,14 @@ OUTPUT_DEFAULT_CONFIG = {
       'hls',
     ],
     # Length of each segment in seconds.
-    'segment_size': 10,
+    'segment_size': 4,
     # Forces the use of SegmentTemplate in DASH.
     'segment_per_file': True,
-    # Availability window for live packaging.
+    # Availability window, or the number of seconds a segment remains available.
     'availability_window': 300,
-    # Presentation delay for live packaging.
+    # Presentation delay, or how far back from the edge the player should be.
     'presentation_delay': 30,
+
     'encryption': {
       # Enables encryption.
       # If disabled, the following settings are ignored.

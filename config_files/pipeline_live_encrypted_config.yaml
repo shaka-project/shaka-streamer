@@ -32,8 +32,6 @@ packager:
   manifest_format:
     - dash
     - hls
-  # Length of each segment in seconds.
-  segment_size: 4
 
   encryption:
     # Enables encryption.
@@ -55,3 +53,4 @@ packager:
     protection_scheme: cenc
     # Seconds of unencrypted media at the beginning of the stream.
     clear_lead: 10
+
