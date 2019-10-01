@@ -89,11 +89,11 @@ describe('Shaka Streamer', () => {
   channelsTests(dashManifestUrl, 2, '(dash)');
   channelsTests(hlsManifestUrl, 6, '(hls)');
   channelsTests(dashManifestUrl, 6, '(dash)');
-  // The HLS manifest does not indicate the availability window, so only run a
-  // DASH test for this case.
+  // The HLS manifest does not indicate the availability window, so only test
+  // this in DASH.
   availabilityTests(dashManifestUrl, '(dash)');
-  // There is no option supported by Packager to set a presentation delay with
-  // HLS, so only run a dash test for this case.
+  // The HLS manifest does not indicate the presentation delay, so only test
+  // this in DASH.
   delayTests(dashManifestUrl, '(dash)');
   durationTests(hlsManifestUrl, '(hls)');
   durationTests(dashManifestUrl, '(dash)');
@@ -234,12 +234,6 @@ function codecTests(manifestUrl, format) {
           'h264',
         ],
       },
-      'packager': {
-        'manifest_format': [
-          'dash',
-          'hls',
-        ],
-      },
       'streaming_mode': 'vod',
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -268,18 +262,10 @@ function autoLanguageTests(manifestUrl, format) {
         },
       ],
     };
+    // We particularly want to verify this in live mode, in which we're
+    // transcoding from a FIFO.  This shows that we're auto-detecting from the
+    // original files even in this special case.
     const pipelineConfigDict = {
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-      },
-      'packager': {
-        'manifest_format': [
-          'dash',
-          'hls',
-        ],
-      },
       'streaming_mode': 'live',
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -305,19 +291,7 @@ function languageTests(manifestUrl, format) {
       ],
     };
     const pipelineConfigDict = {
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-      },
-      'packager': {
-        'manifest_format': [
-          'dash',
-          'hls',
-        ],
-      },
       'streaming_mode': 'vod',
-
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -366,22 +340,6 @@ function textTracksTests(manifestUrl, format) {
 
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-        // This test currently only tests aac with h264, which means webm
-        // won't be an output.  With webm, it doesnt work on chrome.
-        'audio_codecs': [
-          'aac',
-        ],
-        'video_codecs': [
-          'h264',
-        ],
-      },
-      'packager': {
-        'segment_per_file': false,
-      },
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -411,20 +369,6 @@ function vodTests(manifestUrl, format) {
 
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-        'audio_codecs': [
-          'aac',
-        ],
-        'video_codecs': [
-          'h264',
-        ],
-      },
-      'packager': {
-        'segment_per_file': false,
-      },
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -449,19 +393,7 @@ function channelsTests(manifestUrl, channels, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-        'audio_codecs': [
-          'aac',
-        ],
-        'video_codecs': [
-          'h264',
-        ],
         'channels': channels,
-      },
-      'packager': {
-        'segment_per_file': false,
       },
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -488,19 +420,7 @@ function availabilityTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-        'video_codecs': [
-          'h264',
-        ],
-      },
       'packager': {
-        'manifest_format': [
-          'dash',
-        ],
-        'segment_per_file': true,
         'availability_window': 500,
       },
     };
@@ -510,8 +430,9 @@ function availabilityTests(manifestUrl, format) {
     const re = /timeShiftBufferDepth="([^"]*)"/;
     const found = bodyText.match(re);
     expect(found).not.toBe(null);
-    if (found)
+    if (found) {
       expect(found[1]).toBe('PT500S');
+    }
   });
 }
 
@@ -531,19 +452,7 @@ function delayTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-        'video_codecs': [
-          'h264',
-        ],
-      },
       'packager': {
-        'manifest_format': [
-          'dash',
-        ],
-        'segment_per_file': true,
         'presentation_delay': 100,
       },
     };
@@ -572,21 +481,6 @@ function durationTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-        'video_codecs': [
-          'h264',
-        ],
-      },
-      'packager': {
-        'manifest_format': [
-          'dash',
-          'hls',
-        ],
-        'segment_per_file': false,
-      },
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
