@@ -590,6 +590,6 @@ function durationTests(manifestUrl, format) {
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
-    expect(video.duration).toBeCloseTo(10);
+    expect(video.duration).toBeCloseTo(10, 1 /* decimal points to check */);
   });
 }
