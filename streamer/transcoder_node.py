@@ -127,7 +127,10 @@ class TranscoderNode(node_base.NodeBase):
       ]
     args += [
         # A larger queue to buffer input from the pipeline (default is 8).
-        '-thread_queue_size', '16000',
+        # This is in packets, but for raw_images, that means frames.  A 720p PPM
+        # frame is 2.7MB, and a 1080p PPM is 6.2MB.  The entire queue, when
+        # full, must fit into memory.
+        '-thread_queue_size', '200',
     ]
     return args
 
