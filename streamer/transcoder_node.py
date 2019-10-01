@@ -57,24 +57,24 @@ class TranscoderNode(node_base.NodeBase):
       input = self._input_config.inputs[i]
 
       if self._config.mode == 'live':
-        args += self._live_input(input, self._inputs[i])
+        args += self._live_input(input)
 
-      elif self._config.mode == 'vod':
+      if input.get_start_time():
         args += [
-            # The input itself.
-            '-i', input.get_name(),
+            # Encode from intended starting time of the VOD input.
+            '-ss', input.get_start_time(),
+        ]
+      if input.get_end_time():
+        args += [
+            # Encode until intended ending time of the VOD input.
+            '-to', input.get_end_time(),
         ]
 
-        if input.get_start_time():
-          args += [
-              # Encode from intended starting time of the VOD input.
-              '-ss', input.get_start_time(),
-          ]
-        if input.get_end_time():
-          args += [
-              # Encode until intended ending time of the VOD input.
-              '-to', input.get_end_time(),
-          ]
+      # The input name always comes after the applicable input arguments.
+      args += [
+          # The input itself.
+          '-i', self._inputs[i],
+      ]
 
       # Check if the media type of the input is audio and if there are expected
       # outputs for the audio input.
@@ -107,7 +107,7 @@ class TranscoderNode(node_base.NodeBase):
 
     self._process = self._create_process(args)
 
-  def _live_input(self, input_object, input_path):
+  def _live_input(self, input_object):
     args = []
     if input_object.get_input_type() == 'looped_file':
       pass
@@ -128,8 +128,6 @@ class TranscoderNode(node_base.NodeBase):
     args += [
         # A larger queue to buffer input from the pipeline (default is 8).
         '-thread_queue_size', '16000',
-        # The input itself.
-        '-i', input_path,
     ]
     return args
 
