@@ -94,7 +94,8 @@ class TranscoderNode(node_base.NodeBase):
           # Map arguments must be repeated for each output file.
           args += map_args
           args += self._encode_audio(audio, audio.audio_codec, audio.channels,
-                                     metadata.CHANNEL_MAP[audio.channels])
+                                     metadata.CHANNEL_MAP[audio.channels],
+                                     input)
 
       if input.get_media_type() == 'video':
         group_of_pictures = int(self._config.packager['segment_size'] *
@@ -106,8 +107,7 @@ class TranscoderNode(node_base.NodeBase):
           args += self._encode_video(video, video.video_codec,
                                      group_of_pictures,
                                      metadata.RESOLUTION_MAP[video.res],
-                                     input.get_frame_rate(),
-                                     input.get_interlaced())
+                                     input)
 
     self._process = self._create_process(args)
 
@@ -138,7 +138,8 @@ class TranscoderNode(node_base.NodeBase):
     ]
     return args
 
-  def _encode_audio(self, audio, codec, channels, channel_map):
+  def _encode_audio(self, audio, codec, channels, channel_map, input):
+    filters = []
     args = [
         # No video encoding for audio.
         '-vn',
@@ -148,11 +149,13 @@ class TranscoderNode(node_base.NodeBase):
     ]
 
     if channels == 6:
-      args += [
+      filters += [
         # Work around for https://github.com/google/shaka-packager/issues/598,
         # as seen on https://trac.ffmpeg.org/ticket/6974
-        '-af', 'channelmap=channel_layout=5.1',
+        'channelmap=channel_layout=5.1',
       ]
+
+    filters.extend(input.get_filters())
 
     if codec == 'aac':
       args += [
@@ -174,14 +177,20 @@ class TranscoderNode(node_base.NodeBase):
           # DASH-compatible output format.
           '-dash', '1',
       ]
+
+    if len(filters):
+      args += [
+          # Set audio filters.
+          '-af', ','.join(filters),
+      ]
+
     args += [
         # The output.
         audio.pipe,
     ]
     return args
 
-  def _encode_video(self, video, codec, gop_size, res_map, frame_rate,
-                    is_interlaced):
+  def _encode_video(self, video, codec, gop_size, res_map, input):
     filters = []
     args = [
         # No audio encoding for video.
@@ -189,13 +198,17 @@ class TranscoderNode(node_base.NodeBase):
         # Full pelME compare function.
         '-cmp', 'chroma',
     ]
+
     # TODO: auto detection of interlacing
-    if is_interlaced:
+    if input.get_interlaced():
       # Sanity check: since interlaced files are made up of two interlaced
       # frames, the frame rate must be even and not too small.
+      frame_rate = input.get_frame_rate()
       assert frame_rate % 2 == 0 and frame_rate >= 48
       filters.append('pp=fd')
       args.extend(['-r', str(frame_rate / 2)])
+
+    filters.extend(input.get_filters())
 
     if video.hardware:
       filters.append('format=nv12')

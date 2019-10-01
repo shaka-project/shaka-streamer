@@ -115,6 +115,10 @@ describe('Shaka Streamer', () => {
 
   mapTests(hlsManifestUrl, '(hls)');
   mapTests(dashManifestUrl, '(dash)');
+
+  // The player doesn't have any framerate or other metadata from an HLS
+  // manifest that would let us detect our filters, so only test this in DASH.
+  filterTests(dashManifestUrl, '(dash)');
 });
 
 function resolutionTests(manifestUrl, format) {
@@ -583,5 +587,55 @@ function mapTests(manifestUrl, format) {
     expect(trackList.length).toBe(1);
     expect(trackList[0].videoCodec).not.toBe(null);
     expect(trackList[0].audioCodec).not.toBe(null);
+  });
+}
+
+function filterTests(manifestUrl, format) {
+  it('filters inputs ' + format, async() => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'video',
+          'resolution': '720p',
+          'frame_rate': 24.0,
+          'track_num': 0,
+          'is_interlaced': false,
+          'start_time': '00:00:00',
+          'end_time': '00:00:10',
+          'filters': [
+            // Resample frames to 90fps, which we can later detect.
+            'fps=fps=90',
+          ],
+        },
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'audio',
+          'track_num': 1,
+          'start_time': '00:00:00',
+          'end_time': '00:00:10',
+          'filters': [
+            // Resample audio to 88.2kHz, which we can later detect.
+            'aresample=88200',
+          ],
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'transcoder': {
+        'resolutions': [
+          '144p',
+        ],
+      },
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+
+    const trackList = player.getVariantTracks();
+    expect(trackList.length).toBe(1);
+    expect(trackList[0].frameRate).toBe(90);
+    // TODO(joeyparrish): expose sampleRate through Shaka Player API
+    //expect(trackList[0].sampleRate).toBe(88200);
   });
 }

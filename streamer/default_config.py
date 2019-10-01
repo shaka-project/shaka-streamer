@@ -46,6 +46,9 @@ INPUT_DEFAULT_CONFIG = {
       'start_time': '',
       # End time of VOD input to encode.
       'end_time': '',
+      # An arbitrary set of filters to pass to ffmpeg for this input.
+      # For example, 'pad=1280:720:20:20'.
+      'filters': [],
     },
   ],
 }

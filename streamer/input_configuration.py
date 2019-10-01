@@ -78,6 +78,9 @@ class Input():
       return self._input['end_time']
     return None
 
+  def get_filters(self):
+    return self._input.get('filters', [])
+
   def check_entry(self):
     self.check_name()
     if self.get_media_type() == 'video':
