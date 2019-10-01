@@ -95,6 +95,9 @@ describe('Shaka Streamer', () => {
   // The HLS manifest does not indicate the presentation delay, so only test
   // this in DASH.
   delayTests(dashManifestUrl, '(dash)');
+  // The HLS manifest does not indicate the update period, so only test this in
+  // DASH.
+  updateTests(dashManifestUrl, '(dash)');
   durationTests(hlsManifestUrl, '(hls)');
   durationTests(dashManifestUrl, '(dash)');
 });
@@ -460,6 +463,38 @@ function delayTests(manifestUrl, format) {
     await player.load(manifestUrl);
     delay = player.getManifest().presentationTimeline.getDelay();
     expect(delay).toBe(100);
+  });
+}
+
+function updateTests(manifestUrl, format) {
+  it('outputs the correct update period ' + format, async() => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'input_type': 'looped_file',
+          'media_type': 'video',
+          'resolution': '720p',
+          'frame_rate': 24.0,
+          'track_num': 0,
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'live',
+      'packager': {
+        'update_period': 42,
+      },
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    const response = await fetch(manifestUrl);
+    const bodyText = await response.text();
+    const re = /minimumUpdatePeriod="([^"]*)"/;
+    const found = bodyText.match(re);
+    expect(found).not.toBe(null);
+    if (found) {
+      expect(found[1]).toBe('PT42S');
+    }
   });
 }
 

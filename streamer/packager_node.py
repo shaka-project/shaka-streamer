@@ -90,6 +90,9 @@ class PackagerNode(node_base.NodeBase):
           # live edge.
           '--suggested_presentation_delay',
           str(self._config.packager['presentation_delay']),
+          # Number of seconds between manifest updates.
+          '--minimum_update_period',
+          str(self._config.packager['update_period']),
       ]
 
     args += self._setup_manifest_format()

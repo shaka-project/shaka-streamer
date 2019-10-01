@@ -89,6 +89,8 @@ OUTPUT_DEFAULT_CONFIG = {
     'availability_window': 300,
     # Presentation delay, or how far back from the edge the player should be.
     'presentation_delay': 30,
+    # Update period, or how often the player should fetch a new manifest.
+    'update_period': 8,
 
     'encryption': {
       # Enables encryption.
