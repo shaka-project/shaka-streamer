@@ -41,13 +41,15 @@ class ResolutionData():
 
 # A map of channels to ChannelData objects which contains the AAC and Opus
 # bitrate information of a given channel.
+# TODO(joeyparrish): Break this down into a multi-level map involving codec.
 CHANNEL_MAP = {
     2: ChannelData(128, 64),
     6: ChannelData(192, 96),
 }
 
 # A map of resolutions to ResolutionData objects which contain
-# the height and H264 bitrate of a given resolution.
+# the height and bitrate of a given resolution.
+# TODO(joeyparrish): Break this down into a multi-level map involving codec.
 RESOLUTION_MAP = {
     '144p': ResolutionData(256, 144, '108k', '95k', 'baseline'),
     '240p': ResolutionData(426, 240, '242k', '150k', 'main'),
@@ -65,18 +67,44 @@ RESOLUTION_MAP = {
 }
 
 class Metadata():
-
-  def __init__(self, pipe, channels = None, res_string = None,
-               audio_codec = None, video_codec = None, lang=None,
-               hardware=None):
+  def __init__(self, pipe, channels=None, resolution_name=None,
+               codec=None, language=None, hardware=False):
     self.pipe = pipe
+    self.channels = channels
+    self.codec = codec
+    self.language = language
+    self.resolution_name = resolution_name
+    self.hardware = hardware
+
+    # TODO(joeyparrish): Use constants for codec & format names
     if channels:
-      self.channels = channels
-      self.audio_codec = audio_codec
+      self.type = 'audio'
+      # TODO(joeyparrish): channel_data is a weak variable name.
       self.channel_data = CHANNEL_MAP[channels]
-      self.lang = lang
-    if res_string:
-      self.res = res_string
-      self.video_codec = video_codec
-      self.resolution_data = RESOLUTION_MAP[res_string]
-      self.hardware = hardware
+      if self.codec == 'aac':
+        self.bitrate = self.channel_data.aac_bitrate
+        self.format = 'mp4'
+      elif self.codec == 'opus':
+        self.bitrate = self.channel_data.opus_bitrate
+        self.format = 'webm'
+
+    if resolution_name:
+      self.type = 'video'
+      # TODO(joeyparrish): resolution_data is a weak variable name.
+      self.resolution_data = RESOLUTION_MAP[resolution_name]
+      if self.codec == 'h264':
+        self.bitrate = self.resolution_data.h264_bitrate
+        self.format = 'mp4'
+      elif self.codec == 'vp9':
+        self.bitrate = self.resolution_data.vp9_bitrate
+        self.format = 'webm'
+
+  def fill_template(self, template, **kwargs):
+    """Fill in a template string using **kwargs and values in self."""
+    value_map = {}
+    # First take any values from this object itself.
+    value_map.update(self.__dict__)
+    # Then fill in any values from kwargs.
+    value_map.update(kwargs)
+    # Now fill in the template with these values.
+    return template.format(**value_map)

@@ -93,21 +93,13 @@ class TranscoderNode(node_base.NodeBase):
         for audio in self._output_audios:
           # Map arguments must be repeated for each output file.
           args += map_args
-          args += self._encode_audio(audio, audio.audio_codec, audio.channels,
-                                     metadata.CHANNEL_MAP[audio.channels],
-                                     input)
+          args += self._encode_audio(audio, input)
 
       if input.get_media_type() == 'video':
-        group_of_pictures = int(self._config.packager['segment_size'] *
-                                input.get_frame_rate())
-
         for video in self._output_videos:
           # Map arguments must be repeated for each output file.
           args += map_args
-          args += self._encode_video(video, video.video_codec,
-                                     group_of_pictures,
-                                     metadata.RESOLUTION_MAP[video.res],
-                                     input)
+          args += self._encode_video(video, input)
 
     self._process = self._create_process(args)
 
@@ -138,17 +130,17 @@ class TranscoderNode(node_base.NodeBase):
     ]
     return args
 
-  def _encode_audio(self, audio, codec, channels, channel_map, input):
+  def _encode_audio(self, audio, input):
     filters = []
     args = [
         # No video encoding for audio.
         '-vn',
         # Set the number of channels to the one specified in the VOD config
         # file.
-        '-ac', str(channels),
+        '-ac', str(audio.channels),
     ]
 
-    if channels == 6:
+    if audio.channels == 6:
       filters += [
         # Work around for https://github.com/google/shaka-packager/issues/598,
         # as seen on https://trac.ffmpeg.org/ticket/6974
@@ -157,23 +149,23 @@ class TranscoderNode(node_base.NodeBase):
 
     filters.extend(input.get_filters())
 
-    if codec == 'aac':
+    if audio.codec == 'aac':
       args += [
           # Format with MPEG-TS for a pipe.
           '-f', 'mpegts',
           # AAC audio codec.
           '-c:a', 'aac',
           # Set bitrate to the one specified in the VOD config file.
-          '-b:a', '{0}k'.format(channel_map.aac_bitrate),
+          '-b:a', '{0}k'.format(audio.channel_data.aac_bitrate),
       ]
-    elif codec == 'opus':
+    elif audio.codec == 'opus':
       args += [
           # Opus encoding has output format webm.
           '-f', 'webm',
           # Opus audio codec.
           '-c:a', 'libopus',
           # Set bitrate to the one specified in the VOD config file.
-          '-b:a', '{0}k'.format(channel_map.opus_bitrate),
+          '-b:a', '{0}k'.format(audio.channel_data.opus_bitrate),
           # DASH-compatible output format.
           '-dash', '1',
       ]
@@ -190,7 +182,8 @@ class TranscoderNode(node_base.NodeBase):
     ]
     return args
 
-  def _encode_video(self, video, codec, gop_size, res_map, input):
+  # TODO(joeyparrish): "video" is a weak variable name
+  def _encode_video(self, video, input):
     filters = []
     args = [
         # No audio encoding for video.
@@ -201,9 +194,9 @@ class TranscoderNode(node_base.NodeBase):
 
     # TODO: auto detection of interlacing
     if input.get_interlaced():
+      frame_rate = input.get_frame_rate()
       # Sanity check: since interlaced files are made up of two interlaced
       # frames, the frame rate must be even and not too small.
-      frame_rate = input.get_frame_rate()
       assert frame_rate % 2 == 0 and frame_rate >= 48
       filters.append('pp=fd')
       args.extend(['-r', str(frame_rate / 2)])
@@ -213,11 +206,13 @@ class TranscoderNode(node_base.NodeBase):
     if video.hardware:
       filters.append('format=nv12')
       filters.append('hwupload')
-      filters.append('scale_vaapi={0}:{1}'.format(-2, res_map.height))
+      # -2 here means to choose a width to keep the original aspect ratio.
+      filters.append('scale_vaapi=-2:{0}'.format(video.resolution_data.height))
     else:
-      filters.append('scale={0}:{1}'.format(-2, res_map.height))
+      # -2 here means to choose a width to keep the original aspect ratio.
+      filters.append('scale=-2:{0}'.format(video.resolution_data.height))
 
-    if codec == 'h264':
+    if video.codec == 'h264':
       args += [
           # MPEG-TS format works well in a pipe.
           '-f', 'mpegts',
@@ -249,7 +244,7 @@ class TranscoderNode(node_base.NodeBase):
 
       args += [
           # Set bitrate to the one specified in the VOD config file.
-          '-b:v', '{0}'.format(res_map.h264_bitrate),
+          '-b:v', '{0}'.format(video.resolution_data.h264_bitrate),
           # Set maximum number of B frames between non-B frames.
           '-bf', '0',
           # The only format supported by QT/Apple.
@@ -258,9 +253,9 @@ class TranscoderNode(node_base.NodeBase):
           '-flags', '+cgop',
       ]
       # Use different ffmpeg options depending on the H264 profile.
-      args += profile_args[res_map.h264_profile]
+      args += profile_args[video.resolution_data.h264_profile]
 
-    elif codec == 'vp9':
+    elif video.codec == 'vp9':
       args += [
           # Format using webm.
           '-f', 'webm',
@@ -279,14 +274,16 @@ class TranscoderNode(node_base.NodeBase):
 
       args += [
           # Set bitrate to the one specified in the VOD config file.
-          '-b:v', '{0}'.format(res_map.vp9_bitrate),
+          '-b:v', '{0}'.format(video.resolution_data.vp9_bitrate),
           # DASH-compatible output format.
           '-dash', '1',
       ]
 
+    keyframe_interval = int(self._config.packager['segment_size'] *
+                            input.get_frame_rate())
     args += [
         # Set minimum and maximum GOP length.
-        '-keyint_min', str(gop_size), '-g', str(gop_size),
+        '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),
         # Set video filters.
         '-vf', ','.join(filters),
         # The output.

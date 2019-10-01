@@ -187,16 +187,16 @@ class ControllerNode(object):
     language = input.get_language() or self._probe_language(input)
     for codec in codecs:
       audio_outputs.append(metadata.Metadata(self._create_pipe(),
-                                             channels, audio_codec=codec,
-                                             lang=language))
+                                             channels=channels, codec=codec,
+                                             language=language))
     return audio_outputs
 
   def _add_video(self, input, resolutions, codecs):
     video_outputs = []
     for codec in codecs:
-      hardware_encoding_required = False
+      hardware_encoding = False
       if codec.startswith('hw:'):
-        hardware_encoding_required = True
+        hardware_encoding = True
         codec = codec.split(':')[1]
       in_res = input.get_resolution()
       for out_res in resolutions:
@@ -205,8 +205,9 @@ class ControllerNode(object):
         if (metadata.RESOLUTION_MAP[in_res] >=
             metadata.RESOLUTION_MAP[out_res]):
           video_outputs.append(metadata.Metadata(self._create_pipe(),
-              res_string=out_res, video_codec=codec,
-              hardware=hardware_encoding_required))
+                                                 resolution_name=out_res,
+                                                 codec=codec,
+                                                 hardware=hardware_encoding))
     return video_outputs
 
   def _probe_language(self, input):
