@@ -158,9 +158,6 @@ class TranscoderNode(node_base.NodeBase):
           '-c:a', 'aac',
           # Set bitrate to the one specified in the VOD config file.
           '-b:a', '{0}k'.format(channel_map.aac_bitrate),
-          # Reorder mp4 segments so that the moov segment is at the front.
-          # Needed for output to a pipe.
-          '-movflags', '+faststart',
       ]
     elif codec == 'opus':
       args += [
@@ -238,9 +235,6 @@ class TranscoderNode(node_base.NodeBase):
           '-b:v', '{0}'.format(res_map.h264_bitrate),
           # Set maximum number of B frames between non-B frames.
           '-bf', '0',
-          # Reorder mp4 segments so that the moov segment is at the front.
-          # Needed for output to a pipe.
-          '-movflags', '+faststart',
           # The only format supported by QT/Apple.
           '-pix_fmt', 'yuv420p',
           # Require a closed GOP.  Some decoders don't support open GOPs.
