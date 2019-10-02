@@ -63,7 +63,6 @@ class NodeBase(object):
     """Stop the subprocess if it's still running."""
     if self._process:
       # Slightly more polite than kill.  Try this first.
-
       self._process.terminate()
 
       if self.is_running():
@@ -73,4 +72,7 @@ class NodeBase(object):
       if self.is_running():
         # If it's still not dead, use kill.
         self._process.kill()
-        # Don't wait to see the results.  If this didn't work, nothing will.
+        # Wait for the process to die and read its exit code.  There is no way
+        # to ignore a kill signal, so this will happen quickly.  If we don't do
+        # this, it can create a zombie process.
+        self._process.wait()
