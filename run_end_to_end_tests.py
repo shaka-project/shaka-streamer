@@ -42,9 +42,14 @@ app = flask.Flask(__name__, static_folder=OUTPUT_DIR)
 # Stops browser from caching files to prevent cross-test contamination.
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-def cleanupFiles():
-  # Check if the directory for outputted Packager files exists, and if it
-  # does, delete it and remake a new one.
+def cleanup():
+  # If the controller is running, stop it.
+  global controller
+  if controller is not None:
+    controller.stop()
+  controller = None
+
+  # If the output directory exists, delete it and make a new one.
   if os.path.exists(OUTPUT_DIR):
     shutil.rmtree(OUTPUT_DIR)
   os.mkdir(OUTPUT_DIR)
@@ -110,7 +115,7 @@ def start():
   if controller is not None:
     return createCrossOriginResponse(
         status=403, body='Instance already running!')
-  cleanupFiles()
+  cleanup()
 
   # Receives configs from the tests to start Shaka Streamer.
   configs = json.loads(flask.request.data)
@@ -130,11 +135,7 @@ def start():
 
 @app.route('/stop')
 def stop():
-  global controller
-  if controller is not None:
-    controller.stop()
-  controller = None
-  cleanupFiles()
+  cleanup()
   return createCrossOriginResponse()
 
 @app.route('/output_files/<path:filename>', methods = ['GET','OPTIONS'])
@@ -232,6 +233,7 @@ def main():
 
   print('\n\nNumber of failures:', fails, '\nNumber of trials:', trials)
   print('\nSuccess rate:', 100 * (trials - fails) / trials, '%')
+  cleanup()
   return fails
 
 if __name__ == '__main__':
