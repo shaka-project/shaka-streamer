@@ -16,6 +16,7 @@
 
 import abc
 import enum
+import os
 import shlex
 import subprocess
 import time
@@ -47,20 +48,33 @@ class NodeBase(object):
     """
     pass
 
-  def _create_process(self, args):
+  def _create_process(self, args, env={}, merge_env=True, stdout=None,
+                      stderr=None):
     """A central point to create subprocesses, so that we can debug the
     command-line arguments.
 
     Args:
       args: An array of strings, the command line of the subprocess.
+      env: A dictionary of environment variables to pass to the subprocess.
+      merge_env: If true, merge env with the parent process environment.
     Returns:
       The Popen object of the subprocess.
     """
+    if merge_env:
+      child_env = os.environ.copy()
+      child_env.update(env)
+    else:
+      child_env = env
+
     # Print arguments formatted as output from bash -x would be.
     # This makes it easy to see the arguments and easy to copy/paste them for
     # debugging in a shell.
     print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
-    return subprocess.Popen(args, stdin = subprocess.DEVNULL)
+
+    return subprocess.Popen(args,
+                            env=child_env,
+                            stdin=subprocess.DEVNULL,
+                            stdout=stdout, stderr=stderr)
 
   def check_status(self):
     """Returns the current ProcessStatus of the node."""
