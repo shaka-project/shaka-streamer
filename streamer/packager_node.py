@@ -15,6 +15,7 @@
 """A module that feeds information from two named pipes into shaka-packager."""
 
 import os
+import subprocess
 
 from . import metadata
 from . import node_base
@@ -124,8 +125,16 @@ class PackagerNode(node_base.NodeBase):
     if self._config.encryption['enable']:
       args += self._setup_encryption()
 
-    self._process = self._create_process(args)
+    stdout = None
+    if self._config.debug_logs:
+      # Log by writing all Packager output to a file.  Unlike the logging
+      # system in ffmpeg, this will stop any Packager output from getting to
+      # the screen.
+      stdout = open('PackagerNode.log', 'w')
 
+    self._process = self._create_process(args,
+                                         stderr=subprocess.STDOUT,
+                                         stdout=stdout)
 
   def _create_text(self, dict, language):
     # TODO: Format using text Metadata objects, which don't exist yet

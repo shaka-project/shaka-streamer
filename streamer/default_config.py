@@ -65,6 +65,10 @@ OUTPUT_DEFAULT_CONFIG = {
   # If true, reduce the level of output.  Only errors will be shown in quiet
   # mode.
   'quiet': False,
+  # If true, output simple log files from each node.  No control is given over
+  # log filenames.  Logs are written to the current working directory.  We do
+  # not yet support log rotation.  This is meant only for debugging.
+  'debug_logs': False,
 
   'transcoder': {
     # A list of resolutions to encode.

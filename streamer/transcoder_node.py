@@ -109,7 +109,13 @@ class TranscoderNode(node_base.NodeBase):
           args += map_args
           args += self._encode_video(video, input)
 
-    self._process = self._create_process(args)
+    env = {}
+    if self._config.debug_logs:
+      # Use this environment variable to turn on ffmpeg's logging.  This is
+      # independent of the -loglevel switch above.
+      env['FFREPORT'] = 'file=TranscoderNode.log:level=32'
+
+    self._process = self._create_process(args, env)
 
   def _live_input(self, input_object):
     args = []

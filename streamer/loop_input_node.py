@@ -64,5 +64,15 @@ class LoopInputNode(node_base.NodeBase):
         self._output_path,
     ]
 
-    self._process = self._create_process(args)
+    env = {}
+    if self._config.debug_logs:
+      # A safe version of the input path that we can put into a log filename.
+      sanitized_input = self._input_path.replace('/', '-').replace('\\', '-')
+      # Use this environment variable to turn on ffmpeg's logging.  This is
+      # independent of the -loglevel switch above.  The log file will have the
+      # input filename in it, in case there are multiple LoopInputNodes.
+      env['FFREPORT'] = 'file=LoopInputNode-{}.log:level=32'.format(
+          sanitized_input)
+
+    self._process = self._create_process(args, env)
 

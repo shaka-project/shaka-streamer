@@ -19,6 +19,7 @@ from . import validation
 
 MODE = 'streaming_mode'
 QUIET = 'quiet'
+DEBUG_LOGS = 'debug_logs'
 TRANSCODER = 'transcoder'
 PACKAGER = 'packager'
 ENCRYPTION = 'encryption'
@@ -32,6 +33,7 @@ class PipelineConfig():
     self.dict = user_config
     self.mode = self.dict[MODE]
     self.quiet = self.dict[QUIET]
+    self.debug_logs = self.dict[DEBUG_LOGS]
     self.transcoder = self.dict[TRANSCODER]
     self.packager = self.dict[PACKAGER]
     self.encryption = self.packager[ENCRYPTION]
