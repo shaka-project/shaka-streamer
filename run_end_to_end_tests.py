@@ -54,9 +54,6 @@ def cleanup():
     shutil.rmtree(OUTPUT_DIR)
   os.mkdir(OUTPUT_DIR)
 
-def hasSegment(representation):
-  return re.search('<S t', representation.group())
-
 def createCrossOriginResponse(body=None, status=200):
   # Enable CORS because karma and flask are cross-origin.
   resp = flask.Response(response=body, status=status)
@@ -64,50 +61,59 @@ def createCrossOriginResponse(body=None, status=200):
   resp.headers.add('Access-Control-Allow-Methods', 'GET,POST')
   return resp
 
-def waitDashManifest(dash_path):
-  # Does not read manifest until it is created.
-  while not os.path.exists(dash_path):
-    time.sleep(1)
+def dashStreamsReady(manifest_path):
+  """Return True if the DASH manifest exists and each Representation has at
+  least one segment in it."""
 
-  # Waiting until every resolution has an initial segment,
-  # so the manifest can be loaded properly.
-  missing_segment = True
-  pattern = re.compile('<Representation.*?((\n).*?)*?Representation>')
-  while missing_segment:
-    time.sleep(1)
-    with open(dash_path) as dash_file:
-      missing_segment = False
-      for representation in pattern.finditer(dash_file.read()):
-        if not hasSegment(representation):
-          missing_segment = True
+  # Check to see if the DASH manifest exists yet.
+  if not os.path.exists(manifest_path):
+    return False
 
-def hlsReadyStreamCount(stream_list):
-  init_count = 0
-  for stream_path in stream_list:
-    with open(stream_path) as stream_file:
-      if '#EXTINF' in stream_file.read():
-        init_count += 1
-  return init_count
+  # Waiting until every Representation has a segment.
+  pattern = re.compile(r'<Representation.*?((\n).*?)*?Representation>')
+  with open(manifest_path) as manifest_file:
+    for representation in pattern.finditer(manifest_file.read()):
+      if not re.search(r'<S t', representation.group()):
+        # This Representation has no segments.
+        return False
 
-def waitHlsManifest(hls_path):
-  # Does not read manifest until it is created.
-  while not os.path.exists(hls_path):
-    time.sleep(1)
+  return True
 
-  # Parsing master playlist to see how many streams there are.
-  stream_pattern = re.compile('stream_\d+\.m3u8')
-  with open(hls_path) as hls_file:
-    stream_count = len(set(stream_pattern.findall(hls_file.read())))
+def hlsStreamsReady(master_playlist_path):
+  """Return True if the HLS master playlist exists, and all of the media
+  playlists referenced by it exist, and each of those media playlists have at
+  least one segment in it."""
 
-  # Waiting until the correct number of streams exist.
-  stream_path_glob = OUTPUT_DIR + 'stream_*.m3u8'
-  while len(glob.glob(stream_path_glob)) != stream_count:
-    time.sleep(1)
+  # Check to see if the HLS master playlist exists yet.
+  if not os.path.exists(master_playlist_path):
+    return False
 
-  # Waiting until each stream has enough segments.
-  stream_list = glob.glob(stream_path_glob)
-  while hlsReadyStreamCount(stream_list) != stream_count:
-    time.sleep(1)
+  # Parsing master playlist to see how many media playlists there are.
+  # Do this every time, since the master playlist contents may change.
+  with open(master_playlist_path) as hls_file:
+    contents = hls_file.read()
+    media_playlist_list = re.findall(r'^.*\.m3u8$', contents, re.MULTILINE)
+    media_playlist_count = len(media_playlist_list)
+
+  # See how many playlists exist so far.
+  playlist_list = glob.glob(OUTPUT_DIR + '*.m3u8')
+
+  # Return False if we don't have the right number.  The +1 accounts for the
+  # master playlist.
+  if len(playlist_list) != media_playlist_count + 1:
+    return False
+
+  for playlist_path in playlist_list:
+    if playlist_path == master_playlist_path:
+      # Skip the master playlist
+      continue
+
+    with open(playlist_path) as playlist_file:
+      if '#EXTINF' not in playlist_file.read():
+        # This doesn't have segments yet.
+        return False
+
+  return True
 
 @app.route('/start', methods = ['POST'])
 def start():
@@ -151,9 +157,11 @@ def send_file(filename):
     # If streaming mode is live, needs to wait for specific content in
     # manifest until it can be loaded by the player.
     if filename.endswith('.mpd'):
-      waitDashManifest(OUTPUT_DIR + filename)
+      while not dashStreamsReady(OUTPUT_DIR + filename):
+        time.sleep(1)
     elif filename.endswith('.m3u8') and not filename.startswith('stream_'):
-      waitHlsManifest(OUTPUT_DIR + filename)
+      while not hlsStreamsReady(OUTPUT_DIR + filename):
+        time.sleep(1)
 
   # Sending over requested files.
   try:
