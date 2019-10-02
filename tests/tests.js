@@ -128,7 +128,6 @@ function resolutionTests(manifestUrl, format) {
       'inputs': [
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
-          'input_type': 'looped_file',
           'media_type': 'video',
           'frame_rate': 24.0,
           'resolution': '1080p',
@@ -137,6 +136,7 @@ function resolutionTests(manifestUrl, format) {
       ]
     };
     const pipelineConfigDict = {
+      'streaming_mode': 'vod',
       'transcoder': {
         // A list of resolutions to encode.
         'resolutions': [
@@ -155,6 +155,7 @@ function resolutionTests(manifestUrl, format) {
     const trackList = player.getVariantTracks();
     const heightList = trackList.map(track => track.height);
     heightList.sort((a, b) => a - b);
+    // No 4k, since that is above the input res.
     expect(heightList).toEqual([144, 240, 480, 720, 1080]);
   });
 }
@@ -188,7 +189,6 @@ function drmTests(manifestUrl, format) {
       'inputs': [
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
-          'input_type': 'looped_file',
           'media_type': 'video',
           'frame_rate': 24.0,
           'resolution': '1080p',
@@ -197,6 +197,7 @@ function drmTests(manifestUrl, format) {
       ]
     };
     const pipelineConfigDict = {
+      'streaming_mode': 'vod',
       'packager': {
         'encryption': {
           // Enables encryption.
@@ -243,6 +244,7 @@ function codecTests(manifestUrl, format) {
       ],
     };
     const pipelineConfigDict = {
+      'streaming_mode': 'vod',
       'transcoder': {
         'resolutions': [
           '144p',
@@ -254,7 +256,6 @@ function codecTests(manifestUrl, format) {
           'h264',
         ],
       },
-      'streaming_mode': 'vod',
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -329,7 +330,6 @@ function textTracksTests(manifestUrl, format) {
       'inputs': [
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
-          'input_type': 'looped_file',
           'media_type': 'video',
           'frame_rate': 24.0,
           'resolution': '1080p',
@@ -378,7 +378,6 @@ function vodTests(manifestUrl, format) {
       'inputs': [
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
-          'input_type': 'looped_file',
           'media_type': 'video',
           'frame_rate': 24.0,
           'resolution': '1080p',
@@ -403,7 +402,6 @@ function channelsTests(manifestUrl, channels, format) {
       'inputs': [
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
-          'input_type': 'looped_file',
           'media_type': 'audio',
           'track_num': 1,
         },
@@ -526,8 +524,9 @@ function durationTests(manifestUrl, format) {
           'frame_rate': 24.0,
           'track_num': 0,
           'is_interlaced': false,
-          'start_time': '00:00:00',
-          'end_time': '00:00:10',
+           // The original clip is 10 seconds long.
+          'start_time': '00:00:02',
+          'end_time': '00:00:05',
         },
       ],
     };
@@ -536,7 +535,8 @@ function durationTests(manifestUrl, format) {
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
-    expect(video.duration).toBeCloseTo(10, 1 /* decimal points to check */);
+    // We took from 2-5, so the output should be about 3 seconds long.
+    expect(video.duration).toBeCloseTo(3, 1 /* decimal points to check */);
   });
 }
 
@@ -557,15 +557,11 @@ function mapTests(manifestUrl, format) {
           'frame_rate': 24.0,
           'track_num': 0,
           'is_interlaced': false,
-          'start_time': '00:00:00',
-          'end_time': '00:00:10',
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
           'track_num': 1,
-          'start_time': '00:00:00',
-          'end_time': '00:00:10',
         },
       ],
     };
@@ -601,8 +597,6 @@ function filterTests(manifestUrl, format) {
           'frame_rate': 24.0,
           'track_num': 0,
           'is_interlaced': false,
-          'start_time': '00:00:00',
-          'end_time': '00:00:10',
           'filters': [
             // Resample frames to 90fps, which we can later detect.
             'fps=fps=90',
@@ -612,8 +606,6 @@ function filterTests(manifestUrl, format) {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
           'track_num': 1,
-          'start_time': '00:00:00',
-          'end_time': '00:00:10',
           'filters': [
             // Resample audio to 88.2kHz, which we can later detect.
             'aresample=88200',
