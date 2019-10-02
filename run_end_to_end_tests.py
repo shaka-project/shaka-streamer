@@ -119,6 +119,8 @@ def start():
 
   # Receives configs from the tests to start Shaka Streamer.
   configs = json.loads(flask.request.data)
+  # Enforce quiet mode without needing it specified in every test.
+  configs['pipeline_config']['quiet'] = True
 
   controller = ControllerNode()
   try:

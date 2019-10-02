@@ -48,6 +48,14 @@ class TranscoderNode(node_base.NodeBase):
         '-y',
     ]
 
+    if self._config.quiet:
+      args += [
+          # Suppresses all messages except errors.
+          # Without this, a status line will be printed by default showing
+          # progress and transcoding speed.
+          '-loglevel', 'error',
+      ]
+
     if any([output.hardware for output in self._output_videos]):
       args += [
           # Hardware acceleration args.

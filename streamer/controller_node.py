@@ -106,7 +106,8 @@ class ControllerNode(object):
         i.check_input_type()
         if i.get_input_type() == 'looped_file':
           loop_output = self._create_pipe()
-          input_node = loop_input_node.LoopInputNode(i.get_name(), loop_output)
+          input_node = loop_input_node.LoopInputNode(
+              pipeline_config, i.get_name(), loop_output)
           self._nodes.append(input_node)
           input_paths.append(loop_output)
 

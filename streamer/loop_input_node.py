@@ -17,8 +17,9 @@
 from . import node_base
 
 class LoopInputNode(node_base.NodeBase):
-  def __init__(self, input_path, output_path):
+  def __init__(self, config, input_path, output_path):
     node_base.NodeBase.__init__(self)
+    self._config = config
     self._input_path = input_path
     self._output_path = output_path
 
@@ -29,8 +30,24 @@ class LoopInputNode(node_base.NodeBase):
         '-stream_loop', '-1',
         # Read input in real time.
         '-re',
-        # Suppresses all messages except warnings and errors.
-        '-loglevel', 'warning',
+    ]
+
+    if self._config.quiet:
+      args += [
+          # Suppresses all messages except errors.
+          '-loglevel', 'error',
+      ]
+    else:
+      args += [
+          # Suppresses all messages except warnings and errors.
+          # By using this instead of the default, we suppress the status line
+          # showing progress and transcoding speed.  The transcoder node will
+          # show this instead, which will indicate overall pipeline speed.
+          # If we show both at once, it will be unreadable.
+          '-loglevel', 'warning',
+      ]
+
+    args += [
         # The input itself.
         '-i', self._input_path,
         # Format the output as MPEG2-TS, which works well in a pipe.
@@ -39,9 +56,6 @@ class LoopInputNode(node_base.NodeBase):
         '-c:v', 'copy',
         # Copy the audio stream directly.
         '-c:a', 'copy',
-    ]
-
-    args += [
         # Do not prompt for output files that already exist.  Since we created
         # the named pipe in advance, it definitely already exists.  A prompt
         # would block ffmpeg to wait for user input.

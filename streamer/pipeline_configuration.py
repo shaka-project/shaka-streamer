@@ -18,6 +18,7 @@ from . import default_config
 from . import validation
 
 MODE = 'streaming_mode'
+QUIET = 'quiet'
 TRANSCODER = 'transcoder'
 PACKAGER = 'packager'
 ENCRYPTION = 'encryption'
@@ -30,6 +31,7 @@ class PipelineConfig():
     validation.setup_config(user_config, default_config, valid_values)
     self.dict = user_config
     self.mode = self.dict[MODE]
+    self.quiet = self.dict[QUIET]
     self.transcoder = self.dict[TRANSCODER]
     self.packager = self.dict[PACKAGER]
     self.encryption = self.packager[ENCRYPTION]

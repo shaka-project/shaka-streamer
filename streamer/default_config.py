@@ -62,6 +62,10 @@ INPUT_VALID_VALUES = {
 OUTPUT_DEFAULT_CONFIG = {
   # Mode of streaming. Can either be live or vod.
   'streaming_mode': 'live',
+  # If true, reduce the level of output.  Only errors will be shown in quiet
+  # mode.
+  'quiet': False,
+
   'transcoder': {
     # A list of resolutions to encode.
     'resolutions': [
