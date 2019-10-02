@@ -238,7 +238,9 @@ def check_version(name, command, minimum_version):
 
   try:
     version_string = str(subprocess.check_output(command))
-  except:
+  except (subprocess.CalledProcessError, OSError) as e:
+    if isinstance(e, subprocess.CalledProcessError):
+      print(e.stdout, file=sys.stderr)
     raise FileNotFoundError(name + ' not installed! Please install version ' +
                             min_version_string + ' or higher of ' + name + '.')
 
