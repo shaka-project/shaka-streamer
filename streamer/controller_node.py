@@ -28,6 +28,7 @@ import uuid
 from . import input_configuration
 from . import loop_input_node
 from . import metadata
+from . import node_base
 from . import packager_node
 from . import pipeline_configuration
 from . import transcoder_node
@@ -52,6 +53,12 @@ class ControllerNode(object):
   def __del__(self):
     # Clean up named pipes by removing the temp directory we placed them in.
     shutil.rmtree(self._temp_dir)
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, *unused_args):
+    self.stop()
 
   def _create_pipe(self):
     """Create a uniquely-named named pipe in the node's temp directory.
@@ -172,10 +179,17 @@ class ControllerNode(object):
 
     for node in self._nodes:
       node.start()
+    return self
 
-  def is_running(self):
-    """Return True if we have nodes and all of them are still running."""
-    return self._nodes and all(n.is_running() for n in self._nodes)
+  def check_status(self):
+    """Checks the status of all the nodes.
+
+    If one node is errored, this returns Errored; otherwise if one node is
+    finished, this returns Finished; this only returns Running if all nodes are
+    running.
+    """
+    value = max(node.check_status().value for node in self._nodes)
+    return node_base.ProcessStatus(value)
 
   def stop(self):
     """Stop all nodes."""

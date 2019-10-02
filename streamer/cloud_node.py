@@ -156,5 +156,8 @@ class CloudNode(node_base.NodeBase):
     self._running = False
     self._thread.join()
 
-  def is_running(self):
-    return self._running
+  def check_status(self):
+    if self._running:
+      return node_base.ProcessStatus.Running
+    else:
+      return node_base.ProcessStatus.Finished

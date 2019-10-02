@@ -15,14 +15,28 @@
 """A base class for nodes that run a single subprocess."""
 
 import abc
+import enum
 import shlex
 import subprocess
 import time
 
+class ProcessStatus(enum.Enum):
+  # Use number values so we can sort based on value.
+  Running = 0
+  Finished = 1
+  Errored = 2
+
+
 class NodeBase(object):
+
   @abc.abstractmethod
   def __init__(self):
     self._process = None
+
+  def __del__(self):
+    # If the process isn't stopped by now, stop it here.  It is preferable to
+    # explicitly call stop().
+    self.stop()
 
   @abc.abstractmethod
   def start(self):
@@ -48,16 +62,19 @@ class NodeBase(object):
     print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
     return subprocess.Popen(args, stdin = subprocess.DEVNULL)
 
-  def is_running(self):
-    """Returns True if the subprocess is still running, and False otherwise."""
+  def check_status(self):
+    """Returns the current ProcessStatus of the node."""
     if not self._process:
-      return False
+      raise ValueError('Must have a process to check')
 
     self._process.poll()
-    if self._process.returncode is not None:
-      return False
+    if self._process.returncode is None:
+      return ProcessStatus.Running
 
-    return True
+    if self._process.returncode == 0:
+      return ProcessStatus.Finished
+    else:
+      return ProcessStatus.Errored
 
   def stop(self):
     """Stop the subprocess if it's still running."""
@@ -65,11 +82,11 @@ class NodeBase(object):
       # Slightly more polite than kill.  Try this first.
       self._process.terminate()
 
-      if self.is_running():
+      if self.check_status() == ProcessStatus.Running:
         # If it's not dead yet, wait 1 second.
         time.sleep(1)
 
-      if self.is_running():
+      if self.check_status() == ProcessStatus.Running:
         # If it's still not dead, use kill.
         self._process.kill()
         # Wait for the process to die and read its exit code.  There is no way

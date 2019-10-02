@@ -25,10 +25,12 @@ both VOD and live content.
 import argparse
 import os
 import shutil
+import sys
 import time
 import yaml
 
 from streamer import VERSION
+from streamer import node_base
 from streamer.controller_node import ControllerNode
 
 
@@ -80,25 +82,15 @@ def main():
     if not args.cloud_url.startswith('gs://'):
       parser.error('Invalid cloud URL, only gs:// URLs are supported currently')
 
-  try:
-    controller.start(args.output, input_config_dict, pipeline_config_dict,
-                     args.cloud_url)
-  except:
-    # If the controller throws an exception during startup, we want to call
-    # stop() to shut down any external processes that have already been started.
-    # Then, re-raise the exception.
-    controller.stop()
-    raise
+  with controller.start(args.output, input_config_dict, pipeline_config_dict,
+                        args.cloud_url):
+    # Sleep so long as the pipeline is still running.
+    while True:
+      status = controller.check_status()
+      if status != node_base.ProcessStatus.Running:
+        return 0 if status == node_base.ProcessStatus.Finished else 1
 
-  # Sleep so long as the pipeline is still running.
-  while controller.is_running():
-    try:
       time.sleep(1)
-    except KeyboardInterrupt:
-      # Sometimes ffmpeg/packager take a while to be killed, so this signal
-      # handler will kill both running processes as there is SIGINT signal.
-      controller.stop()
-      break
 
 if __name__ == '__main__':
-  main()
+  sys.exit(main())

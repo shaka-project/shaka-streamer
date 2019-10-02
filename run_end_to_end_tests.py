@@ -27,6 +27,7 @@ import time
 import threading
 import urllib
 
+from streamer import node_base
 from streamer.controller_node import ControllerNode
 
 OUTPUT_DIR = 'output_files/'
@@ -143,15 +144,30 @@ def start():
 
 @app.route('/stop')
 def stop():
+  global controller
+  resp = createCrossOriginResponse()
+  if controller is not None:
+    # Check status to see if one of the processes exited.
+    if controller.check_status() == node_base.ProcessStatus.Errored:
+      resp = createCrossOriginResponse(
+          status=500, body='Some processes exited with non-zero exit codes')
+
   cleanup()
-  return createCrossOriginResponse()
+  return resp
 
 @app.route('/output_files/<path:filename>', methods = ['GET','OPTIONS'])
 def send_file(filename):
   if controller.is_vod():
     # If streaming mode is vod, needs to wait until packager is completely
     # done packaging contents.
-    while controller.is_running():
+    while True:
+      status = controller.check_status()
+      if status == node_base.ProcessStatus.Finished:
+        break
+      elif status != node_base.ProcessStatus.Running:
+        return createCrossOriginResponse(
+            status=500, body='Some processes exited with non-zero exit codes')
+
       time.sleep(1)
   else:
     # If streaming mode is live, needs to wait for specific content in
