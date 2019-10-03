@@ -25,6 +25,7 @@ import subprocess
 import tempfile
 import uuid
 
+from . import cloud_node
 from . import input_configuration
 from . import loop_input_node
 from . import metadata
@@ -171,10 +172,11 @@ class ControllerNode(object):
     self._nodes.append(package_node)
 
     if bucket_url:
-      # Import the cloud node late, so that the cloud deps are optional.
-      from . import cloud_node
+      cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
+      os.mkdir(cloud_temp_dir)
+
       push_to_cloud = cloud_node.CloudNode(output_dir, bucket_url,
-                                           self._temp_dir)
+                                           cloud_temp_dir)
       self._nodes.append(push_to_cloud)
 
     for node in self._nodes:

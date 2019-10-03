@@ -65,16 +65,7 @@ brew install ffmpeg
 ## Google Cloud Storage (optional)
 
 Shaka Streamer can push content directly to a Google Cloud Storage bucket.  To
-use this feature, the Google Cloud SDK and the Cloud Storage python module are
-required.
-
-For Ubuntu, for example, you could install the necessary components like this:
-
-```sh
-sudo apt -y install google-cloud-sdk python3-pip python3-setuptools
-pip3 install --user google-cloud
-pip3 install --user google-cloud-storage
-```
+use this feature, the Google Cloud SDK is required.
 
 See https://cloud.google.com/sdk/install for details on installing the Google
 Cloud SDK on your platform.
@@ -84,11 +75,11 @@ log in through your browser.
 
 ```sh
 gcloud init
-gcloud auth login
-gsutil config
 ```
 
-Follow the instructions given to you by each of these tools.
+Follow the instructions given to you by gcloud to initialize the environment and
+login.
+
 
 ## Test Dependencies (optional)
 
