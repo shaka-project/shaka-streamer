@@ -16,12 +16,7 @@
 
 from google.cloud import storage
 
-import glob
-import json
 import os
-import shutil
-import sys
-import threading
 import time
 
 from . import node_base
@@ -37,34 +32,20 @@ from . import node_base
 # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
 CACHE_CONTROL_HEADER = 'no-store, no-transform'
 
-class CloudNode(node_base.NodeBase):
-
+class CloudNode(node_base.ThreadedNodeBase):
   def __init__(self, input_dir, bucket_url, temp_dir):
-    node_base.NodeBase.__init__(self)
+    super().__init__(thread_name='cloud', continue_on_exception=True)
     self._input_dir = input_dir
     self._temp_dir = temp_dir
     self._storage_client = storage.Client()
-    self._running = True
     self._bucket_url = bucket_url
     bucket, path = self._bucket_url.replace('gs://', '').split('/', 1)
     self._bucket = self._storage_client.get_bucket(bucket)
     # Strip trailing slashes to make sure we don't construct paths later like
     # foo//bar, which is _not_ the same as foo/bar in Google Cloud Storage.
     self._subdir_path = path.rstrip('/')
-    self._thread = threading.Thread(target=self._thread_main, name='cloud')
 
-  def _thread_main(self):
-    while self._running:
-      try:
-        self._upload_all()
-      except:
-        print('Exception in cloud upload:', sys.exc_info())
-        print('Cloud upload continuing.')
-
-      # Yield time to other threads.
-      time.sleep(1)
-
-  def _upload_all(self):
+  def _thread_single_pass(self):
     all_files = os.listdir(self._input_dir)
     is_manifest_file = lambda x: x.endswith('.mpd') or x.endswith('.m3u8')
     manifest_files = filter(is_manifest_file, all_files)
@@ -83,7 +64,7 @@ class CloudNode(node_base.NodeBase):
 
       # Capture manifest contents, and retry until the file is non-empty or
       # until the thread is killed.
-      while not contents and self._running:
+      while not contents and self._is_running():
         time.sleep(0.1)
 
         with open(source_path, 'rb') as f:
@@ -93,7 +74,7 @@ class CloudNode(node_base.NodeBase):
 
     for filename in segment_files:
       # Check if the thread has been interrupted.
-      if not self._running:
+      if not self._is_running():
         return
 
       source_path = os.path.join(self._input_dir, filename)
@@ -102,7 +83,7 @@ class CloudNode(node_base.NodeBase):
 
     for filename, contents in manifest_contents.items():
       # Check if the thread has been interrupted.
-      if not self._running:
+      if not self._is_running():
         return
 
       destination_path = self._subdir_path + '/' + filename
@@ -116,7 +97,7 @@ class CloudNode(node_base.NodeBase):
                                                 prefix=self._subdir_path + '/')
     for blob in all_blobs:
       # Check if the thread has been interrupted.
-      if not self._running:
+      if not self._is_running():
         return
 
       assert blob.name.startswith(self._subdir_path + '/')
@@ -149,15 +130,5 @@ class CloudNode(node_base.NodeBase):
     blob.cache_control = CACHE_CONTROL_HEADER
     blob.upload_from_string(source_string)
 
-  def start(self):
-    self._thread.start()
-
-  def stop(self):
-    self._running = False
-    self._thread.join()
-
-  def check_status(self):
-    if self._running:
-      return node_base.ProcessStatus.Running
-    else:
-      return node_base.ProcessStatus.Finished
+  def _is_running(self):
+    return self.check_status() == node_base.ProcessStatus.Running

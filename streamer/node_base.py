@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A base class for nodes that run a single subprocess."""
+"""Base classes for nodes."""
 
 import abc
 import enum
 import os
 import shlex
 import subprocess
+import sys
+import threading
 import time
+
 
 class ProcessStatus(enum.Enum):
   # Use number values so we can sort based on value.
@@ -29,6 +32,7 @@ class ProcessStatus(enum.Enum):
 
 
 class NodeBase(object):
+  """A base class for nodes that run a single subprocess."""
 
   @abc.abstractmethod
   def __init__(self):
@@ -107,3 +111,55 @@ class NodeBase(object):
         # to ignore a kill signal, so this will happen quickly.  If we don't do
         # this, it can create a zombie process.
         self._process.wait()
+
+
+class ThreadedNodeBase(NodeBase):
+  """A base class for nodes that run a thread which repeats some callback in a
+  background thread."""
+
+  def __init__(self, thread_name, continue_on_exception):
+    super().__init__()
+    self._status = ProcessStatus.Finished
+    self._thread_name = thread_name
+    self._continue_on_exception = continue_on_exception
+    self._thread = threading.Thread(target=self._thread_main, name=thread_name)
+
+  def _thread_main(self):
+    while self._status == ProcessStatus.Running:
+      try:
+        self._thread_single_pass()
+      except:
+        print('Exception in', self._thread_name, '-', sys.exc_info())
+
+        if self._continue_on_exception:
+          print('Continuing.')
+        else:
+          print('Quitting.')
+          self._status = ProcessStatus.Errored
+          return
+
+      # Yield time to other threads.
+      time.sleep(1)
+
+  @abc.abstractmethod
+  def _thread_single_pass(self):
+    """Runs a single step of the thread loop.
+
+    This is implemented by subclasses to do whatever it is they do.  It will be
+    called repeatedly by the base class from the node's background thread.  If
+    this method raises an exception, the behavior depends on the
+    continue_on_exception argument in the constructor.  If
+    continue_on_exception is true, the the thread will continue.  Otherwise, an
+    exception will stop the thread and therefore the node."""
+    pass
+
+  def start(self):
+    self._status = ProcessStatus.Running
+    self._thread.start()
+
+  def stop(self):
+    self._status = ProcessStatus.Finished
+    self._thread.join()
+
+  def check_status(self):
+    return self._status
