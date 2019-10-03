@@ -53,14 +53,17 @@ class NodeBase(object):
     pass
 
   def _create_process(self, args, env={}, merge_env=True, stdout=None,
-                      stderr=None):
+                      stderr=None, shell=False):
     """A central point to create subprocesses, so that we can debug the
     command-line arguments.
 
     Args:
-      args: An array of strings, the command line of the subprocess.
+      args: An array of strings if shell is False, or a single string is shell
+            is True; the command line of the subprocess.
       env: A dictionary of environment variables to pass to the subprocess.
       merge_env: If true, merge env with the parent process environment.
+      shell: If true, args must be a single string, which will be executed as a
+             shell command.
     Returns:
       The Popen object of the subprocess.
     """
@@ -73,12 +76,18 @@ class NodeBase(object):
     # Print arguments formatted as output from bash -x would be.
     # This makes it easy to see the arguments and easy to copy/paste them for
     # debugging in a shell.
-    print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
+    if shell:
+      assert type(args) is str
+      print('+ ' + args)
+    else:
+      assert type(args) is list
+      print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
 
     return subprocess.Popen(args,
                             env=child_env,
                             stdin=subprocess.DEVNULL,
-                            stdout=stdout, stderr=stderr)
+                            stdout=stdout, stderr=stderr,
+                            shell=shell)
 
   def check_status(self):
     """Returns the current ProcessStatus of the node."""

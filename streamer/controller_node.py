@@ -26,6 +26,7 @@ import tempfile
 import uuid
 
 from . import cloud_node
+from . import external_command_node
 from . import input_configuration
 from . import loop_input_node
 from . import metadata
@@ -112,12 +113,20 @@ class ControllerNode(object):
     for i in input_config.inputs:
       if pipeline_config.mode == 'live':
         i.check_input_type()
+
         if i.get_input_type() == 'looped_file':
           loop_output = self._create_pipe()
           input_node = loop_input_node.LoopInputNode(
               pipeline_config, i.get_name(), loop_output)
           self._nodes.append(input_node)
           input_paths.append(loop_output)
+
+        elif i.get_input_type() == 'external_command':
+          command_output = self._create_pipe()
+          command_node = external_command_node.ExternalCommandNode(
+              i.get_name(), command_output)
+          self._nodes.append(command_node)
+          input_paths.append(command_output)
 
         elif i.get_input_type() == 'raw_images':
           input_paths.append(i.get_name())

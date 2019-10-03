@@ -14,6 +14,8 @@
 
 """A module that organizes the input configs."""
 
+import shlex
+
 from . import default_config
 from . import validation
 
@@ -46,6 +48,13 @@ class Input(object):
     if 'media_type' not in self._input:
       raise RuntimeError('media type must be specified for all inputs')
     return self._input['media_type']
+
+  def get_extra_input_args(self):
+    # shlex understands the rules of quoting and separating command-lines into
+    # arguments, so the user can specify a simple string in the config file,
+    # and we can split it into an argument array.  Note that splitting an empty
+    # string in shlex results in an empty array.
+    return shlex.split(self._input.get('extra_input_args', ''))
 
   def get_frame_rate(self):
     return self._input['frame_rate']

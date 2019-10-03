@@ -23,11 +23,17 @@ INPUT_DEFAULT_CONFIG = {
   # List of inputs. Each one is a dictionary.
   'inputs': [
     {
-      # Name of the input.
+      # Name of the input file.
+      # For input_type == 'external_command', this is the command to be
+      # executed, which should follow shell quoting rules.
       'name': 'test_assets/BigBuckBunny.1080p.mp4',
       # Type of input. To be used only for live. Can be looped_file, raw_images
       # or webcam.
       'input_type': 'looped_file',
+      # For input_type == 'external_command', extra input arguments needed to
+      # understand the output of the external command.  This allows you the
+      # external command to output almost anything ffmpeg could ingest.
+      'extra_input_args': '',
       # The type of media for the input. Can be audio or video.
       'media_type': 'video',
       # Frame rate per second.
@@ -55,7 +61,7 @@ INPUT_DEFAULT_CONFIG = {
 
 # Contains sets of valid values for certain fields in the inputs list.
 INPUT_VALID_VALUES = {
-  'input_type': {'raw_images', 'looped_file', 'webcam'},
+  'input_type': {'raw_images', 'looped_file', 'webcam', 'external_command'},
   'media_type': {'audio', 'video', 'text'},
 }
 

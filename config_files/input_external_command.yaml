@@ -1,0 +1,48 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is a sample input configuration file for Shaka Streamer for using an
+# external command as input.  This particular example only runs on Linux or
+# macOS, and requires a tool called Gource (https://gource.io/).  You can
+# adapt this to any other external command that generates video or audio.
+
+# List of inputs.
+inputs:
+    # The type of input.
+  - input_type: external_command
+    # The command to run.  Here $SHAKA_STREAMER_EXTERNAL_COMMAND_OUTPUT is
+    # replaced with the output pipe.
+    name: >
+      gource
+        -1240x680
+        --output-framerate 30
+        --loop
+        --disable-input
+        -o $SHAKA_STREAMER_EXTERNAL_COMMAND_OUTPUT
+    # Extra input arguments for ffmpeg to understand the command's output.
+    extra_input_args: '-f image2pipe -framerate 25 -re'
+    # Extra filters to be applied to the input.  In this case, add 20 pixels of
+    # block padding to the input on all sides to pad it up to 720p.  This helps
+    # account for overscan on TVs.
+    filters:
+      - pad=1280:720:20:20
+    # The media type of the input. Can be audio or video.
+    media_type: video
+    # Frame rate in seconds.
+    frame_rate: 25
+    # Resolution of the input.
+    resolution: 720p
+    # Whether or not the video frames are interlaced.
+    is_interlaced: False
+

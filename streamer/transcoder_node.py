@@ -121,6 +121,11 @@ class TranscoderNode(node_base.NodeBase):
     args = []
     if input_object.get_input_type() == 'looped_file':
       pass
+    elif input_object.get_input_type() == 'external_command':
+      # The config file may specify additional args needed for this input.
+      # This allows the external command to output almost anything ffmpeg could
+      # ingest.
+      args += input_object.get_extra_input_args()
     elif input_object.get_input_type() == 'raw_images':
       args += [
           # Parse the input as a stream of images fed into a pipe.
@@ -293,6 +298,7 @@ class TranscoderNode(node_base.NodeBase):
           '-dash', '1',
       ]
 
+    # TODO: auto-detection of framerate?
     keyframe_interval = int(self._config.packager['segment_size'] *
                             input.get_frame_rate())
     args += [
