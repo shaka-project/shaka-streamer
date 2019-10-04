@@ -17,8 +17,9 @@
 from . import node_base
 
 class LoopInputNode(node_base.NodeBase):
+
   def __init__(self, config, input_path, output_path):
-    node_base.NodeBase.__init__(self)
+    super().__init__()
     self._config = config
     self._input_path = input_path
     self._output_path = output_path

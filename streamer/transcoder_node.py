@@ -30,7 +30,7 @@ profile_args = {
 class TranscoderNode(node_base.NodeBase):
 
   def __init__(self, input_paths, output_audios, output_videos, input_config, config):
-    node_base.NodeBase.__init__(self)
+    super().__init__()
     self._input_paths = input_paths
     self._output_audios = output_audios
     self._output_videos = output_videos

@@ -61,8 +61,9 @@ class SegmentError(Exception):
   pass
 
 class PackagerNode(node_base.NodeBase):
+
   def __init__(self, audio_inputs, video_inputs, text_inputs, output_dir, config):
-    node_base.NodeBase.__init__(self)
+    super().__init__()
     self._audio_inputs = audio_inputs
     self._video_inputs = video_inputs
     self._text_inputs = text_inputs
