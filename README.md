@@ -40,7 +40,17 @@ gsutil -m cp gs://shaka-streamer-assets/sample-inputs/* .
 python3 shaka_streamer.py \
   -i config_files/input_looped_file_config.yaml \
   -p config_files/pipeline_live_config.yaml \
-  -c gs://my_cloud_bucket/folder/
+  -c gs://my_gcs_bucket/folder/
+```
+
+
+### Example command-line for live streaming to Amazon S3:
+
+```sh
+python3 shaka_streamer.py \
+  -i config_files/input_looped_file_config.yaml \
+  -p config_files/pipeline_live_config.yaml \
+  -c s3://my_s3_bucket/folder/
 ```
 
 ## Running tests

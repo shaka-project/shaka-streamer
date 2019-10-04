@@ -62,13 +62,15 @@ For Mac, you can either build FFmpeg from source or you can use
 brew install ffmpeg
 ```
 
-## Google Cloud Storage (optional)
+## Cloud Storage (optional)
 
-Shaka Streamer can push content directly to a Google Cloud Storage bucket.  To
-use this feature, the Google Cloud SDK is required.
+Shaka Streamer can push content directly to a Google Cloud Storage or Amazon S3
+bucket.  To use this feature, the Google Cloud SDK is required.
 
 See https://cloud.google.com/sdk/install for details on installing the Google
 Cloud SDK on your platform.
+
+### Google Cloud Storage
 
 If you haven't already, you will need to initialize your gcloud environment and
 log in through your browser.
@@ -79,6 +81,12 @@ gcloud init
 
 Follow the instructions given to you by gcloud to initialize the environment and
 login.
+
+### Amazon S3
+
+To authenticate to Amazon S3, you can either add credentials to your [boto
+config file](http://boto.cloudhackers.com/en/latest/boto_config_tut.html) or
+login interactively using the [AWS CLI](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html).
 
 
 ## Test Dependencies (optional)

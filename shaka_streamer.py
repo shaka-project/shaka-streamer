@@ -57,7 +57,8 @@ def main():
                       help='The path to the pipeline config file (required).')
   parser.add_argument('-c', '--cloud_url',
                       default=None,
-                      help='The Google Cloud Storage URL to upload to.')
+                      help='The Google Cloud Storage or Amazon S3 URL to ' +
+                           'upload to.  (Starts with gs:// or s3://)')
   parser.add_argument('-o', '--output',
                       default='output_files',
                       help='The output folder to write files to. ' +
@@ -79,8 +80,9 @@ def main():
     pipeline_config_dict = yaml.load(f)
 
   if args.cloud_url:
-    if not args.cloud_url.startswith('gs://'):
-      parser.error('Invalid cloud URL, only gs:// URLs are supported currently')
+    if (not args.cloud_url.startswith('gs://') and
+        not args.cloud_url.startswith('s3://')):
+      parser.error('Invalid cloud URL! Only gs:// and s3:// URLs are supported')
 
   with controller.start(args.output, input_config_dict, pipeline_config_dict,
                         args.cloud_url):
