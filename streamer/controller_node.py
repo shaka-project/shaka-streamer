@@ -239,7 +239,8 @@ class ControllerNode(object):
                'stream=index:stream_tags=language', '-select_streams',
                str(input.get_track()), '-of', 'compact=p=0:nk=1']
 
-    lang_str = subprocess.check_output(command).decode('utf-8')
+    lang_str = subprocess.check_output(
+        command, stderr=subprocess.DEVNULL).decode('utf-8')
     # The regex is looking for a string that is of the format number|language.
     # Once it finds a number| match, it will copy the string until the end of
     # the line.
