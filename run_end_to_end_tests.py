@@ -18,6 +18,7 @@ import argparse
 import flask
 import glob
 import json
+import logging
 import os
 import re
 import shutil
@@ -34,6 +35,12 @@ OUTPUT_DIR = 'output_files/'
 TEST_DIR = 'test_assets/'
 CLOUD_TEST_ASSETS = (
     'https://storage.googleapis.com/shaka-streamer-assets/test-assets/')
+
+# Turn down Flask's logging so that the console isn't flooded with messages
+# about every request.  Because flask is built on top of another tool called
+# "werkzeug", this the name we use to retrieve the log instance.
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 # Changes relative path to where this file is.
 os.chdir(os.path.dirname(__file__))
