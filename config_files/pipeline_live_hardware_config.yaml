@@ -18,27 +18,26 @@
 # Streaming mode.  Can be live or vod.
 streaming_mode: live
 
-transcoder:
-  # A list of resolutions to encode.
-  resolutions:
-    - 720p
-    - 480p
+# A list of resolutions to encode.
+resolutions:
+  - 720p
+  - 480p
 
-  # The number of audio channels to output.
-  channels: 2
+# The number of audio channels to output.
+channels: 2
 
-  # The codecs to encode with.
-  audio_codecs:
-    - aac
-    - opus
-  video_codecs:
-    - h264
-    - hw:vp9
+# The codecs to encode with.
+audio_codecs:
+  - aac
+  - opus
+video_codecs:
+  - h264
+  - hw:vp9  # Use hardware encoding for VP9.
 
-packager:
-  # Manifest format (dash, hls, or both)
-  manifest_format:
-    - dash
-    - hls
-  # Length of each segment in seconds.
-  segment_size: 4
+# Manifest format (dash, hls, or both)
+manifest_format:
+  - dash
+  - hls
+
+# Length of each segment in seconds.
+segment_size: 4

@@ -18,34 +18,34 @@
 # Streaming mode.  Can be live or vod.
 streaming_mode: vod
 
-transcoder:
-  # A list of resolutions to encode.
-  # For VOD, you can specify many more resolutions than you would with live,
-  # since the encoding does not need to be done in real time.
-  resolutions:
-    - 4k
-    - 1080p
-    - 720p
-    - 480p
-    - 360p
+# A list of resolutions to encode.
+# For VOD, you can specify many more resolutions than you would with live,
+# since the encoding does not need to be done in real time.
+resolutions:
+  - 4k
+  - 1080p
+  - 720p
+  - 480p
+  - 360p
 
-  # The number of audio channels to output.
-  channels: 6
+# The number of audio channels to output.
+channels: 6
 
-  # The codecs to encode with.
-  audio_codecs:
-    - aac
-    - opus
-  video_codecs:
-    - h264
-    - vp9
+# The codecs to encode with.
+audio_codecs:
+  - aac
+  - opus
+video_codecs:
+  - h264
+  - vp9
 
-packager:
-  # Manifest format (dash, hls or both)
-  manifest_format:
-    - dash
-    - hls
-  # Length of each segment in seconds.
-  segment_size: 10
-  # Forces the use of SegmentTemplate in DASH.
-  segment_per_file: True
+# Manifest format (dash, hls or both)
+manifest_format:
+  - dash
+  - hls
+
+# Length of each segment in seconds.
+segment_size: 10
+
+# Forces the use of SegmentTemplate in DASH.
+segment_per_file: True

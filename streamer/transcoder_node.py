@@ -15,12 +15,18 @@
 """A module that pushes input to ffmpeg to transcode into various formats."""
 
 from . import input_configuration
-from . import metadata
 from . import node_base
+from . import pipeline_configuration
+
+# Alias a few classes to avoid repeating namespaces later.
+InputType = input_configuration.InputType
+MediaType = input_configuration.MediaType
+StreamingMode = pipeline_configuration.StreamingMode
+
 
 # For H264, there are different profiles with different required command line
 # arguments.
-profile_args = {
+PROFILE_ARGS = {
   'baseline': ['-profile:v', 'baseline', '-level:v', '3.0'],
   'main': ['-profile:v', 'main', '-level:v', '3.1'],
   'high': ['-profile:v', 'high', '-level:v', '4.0'],
@@ -29,13 +35,14 @@ profile_args = {
 
 class TranscoderNode(node_base.NodeBase):
 
-  def __init__(self, input_paths, output_audios, output_videos, input_config, config):
+  def __init__(self, input_paths, output_audios, output_videos, input_config,
+               pipeline_config):
     super().__init__()
     self._input_paths = input_paths
     self._output_audios = output_audios
     self._output_videos = output_videos
     self._input_config = input_config
-    self._config = config
+    self._pipeline_config = pipeline_config
 
     assert len(input_config.inputs) == len(input_paths)
 
@@ -48,7 +55,7 @@ class TranscoderNode(node_base.NodeBase):
         '-y',
     ]
 
-    if self._config.quiet:
+    if self._pipeline_config.quiet:
       args += [
           # Suppresses all messages except errors.
           # Without this, a status line will be printed by default showing
@@ -67,18 +74,23 @@ class TranscoderNode(node_base.NodeBase):
     for i, input in enumerate(self._input_config.inputs):
       input_path = self._input_paths[i]
 
-      if self._config.mode == 'live':
+      # The config file may specify additional args needed for this input.
+      # This allows, for example, an external-command-type input to generate
+      # almost anything ffmpeg could ingest.
+      args += input.extra_input_args
+
+      if self._pipeline_config.streaming_mode == StreamingMode.live:
         args += self._live_input(input)
 
-      if input.get_start_time():
+      if input.start_time:
         args += [
             # Encode from intended starting time of the VOD input.
-            '-ss', input.get_start_time(),
+            '-ss', input.start_time,
         ]
-      if input.get_end_time():
+      if input.end_time:
         args += [
             # Encode until intended ending time of the VOD input.
-            '-to', input.get_end_time(),
+            '-to', input.end_time,
         ]
 
       # The input name always comes after the applicable input arguments.
@@ -94,48 +106,41 @@ class TranscoderNode(node_base.NodeBase):
           # the input file number, and "input.get_track()" is the track number
           # from that input file.  The output stream for this input is implied
           # by where we are in the ffmpeg argument list.
-          '-map', '{0}:{1}'.format(i, input.get_track()),
+          '-map', '{0}:{1}'.format(i, input.track_num),
       ]
 
-      if input.get_media_type() == 'audio':
+      if input.media_type == MediaType.audio:
         for audio in self._output_audios:
           # Map arguments must be repeated for each output file.
           args += map_args
           args += self._encode_audio(audio, input)
 
-      if input.get_media_type() == 'video':
+      if input.media_type == MediaType.video:
         for video in self._output_videos:
           # Map arguments must be repeated for each output file.
           args += map_args
           args += self._encode_video(video, input)
 
     env = {}
-    if self._config.debug_logs:
+    if self._pipeline_config.debug_logs:
       # Use this environment variable to turn on ffmpeg's logging.  This is
       # independent of the -loglevel switch above.
       env['FFREPORT'] = 'file=TranscoderNode.log:level=32'
 
     self._process = self._create_process(args, env)
 
-  def _live_input(self, input_object):
+  def _live_input(self, input):
     args = []
-    if input_object.get_input_type() == 'looped_file':
-      pass
-    elif input_object.get_input_type() == 'external_command':
-      # The config file may specify additional args needed for this input.
-      # This allows the external command to output almost anything ffmpeg could
-      # ingest.
-      args += input_object.get_extra_input_args()
-    elif input_object.get_input_type() == 'raw_images':
+    if input.input_type == InputType.raw_images:
       args += [
           # Parse the input as a stream of images fed into a pipe.
           '-f', 'image2pipe',
           # Set the frame rate to the one specified in the input config.
           # Note that this is the input framerate for the image2 dexuxer, which
           # is not what the similar '-r' option is meant for.
-          '-framerate', str(input_object.get_frame_rate()),
+          '-framerate', str(input.frame_rate),
       ]
-    elif input_object.get_input_type() == 'webcam':
+    elif input.input_type == InputType.webcam:
       args += [
           # Format the input using the webcam format.
           '-f', 'video4linux2',
@@ -147,6 +152,7 @@ class TranscoderNode(node_base.NodeBase):
         # full, must fit into memory.
         '-thread_queue_size', '200',
     ]
+
     return args
 
   def _encode_audio(self, audio, input):
@@ -166,7 +172,7 @@ class TranscoderNode(node_base.NodeBase):
         'channelmap=channel_layout=5.1',
       ]
 
-    filters.extend(input.get_filters())
+    filters.extend(input.filters)
 
     if audio.codec == 'aac':
       args += [
@@ -212,15 +218,15 @@ class TranscoderNode(node_base.NodeBase):
     ]
 
     # TODO: auto detection of interlacing
-    if input.get_interlaced():
-      frame_rate = input.get_frame_rate()
+    if input.is_interlaced:
+      frame_rate = input.frame_rate
       # Sanity check: since interlaced files are made up of two interlaced
       # frames, the frame rate must be even and not too small.
       assert frame_rate % 2 == 0 and frame_rate >= 48
       filters.append('pp=fd')
       args.extend(['-r', str(frame_rate / 2)])
 
-    filters.extend(input.get_filters())
+    filters.extend(input.filters)
 
     if video.hardware:
       filters.append('format=nv12')
@@ -237,7 +243,7 @@ class TranscoderNode(node_base.NodeBase):
           '-f', 'mpegts',
       ]
 
-      if self._config.mode == 'live':
+      if self._pipeline_config.streaming_mode == StreamingMode.live:
         args += [
             # Encodes with highest-speed presets for real-time live streaming.
             '-preset', 'ultrafast',
@@ -272,7 +278,7 @@ class TranscoderNode(node_base.NodeBase):
           '-flags', '+cgop',
       ]
       # Use different ffmpeg options depending on the H264 profile.
-      args += profile_args[video.resolution_data.h264_profile]
+      args += PROFILE_ARGS[video.resolution_data.h264_profile]
 
     elif video.codec == 'vp9':
       args += [
@@ -299,8 +305,8 @@ class TranscoderNode(node_base.NodeBase):
       ]
 
     # TODO: auto-detection of framerate?
-    keyframe_interval = int(self._config.packager['segment_size'] *
-                            input.get_frame_rate())
+    keyframe_interval = int(self._pipeline_config.segment_size *
+                            input.frame_rate)
     args += [
         # Set minimum and maximum GOP length.
         '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),

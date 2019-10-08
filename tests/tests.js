@@ -32,8 +32,17 @@ async function startStreamer(inputConfig, pipelineConfig) {
     }),
   });
 
+  // We use status code 418 for specially-formatted config errors.
+  if (response.status == 418) {
+    const error = await response.json();
+    throw error;
+  }
+
   if (!response.ok) {
-    throw new Error('Failed to produce manifest');
+    // For anything else, log the full text and fail with an error containing
+    // the status code.
+    console.log(response.status, response.statusText, await response.text());
+    throw new Error('Failed to produce manifest: HTTP ' + response.status);
   }
 }
 
@@ -67,6 +76,8 @@ describe('Shaka Streamer', () => {
     await stopStreamer();
     document.body.removeChild(video);
   });
+
+  errorTests();
 
   resolutionTests(hlsManifestUrl, '(hls)');
   resolutionTests(dashManifestUrl, '(dash)');
@@ -121,6 +132,165 @@ describe('Shaka Streamer', () => {
   filterTests(dashManifestUrl, '(dash)');
 });
 
+function errorTests() {
+  function getBasicInputConfig() {
+    // Return a standard input config that each test can change and break
+    // without repeating everything.
+    return {
+      inputs: [
+        {
+          name: TEST_DIR + 'BigBuckBunny.1080p.mp4',
+          media_type: 'video',
+          frame_rate: 24.0,
+          resolution: '1080p',
+          track_num: 0,
+        },
+      ],
+    };
+  }
+
+  const minimalPipelineConfig = {
+    streaming_mode: 'vod',
+  };
+
+  it('fails when extra fields are present', async () => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.inputs[0].foo = 'bar';
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'UnrecognizedField',
+          field_name: 'foo',
+        }));
+  });
+
+  it('fails when media_type is missing', async () => {
+    const inputConfig = getBasicInputConfig();
+    delete inputConfig.inputs[0].media_type;
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MissingRequiredField',
+          field_name: 'media_type',
+        }));
+  });
+
+  it('fails when resolution is missing for video', async () => {
+    const inputConfig = getBasicInputConfig();
+    delete inputConfig.inputs[0].resolution;
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MissingRequiredField',
+          field_name: 'resolution',
+        }));
+  });
+
+  it('fails when frame_rate is not a number', async () => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.inputs[0].frame_rate = '99';
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'WrongType',
+          field_name: 'frame_rate',
+        }));
+  });
+
+  it('fails when resolution is unrecognized', async () => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.inputs[0].resolution = 'wee';
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'WrongType',
+          field_name: 'resolution',
+        }));
+  });
+
+  it('fails when track_num is not an int', async () => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.inputs[0].track_num = 1.1;
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'WrongType',
+          field_name: 'track_num',
+        }));
+  });
+
+  it('fails when start_time/end_time used with non-file inputs', async () => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.inputs[0].input_type = 'raw_images'
+    inputConfig.inputs[0].start_time = '0:30'
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MalformedField',
+          field_name: 'start_time',
+        }));
+
+    delete inputConfig.inputs[0].start_time
+    inputConfig.inputs[0].end_time = '0:90'
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MalformedField',
+          field_name: 'end_time',
+        }));
+  });
+
+  it('fails when filters is not a list of strings', async () => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.inputs[0].filters = 'foo';
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'WrongType',
+          field_name: 'filters',
+        }));
+
+    inputConfig.inputs[0].filters = [1, 2, 3];
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'WrongType',
+          field_name: 'filters',
+        }));
+  });
+
+  it('fails when segment_per_file is false for live', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      streaming_mode: 'live',
+      segment_per_file: false,
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MalformedField',
+          field_name: 'segment_per_file',
+        }));
+  });
+
+  it('fails when content_id is not a hex string', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      streaming_mode: 'vod',
+      encryption: {
+        enable: true,
+        content_id: 'foo',
+      },
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MalformedField',
+          field_name: 'content_id',
+        }));
+  });
+}
+
 function resolutionTests(manifestUrl, format) {
   it('has output resolutions matching the resolutions in config ' + format,
       async () => {
@@ -137,17 +307,15 @@ function resolutionTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        // A list of resolutions to encode.
-        'resolutions': [
-          '4k',
-          '1080p',
-          '720p',
-          '480p',
-          '240p',
-          '144p',
-        ],
-      },
+      // A list of resolutions to encode.
+      'resolutions': [
+        '4k',
+        '1080p',
+        '720p',
+        '480p',
+        '240p',
+        '144p',
+      ],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -198,12 +366,10 @@ function drmTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'packager': {
-        'encryption': {
-          // Enables encryption.
-          'enable': true,
-          'clear_lead': 0,
-        },
+      'encryption': {
+        // Enables encryption.
+        'enable': true,
+        'clear_lead': 0,
       },
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -236,7 +402,6 @@ function codecTests(manifestUrl, format) {
           'track_num': 0,
           'frame_rate': 24.0,
           'resolution': '4k',
-          'is_interlaced': false,
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
@@ -247,17 +412,9 @@ function codecTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-        'audio_codecs': [
-          'opus',
-        ],
-        'video_codecs': [
-          'h264',
-        ],
-      },
+      'resolutions': ['144p'],
+      'audio_codecs': ['opus'],
+      'video_codecs': ['h264'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -412,9 +569,7 @@ function channelsTests(manifestUrl, channels, format) {
 
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        'channels': channels,
-      },
+      'channels': channels,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -440,9 +595,7 @@ function availabilityTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
-      'packager': {
-        'availability_window': 500,
-      },
+      'availability_window': 500,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     const response = await fetch(manifestUrl);
@@ -472,9 +625,7 @@ function delayTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
-      'packager': {
-        'presentation_delay': 100,
-      },
+      'presentation_delay': 100,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -499,9 +650,7 @@ function updateTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
-      'packager': {
-        'update_period': 42,
-      },
+      'update_period': 42,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     const response = await fetch(manifestUrl);
@@ -525,7 +674,6 @@ function durationTests(manifestUrl, format) {
           'resolution': '720p',
           'frame_rate': 24.0,
           'track_num': 0,
-          'is_interlaced': false,
            // The original clip is 10 seconds long.
           'start_time': '00:00:02',
           'end_time': '00:00:05',
@@ -558,7 +706,6 @@ function mapTests(manifestUrl, format) {
           'resolution': '720p',
           'frame_rate': 24.0,
           'track_num': 0,
-          'is_interlaced': false,
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
@@ -569,11 +716,7 @@ function mapTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-      },
+      'resolutions': ['144p'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -598,7 +741,6 @@ function filterTests(manifestUrl, format) {
           'resolution': '720p',
           'frame_rate': 24.0,
           'track_num': 0,
-          'is_interlaced': false,
           'filters': [
             // Resample frames to 90fps, which we can later detect.
             'fps=fps=90',
@@ -617,11 +759,7 @@ function filterTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'transcoder': {
-        'resolutions': [
-          '144p',
-        ],
-      },
+      'resolutions': ['144p'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);

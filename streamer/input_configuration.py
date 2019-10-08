@@ -12,99 +12,186 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module that organizes the input configs."""
+"""A module for the input config."""
 
+import enum
 import shlex
 
-from . import default_config
-from . import validation
+from . import configuration
+from . import metadata
 
-INPUTS = 'inputs'
 
-class InputConfig(object):
+class InputType(enum.Enum):
+  file = 'file'
+  """A track from a file.  Usable only with VOD."""
 
-  def __init__(self, user_config,
-               default_config = default_config.INPUT_DEFAULT_CONFIG,
-               valid_values = default_config.INPUT_VALID_VALUES):
-    validation.setup_config(user_config, default_config, valid_values)
-    self.dict = user_config
-    self.inputs = [Input(i) for i in self.dict[INPUTS]]
+  looped_file = 'looped_file'
+  """A track from a file, looped forever by FFmpeg.  Usable only with live."""
 
-class Input(object):
+  webcam = 'webcam'
+  """A webcam device.  Usable only with live.
 
-  def __init__(self, input):
-    self._input = input
+  The device path should be given in the name field.  For example, on Linux,
+  this might be /dev/video0.
+  """
 
-  def get_name(self):
-    self.check_name()
-    return self._input['name']
+  raw_images = 'raw_images'
+  """A file or pipe with a sequence of raw images.
 
-  def get_input_type(self):
-    if 'input_type' not in self._input:
-      return None
-    return self._input['input_type']
+  Requires the specification of frame_rate.  May require the use of
+  extra_input_args if FFmpeg can't guess the format.
+  """
 
-  def get_media_type(self):
-    if 'media_type' not in self._input:
-      raise RuntimeError('media type must be specified for all inputs')
-    return self._input['media_type']
+  external_command = 'external_command'
+  """An external command that generates a stream of audio or video.
 
-  def get_extra_input_args(self):
-    # shlex understands the rules of quoting and separating command-lines into
-    # arguments, so the user can specify a simple string in the config file,
-    # and we can split it into an argument array.  Note that splitting an empty
-    # string in shlex results in an empty array.
-    return shlex.split(self._input.get('extra_input_args', ''))
+  The command should be given in the name field, using shell quoting rules.
+  The command should send its generated output to the path in the environment
+  variable $SHAKA_STREAMER_EXTERNAL_COMMAND_OUTPUT, which Shaka Streamer set to
+  the path to the output pipe.
 
-  def get_frame_rate(self):
-    return self._input['frame_rate']
+  May require the user of extra_input_args if FFmpeg can't guess the format or
+  framerate.
+  """
 
-  def get_resolution(self):
-    return self._input['resolution']
+class MediaType(enum.Enum):
+  audio = 'audio'
+  video = 'video'
+  text = 'text'
 
-  def get_track(self):
-    if 'track_num' in self._input:
-      return self._input['track_num']
-    return 0
 
-  def get_interlaced(self):
-    if 'is_interlaced' in self._input:
-      return self._input['is_interlaced']
-    return False
+# A runtime-created enum for valid resolutions, based on the |metadata| module.
+Resolution = configuration.enum_from_keys('Resolution', metadata.RESOLUTION_MAP)
 
-  def get_language(self):
-    if 'language' in self._input:
-      return self._input['language']
-    return None
 
-  def get_start_time(self):
-    if 'start_time' in self._input:
-      return self._input['start_time']
-    return None
+class Input(configuration.Base):
+  """An object representing a single input stream to Shaka Streamer."""
 
-  def get_end_time(self):
-    if 'end_time' in self._input:
-      return self._input['end_time']
-    return None
+  input_type = configuration.Field(InputType, default=InputType.file)
+  """The type of the input."""
 
-  def get_filters(self):
-    return self._input.get('filters', [])
+  name = configuration.Field(str, required=True)
+  """Name of the input.
 
-  def check_entry(self):
-    self.check_name()
-    if self.get_media_type() == 'video':
-      self.check_video_entry()
+  With input_type set to 'file', this is a path to a file name.
 
-  def check_name(self):
-    if 'name' not in self._input:
-      raise RuntimeError('name field must be in dictionary entry!')
+  With input_type set to 'looped_file', this is a path to a file name to be
+  looped indefinitely in FFmpeg.
 
-  def check_video_entry(self):
-    if 'frame_rate' not in self._input:
-      raise RuntimeError('frame_rate field must be in video dictionary entry!')
-    if 'resolution' not in self._input:
-      raise RuntimeError('resolution field must be in video dictionary entry!')
+  With input_type set to 'webcam', this is a path to the device node for the
+  webcam.  For example, on Linux, this might be /dev/video0.
 
-  def check_input_type(self):
-    if 'input_type' not in self._input:
-      raise RuntimeError('input_type field must be in dictionary entry!')
+  With input_type set to 'raw_images', this is a path to a file or pipe
+  containing a sequence of raw images.
+
+  With input_type set to 'external_command', this is an external command that
+  generates a stream of audio or video.  The command will be parsed using shell
+  quoting rules.  The command should send its generated output to the path in
+  the environment variable $SHAKA_STREAMER_EXTERNAL_COMMAND_OUTPUT, which Shaka
+  Streamer set to the path to the output pipe.
+  """
+
+  extra_input_args = configuration.Field(str, default='')
+  """Extra input arguments needed by FFmpeg to understand the input.
+
+  This allows you to take inputs that cannot be understand or detected
+  automatically by FFmpeg.
+
+  This string will be parsed using shell quoting rules.
+  """
+
+  media_type = configuration.Field(MediaType, required=True)
+  """The media type of the input stream."""
+
+  # TODO: detect frame rate if not given, require only for raw_images
+  frame_rate = configuration.Field(float)
+  """The frame rate of the input stream, in frames per second.
+
+  Required for media_type of 'video'.
+  """
+
+  # TODO: detect resolution if not given
+  # TODO: support custom resolutions
+  resolution = configuration.Field(Resolution)
+  """The name of the input resolution (1080p, etc).
+
+  Required for media_type of 'video'.
+  """
+
+  # TODO: detect track number based on media_type
+  track_num = configuration.Field(int, default=0)
+  """The track number of the input.  Defaults to 0.
+
+  For multiplexed input files, video is usually track 0, and the first audio
+  track is usually track 1.  This may vary, though.
+  """
+
+  is_interlaced = configuration.Field(bool, default=False)
+  """True if the input video is interlaced.
+
+  If true, the video will be deinterlaced during transcoding.
+  """
+
+  language = configuration.Field(str)
+  """The language of an audio or text stream.
+
+  With input_type set to 'file' or 'looped_file', this will be auto-detected.
+  Otherwise, it will default to 'und' (undetermined).
+  """
+
+  start_time = configuration.Field(str)
+  """The start time of the slice of the input to use.
+
+  Only valid for VOD and with input_type set to 'file'.
+  """
+
+  end_time = configuration.Field(str)
+  """The end time of the slice of the input to use.
+
+  Only valid for VOD and with input_type set to 'file'.
+  """
+
+  filters = configuration.Field(list, subtype=str, default=[])
+  """A list of FFmpeg filter strings to add to the transcoding of this input.
+
+  Each filter is a single string.  For example, 'pad=1280:720:20:20'.
+  """
+
+
+  def _validate_fields(self):
+    if self.media_type == MediaType.video:
+      # These fields are required for video inputs.
+      if self.frame_rate is None:
+        raise configuration.MissingRequiredField(
+            self.__class__, 'frame_rate', self.__class__.frame_rate)
+
+      if self.resolution is None:
+        raise configuration.MissingRequiredField(
+            self.__class__, 'resolution', self.__class__.resolution)
+
+    if self.input_type != InputType.file:
+      # These fields are only valid for file inputs.
+      reason = 'only valid when input_type is "file"'
+
+      if self.start_time:
+        field = self.__class__.start_time
+        raise configuration.MalformedField(
+            self.__class__, 'start_time', field, reason)
+
+      if self.end_time:
+        field = self.__class__.end_time
+        raise configuration.MalformedField(
+            self.__class__, 'end_time', field, reason)
+
+  def _format_fields(self):
+    # This needs to be parsed into an argument array.  Note that shlex.split on
+    # an empty string will produce an empty array.
+    self.extra_input_args = shlex.split(self.extra_input_args)
+
+
+class InputConfig(configuration.Base):
+  """An object representing the entire input config to Shaka Streamer."""
+
+  inputs = configuration.Field(list, subtype=Input, required=True)
+  """A list of Input objects, one per input stream."""
+

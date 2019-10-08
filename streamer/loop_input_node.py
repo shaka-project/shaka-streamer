@@ -18,9 +18,10 @@ from . import node_base
 
 class LoopInputNode(node_base.NodeBase):
 
-  def __init__(self, config, input_path, output_path):
+  # TODO: Take input object instead of path
+  def __init__(self, pipeline_config, input_path, output_path):
     super().__init__()
-    self._config = config
+    self._pipeline_config = pipeline_config
     self._input_path = input_path
     self._output_path = output_path
 
@@ -33,7 +34,7 @@ class LoopInputNode(node_base.NodeBase):
         '-re',
     ]
 
-    if self._config.quiet:
+    if self._pipeline_config.quiet:
       args += [
           # Suppresses all messages except errors.
           '-loglevel', 'error',
@@ -66,7 +67,7 @@ class LoopInputNode(node_base.NodeBase):
     ]
 
     env = {}
-    if self._config.debug_logs:
+    if self._pipeline_config.debug_logs:
       # A safe version of the input path that we can put into a log filename.
       sanitized_input = self._input_path.replace('/', '-').replace('\\', '-')
       # Use this environment variable to turn on ffmpeg's logging.  This is

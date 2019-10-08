@@ -27,8 +27,6 @@ inputs:
     frame_rate: 24.0
     # Resolution of the input.
     resolution: 4k
-    # Whether or not the video frames are interlaced.
-    is_interlaced: False
     # Start time of video to encode.
     start_time: 00:00:00
     # End time of video to encode.

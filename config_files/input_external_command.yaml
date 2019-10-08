@@ -43,6 +43,3 @@ inputs:
     frame_rate: 25
     # Resolution of the input.
     resolution: 720p
-    # Whether or not the video frames are interlaced.
-    is_interlaced: False
-

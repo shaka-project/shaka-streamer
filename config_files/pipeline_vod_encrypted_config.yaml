@@ -18,47 +18,47 @@
 # Streaming mode.  Can be live or vod.
 streaming_mode: vod
 
-transcoder:
-  # A list of resolutions to encode.
-  # For VOD, you can specify many more resolutions than you would with live,
-  # since the encoding does not need to be done in real time.
-  resolutions:
-    - 4k
-    - 1080p
-    - 720p
-    - 480p
-    - 360p
+# A list of resolutions to encode.
+# For VOD, you can specify many more resolutions than you would with live,
+# since the encoding does not need to be done in real time.
+resolutions:
+  - 4k
+  - 1080p
+  - 720p
+  - 480p
+  - 360p
 
-  # The number of audio channels to output.
-  channels: 6
+# The number of audio channels to output.
+channels: 6
 
-packager:
-  # Manifest format (dash, hls or both)
-  manifest_format:
-    - dash
-    - hls
-  # Length of each segment in seconds.
-  segment_size: 10
-  # Forces the use of SegmentTemplate in DASH.
-  segment_per_file: True
+# Manifest format (dash, hls or both)
+manifest_format:
+  - dash
+  - hls
 
-  encryption:
-    # Enables encryption.
-    # If disabled, the following settings are ignored.
-    enable: True
-    # Content identifier that identifies which encryption key to use.
-    # This will default to a random content ID, so this is optional.
-    content_id: '1234'
-    # Key server url.  An encryption key is generated from this server.
-    key_server_url: https://license.uat.widevine.com/cenc/getcontentkey/widevine_test
-    # The name of the signer.
-    signer: widevine_test
-    # AES signing key in hex string.
-    signing_key: 1ae8ccd0e7985cc0b6203a55855a1034afc252980e970ca90e5202689f947ab9
-    # AES signing iv in hex string.
-    signing_iv: d58ce954203b7c9a9a9d467f59839249
-    # Protection scheme (cenc or cbcs)
-    # These are different methods of using a block cipher to encrypt media.
-    protection_scheme: cenc
-    # Seconds of unencrypted media at the beginning of the stream.
-    clear_lead: 10
+# Length of each segment in seconds.
+segment_size: 10
+
+# Forces the use of SegmentTemplate in DASH.
+segment_per_file: True
+
+encryption:
+  # Enables encryption.
+  # If disabled, the following settings are ignored.
+  enable: True
+  # Content identifier that identifies which encryption key to use.
+  # This will default to a random content ID, so this is optional.
+  content_id: '1234'
+  # Key server url.  An encryption key is generated from this server.
+  key_server_url: https://license.uat.widevine.com/cenc/getcontentkey/widevine_test
+  # The name of the signer.
+  signer: widevine_test
+  # AES signing key in hex string.
+  signing_key: 1ae8ccd0e7985cc0b6203a55855a1034afc252980e970ca90e5202689f947ab9
+  # AES signing iv in hex string.
+  signing_iv: d58ce954203b7c9a9a9d467f59839249
+  # Protection scheme (cenc or cbcs)
+  # These are different methods of using a block cipher to encrypt media.
+  protection_scheme: cenc
+  # Seconds of unencrypted media at the beginning of the stream.
+  clear_lead: 10

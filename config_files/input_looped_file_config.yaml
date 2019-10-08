@@ -30,8 +30,6 @@ inputs:
     frame_rate: 24.0
     # Resolution of the input.
     resolution: 720p
-    # Whether or not the video frames are interlaced.
-    is_interlaced: False
 
     # The type of input.
   - input_type: looped_file

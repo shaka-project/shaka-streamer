@@ -35,8 +35,16 @@ from . import packager_node
 from . import pipeline_configuration
 from . import transcoder_node
 
+# Alias a few classes to avoid repeating namespaces later.
+InputConfig = input_configuration.InputConfig
+InputType = input_configuration.InputType
+PipelineConfig = pipeline_configuration.PipelineConfig
+StreamingMode = pipeline_configuration.StreamingMode
+
+
 class VersionError(Exception):
   """Raised when a version is not new enough to work with Shaka Streamer."""
+
   pass
 
 class ControllerNode(object):
@@ -98,11 +106,9 @@ class ControllerNode(object):
     # Check that Shaka Packager version is 2.1 or above.
     check_version('Packager', ['packager', '-version'], (2, 1))
 
-    input_config = input_configuration.InputConfig(input_config_dict)
-
-    pipeline_config = pipeline_configuration.PipelineConfig(
-        pipeline_config_dict)
-    self.pipeline_config = pipeline_config
+    input_config = InputConfig(input_config_dict)
+    pipeline_config = PipelineConfig(pipeline_config_dict)
+    self._pipeline_config = pipeline_config
 
     # Some inputs get processed by Shaka Streamer before being transcoded, so
     # this array will keep track of the input paths to pass to the transcoder.
@@ -111,34 +117,36 @@ class ControllerNode(object):
     input_paths = []
 
     for i in input_config.inputs:
-      if pipeline_config.mode == 'live':
-        i.check_input_type()
-
-        if i.get_input_type() == 'looped_file':
+      if pipeline_config.streaming_mode == StreamingMode.live:
+        if i.input_type == InputType.looped_file:
           loop_output = self._create_pipe()
           input_node = loop_input_node.LoopInputNode(
-              pipeline_config, i.get_name(), loop_output)
+              pipeline_config, i.name, loop_output)
           self._nodes.append(input_node)
           input_paths.append(loop_output)
 
-        elif i.get_input_type() == 'external_command':
+        elif i.input_type == InputType.external_command:
           command_output = self._create_pipe()
           command_node = external_command_node.ExternalCommandNode(
-              i.get_name(), command_output)
+              i.name, command_output)
           self._nodes.append(command_node)
           input_paths.append(command_output)
 
-        elif i.get_input_type() == 'raw_images':
-          input_paths.append(i.get_name())
+        elif i.input_type == InputType.raw_images:
+          input_paths.append(i.name)
 
-        elif i.get_input_type() == 'webcam':
-          input_paths.append(i.get_name())
+        elif i.input_type == InputType.webcam:
+          input_paths.append(i.name)
 
-      elif pipeline_config.mode == 'vod':
-        input_paths.append(i.get_name())
+        elif i.input_type == InputType.file:
+          input_paths.append(i.name)
+
+      elif pipeline_config.streaming_mode == StreamingMode.vod:
+        input_paths.append(i.name)
 
     assert len(input_config.inputs) == len(input_paths)
 
+    # TODO: This is unnecessary.  Just process each input in turn.
     media_outputs = {
         'audio': [],
         'video': [],
@@ -148,20 +156,20 @@ class ControllerNode(object):
     # Sorting the media by type.  So all the audio streams are in one list,
     # all the video stream are in one list, etc.
     for media in input_config.inputs:
-      media.check_entry()
-      media_type = media.get_media_type()
+      media_type = media.media_type.value
       media_outputs[media_type].append(media)
 
     audio_outputs = []
     for i in media_outputs['audio']:
-      audio_outputs.extend(self._add_audio(i, pipeline_config.transcoder['channels'],
-                                           pipeline_config.transcoder['audio_codecs']))
+      audio_outputs.extend(self._add_audio(i,
+                                           pipeline_config.channels,
+                                           pipeline_config.audio_codecs))
 
     video_outputs = []
     for i in media_outputs['video']:
       video_outputs.extend(self._add_video(i,
-                                           pipeline_config.transcoder['resolutions'],
-                                           pipeline_config.transcoder['video_codecs']))
+                                           pipeline_config.resolutions,
+                                           pipeline_config.video_codecs))
 
     # Process input through a transcoder node using ffmpeg.
     ffmpeg_node = transcoder_node.TranscoderNode(input_paths,
@@ -213,8 +221,9 @@ class ControllerNode(object):
 
   def _add_audio(self, input, channels, codecs):
     audio_outputs = []
-    language = input.get_language() or self._probe_language(input)
+    language = input.language or self._probe_language(input)
     for codec in codecs:
+      codec = codec.value
       audio_outputs.append(metadata.Metadata(self._create_pipe(),
                                              channels=channels, codec=codec,
                                              language=language))
@@ -223,12 +232,16 @@ class ControllerNode(object):
   def _add_video(self, input, resolutions, codecs):
     video_outputs = []
     for codec in codecs:
+      codec = codec.value
       hardware_encoding = False
       if codec.startswith('hw:'):
         hardware_encoding = True
         codec = codec.split(':')[1]
-      in_res = input.get_resolution()
+
+      # TODO: on ingest, convert the resolution string into a value from the map
+      in_res = input.resolution.value
       for out_res in resolutions:
+        out_res = out_res.value
         # Only going to output lower or equal resolution videos.
         # Upscaling is costly and does not do anything.
         if (metadata.RESOLUTION_MAP[in_res] >=
@@ -237,8 +250,10 @@ class ControllerNode(object):
                                                  resolution_name=out_res,
                                                  codec=codec,
                                                  hardware=hardware_encoding))
+
     return video_outputs
 
+  # TODO: Move to input_configuration
   def _probe_language(self, input):
     # ffprobe {input}: list out metadata of input
     # -show_entries stream=index:stream_tags=language: list out tracks with
@@ -247,9 +262,9 @@ class ControllerNode(object):
     # specified track.
     # -of compact=p=0:nk=1: Specify no keys printed and don't print the name
     # at the beginning of each line.
-    command = ['ffprobe', input.get_name(), '-show_entries',
+    command = ['ffprobe', input.name, '-show_entries',
                'stream=index:stream_tags=language', '-select_streams',
-               str(input.get_track()), '-of', 'compact=p=0:nk=1']
+               str(input.track_num), '-of', 'compact=p=0:nk=1']
 
     lang_str = subprocess.check_output(
         command, stderr=subprocess.DEVNULL).decode('utf-8')
@@ -262,7 +277,7 @@ class ControllerNode(object):
     return 'und'
 
   def is_vod(self):
-    return self.pipeline_config.mode == 'vod'
+    return self._pipeline_config.streaming_mode == StreamingMode.vod
 
 def check_version(name, command, minimum_version):
   min_version_string = '.'.join([str(x) for x in minimum_version])

@@ -18,31 +18,33 @@
 # Streaming mode.  Can be live or vod.
 streaming_mode: live
 
-transcoder:
-  # A list of resolutions to encode.
-  resolutions:
-    - 720p
-    - 480p
+# A list of resolutions to encode.
+resolutions:
+  - 720p
+  - 480p
 
-  # The number of audio channels to output.
-  channels: 2
+# The number of audio channels to output.
+channels: 2
 
-  # The codecs to encode with.
-  audio_codecs:
-    - aac
-  video_codecs:
-    - h264
+# The codecs to encode with.
+audio_codecs:
+  - aac
+video_codecs:
+  - h264
 
-packager:
-  # Manifest format (dash, hls, or both)
-  manifest_format:
-    - dash
-    - hls
-  # Length of each segment in seconds.
-  segment_size: 4
-  # Availability window, or the number of seconds a segment remains available.
-  availability_window: 300
-  # Presentation delay, or how far back from the edge the player should be.
-  presentation_delay: 30
-  # Update period, or how often the player should fetch a new manifest.
-  update_period: 8
+# Manifest format (dash, hls, or both)
+manifest_format:
+  - dash
+  - hls
+
+# Length of each segment in seconds.
+segment_size: 4
+
+# Availability window, or the number of seconds a segment remains available.
+availability_window: 300
+
+# Presentation delay, or how far back from the edge the player should be.
+presentation_delay: 30
+
+# Update period, or how often the player should fetch a new manifest.
+update_period: 8

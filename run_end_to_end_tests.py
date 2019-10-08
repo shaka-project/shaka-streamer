@@ -30,6 +30,7 @@ import urllib
 
 from streamer import node_base
 from streamer.controller_node import ControllerNode
+from streamer.configuration import ConfigError
 
 OUTPUT_DIR = 'output_files/'
 TEST_DIR = 'test_assets/'
@@ -62,9 +63,10 @@ def cleanup():
     shutil.rmtree(OUTPUT_DIR)
   os.mkdir(OUTPUT_DIR)
 
-def createCrossOriginResponse(body=None, status=200):
+def createCrossOriginResponse(body=None, status=200, mimetype='text/plain'):
   # Enable CORS because karma and flask are cross-origin.
   resp = flask.Response(response=body, status=status)
+  resp.headers.add('Content-Type', mimetype)
   resp.headers.add('Access-Control-Allow-Origin', '*')
   resp.headers.add('Access-Control-Allow-Methods', 'GET,POST')
   return resp
@@ -132,20 +134,38 @@ def start():
   cleanup()
 
   # Receives configs from the tests to start Shaka Streamer.
-  configs = json.loads(flask.request.data)
+  try:
+    configs = json.loads(flask.request.data)
+  except:
+    return createCrossOriginResponse(status=400, body=str(e))
+
   # Enforce quiet mode without needing it specified in every test.
   configs['pipeline_config']['quiet'] = True
 
   controller = ControllerNode()
   try:
-    controller.start(OUTPUT_DIR, configs['input_config'],
+    controller.start(OUTPUT_DIR,
+                     configs['input_config'],
                      configs['pipeline_config'])
-  except:
+  except Exception as e:
     # If the controller throws an exception during startup, we want to call
     # stop() to shut down any external processes that have already been started.
-    # Then, re-raise the exception.
     controller.stop()
-    raise
+    controller = None
+
+    # Then, fail the request with a message that indicates what the error was.
+    if isinstance(e, ConfigError):
+      body = json.dumps({
+        'error_type': type(e).__name__,
+        'class_name': e.class_name,
+        'field_name': e.field_name,
+        'field_type': e.field.get_type_name(),
+        'message': str(e),
+      })
+      return createCrossOriginResponse(
+          status=418, mimetype='application/json', body=body)
+    else:
+      return createCrossOriginResponse(status=500, body=str(e))
 
   return createCrossOriginResponse()
 
