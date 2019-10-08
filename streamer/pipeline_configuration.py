@@ -24,7 +24,7 @@ TRANSCODER = 'transcoder'
 PACKAGER = 'packager'
 ENCRYPTION = 'encryption'
 
-class PipelineConfig():
+class PipelineConfig(object):
 
   def __init__(self, user_config,
                default_config = default_config.OUTPUT_DEFAULT_CONFIG,

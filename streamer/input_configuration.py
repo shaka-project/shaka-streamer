@@ -19,7 +19,7 @@ from . import validation
 
 INPUTS = 'inputs'
 
-class InputConfig():
+class InputConfig(object):
 
   def __init__(self, user_config,
                default_config = default_config.INPUT_DEFAULT_CONFIG,
@@ -28,7 +28,7 @@ class InputConfig():
     self.dict = user_config
     self.inputs = [Input(i) for i in self.dict[INPUTS]]
 
-class Input():
+class Input(object):
 
   def __init__(self, input):
     self._input = input

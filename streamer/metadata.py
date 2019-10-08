@@ -15,13 +15,13 @@
 """A module that maps channels to its respective bitrate and resolutions to its
 respective height, bitrate and profile."""
 
-class ChannelData():
+class ChannelData(object):
 
   def __init__(self, aac_bitrate, opus_bitrate):
     self.aac_bitrate = aac_bitrate
     self.opus_bitrate = opus_bitrate
 
-class ResolutionData():
+class ResolutionData(object):
 
   def __init__(self, width, height, h264_bitrate, vp9_bitrate, h264_profile):
     self.width = width
@@ -66,7 +66,7 @@ RESOLUTION_MAP = {
     '4k-hfr': ResolutionData(3840, 2160, '25M', '18M', 'uhd'),
 }
 
-class Metadata():
+class Metadata(object):
   def __init__(self, pipe, channels=None, resolution_name=None,
                codec=None, language=None, hardware=False):
     self.pipe = pipe
