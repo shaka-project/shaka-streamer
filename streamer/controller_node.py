@@ -188,8 +188,11 @@ class ControllerNode(object):
 
     If one node is errored, this returns Errored; otherwise if one node is
     finished, this returns Finished; this only returns Running if all nodes are
-    running.
+    running.  If there are no nodes, this returns Finished.
     """
+    if not self._nodes:
+      return node_base.ProcessStatus.Finished
+
     value = max(node.check_status().value for node in self._nodes)
     return node_base.ProcessStatus(value)
 
