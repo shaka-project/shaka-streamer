@@ -26,9 +26,15 @@ import time
 
 class ProcessStatus(enum.Enum):
   # Use number values so we can sort based on value.
+
   Running = 0
+  """The node is still running."""
+
   Finished = 1
+  """The node has completed its task and shut down."""
+
   Errored = 2
+  """The node has failed."""
 
 
 class NodeBase(object):

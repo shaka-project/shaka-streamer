@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module that validates and type-checks incoming configurations."""
-
 import abc
 import enum
 import re
@@ -45,13 +43,23 @@ def enum_from_keys(name, dictionary):
 
 
 class ConfigError(Exception):
-  """A base class for config errors."""
+  """A base class for config errors.
+
+  Each subclass provides a meaningful, human-readable string representation in
+  English."""
 
   def __init__(self, class_ref, field_name, field):
     self.class_ref = class_ref
+    """A reference to the config class that the error refers to."""
+
     self.class_name = class_ref.__name__
+    """The name of the config class that the error refers to."""
+
     self.field_name = field_name
+    """The name of the field that the error refers to."""
+
     self.field = field
+    """The Field metadata object that the error refers to."""
 
 
 class UnrecognizedField(ConfigError):
@@ -137,26 +145,31 @@ class Field(object):
 
   def get_type_name(self):
     """Get a human-readable string for the name of self.type."""
+    return Field.get_type_name_static(self.type, self.subtype)
+
+  @staticmethod
+  def get_type_name_static(type, subtype):
+    """Get a human-readable string for the name of type."""
 
     # Make these special cases a little more readable.
-    if self.type is str:
+    if type is str:
       # Call it a string, not a "str".
       return 'string'
-    elif self.type is list:
+    elif type is list:
       # Mention the subtype.
-      return 'list of {}s'.format(self.subtype.__name__)
-    elif self.type is None:
+      return 'list of {}'.format(Field.get_type_name_static(subtype, None))
+    elif type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'
-    elif issubclass(self.type, enum.Enum):
+    elif issubclass(type, enum.Enum):
       # Get the list of valid options as quoted strings.
-      options = [repr(str(x)) for x in self.type.__members__]
-      return '{} (one of {})'.format(self.type.__name__, ', '.join(options))
-    elif issubclass(self.type, ValidatingType):
-      return self.type.name
+      options = [repr(str(member.value)) for member in type]
+      return '{} (one of {})'.format(type.__name__, ', '.join(options))
+    elif issubclass(type, ValidatingType):
+      return type.name
 
     # Otherwise, return the name of the type.
-    return self.type.__name__
+    return type.__name__
 
 
 class Base(object):

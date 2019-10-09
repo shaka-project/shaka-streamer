@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module for the pipeline config."""
-
 import base64
 import enum
 import os
@@ -52,9 +50,16 @@ class AudioCodec(enum.Enum):
 # TODO: ideally, we wouldn't have to explicitly list hw: variants
 class VideoCodec(enum.Enum):
   h264 = 'h264'
+  """H264, also known as AVC."""
+
   hardware_h264 = 'hw:h264'
+  """H264 with hardware encoding."""
+
   vp9 = 'vp9'
+  """VP9."""
+
   hardware_vp9 = 'hw:vp9'
+  """VP9 with hardware encoding."""
 
 class ManifestFormat(enum.Enum):
   dash = 'dash'
@@ -160,7 +165,10 @@ class PipelineConfig(configuration.Base):
 
   video_codecs = configuration.Field(list, subtype=VideoCodec,
                                      default=[VideoCodec.h264])
-  """The video codecs to encode with."""
+  """The video codecs to encode with.
+
+  Note that the prefix "hw:" indicates that a hardware encoder should be
+  used."""
 
   manifest_format = configuration.Field(list, subtype=ManifestFormat,
                                         default=[

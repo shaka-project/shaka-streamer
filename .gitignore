@@ -4,3 +4,4 @@ test_assets/
 node_modules/
 package-lock.json
 Sintel.*
+docs/build

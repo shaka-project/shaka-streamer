@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Controls other modules and shared resources.
+"""If you'd like to import Shaka Streamer as a Python module and build it into
+your own application, this is the top-level API you can use for that.  You may
+also want to look at the source code to the command-line front end
+`shaka_streamer.py`."""
 
-This is the main module, which instantiates and starts other modules, and which
-manages shared resources like named pipes."""
 
 import os
 import re
@@ -42,12 +43,8 @@ PipelineConfig = pipeline_configuration.PipelineConfig
 StreamingMode = pipeline_configuration.StreamingMode
 
 
-class VersionError(Exception):
-  """Raised when a version is not new enough to work with Shaka Streamer."""
-
-  pass
-
 class ControllerNode(object):
+  """Controls all other nodes and manages shared resources."""
 
   def __init__(self):
     global_temp_dir = tempfile.gettempdir()
@@ -95,16 +92,22 @@ class ControllerNode(object):
 
     return path
 
-  def start(self, output_dir, input_config_dict, pipeline_config_dict, bucket_url=None):
-    """Create and start all other nodes."""
+  def start(self, output_dir, input_config_dict, pipeline_config_dict,
+            bucket_url=None):
+    """Create and start all other nodes.
+
+    :raises: `RuntimeError` if the controller has already started.
+    :raises: :class:`streamer.configuration.ConfigError` if the configuration is
+             invalid."""
+
     if self._nodes:
       raise RuntimeError('Controller already started!')
 
     # Check that ffmpeg version is 4.1 or above.
-    check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
+    _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
 
     # Check that Shaka Packager version is 2.1 or above.
-    check_version('Packager', ['packager', '-version'], (2, 1))
+    _check_version('Packager', ['packager', '-version'], (2, 1))
 
     input_config = InputConfig(input_config_dict)
     pipeline_config = PipelineConfig(pipeline_config_dict)
@@ -203,6 +206,8 @@ class ControllerNode(object):
   def check_status(self):
     """Checks the status of all the nodes.
 
+    :rtype: streamer.node_base.ProcessStatus
+
     If one node is errored, this returns Errored; otherwise if one node is
     finished, this returns Finished; this only returns Running if all nodes are
     running.  If there are no nodes, this returns Finished.
@@ -277,9 +282,19 @@ class ControllerNode(object):
     return 'und'
 
   def is_vod(self):
+    """Returns True if the pipeline is running in VOD mode.
+
+    :rtype: bool"""
+
     return self._pipeline_config.streaming_mode == StreamingMode.vod
 
-def check_version(name, command, minimum_version):
+class VersionError(Exception):
+  """Raised when a dependency (like FFmpeg) is missing or not new enough to
+  work with Shaka Streamer.  See also :doc:`prerequisites`."""
+
+  pass
+
+def _check_version(name, command, minimum_version):
   min_version_string = '.'.join([str(x) for x in minimum_version])
 
   try:
