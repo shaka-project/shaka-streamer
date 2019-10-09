@@ -209,8 +209,10 @@ function drmTests(manifestUrl, format) {
     await startStreamer(inputConfigDict, pipelineConfigDict);
     // Player should raise an error and not load because the media
     // is encrypted and the player doesn't have a license server.
-    await expectAsync(player.load(manifestUrl)).toBeRejected(
-        "Encrypted media should not play without a license server");
+    await expectAsync(player.load(manifestUrl)).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: shaka.util.Error.Code.NO_LICENSE_SERVER_GIVEN,
+        }));
 
     player.configure({
       drm: {
