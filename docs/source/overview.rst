@@ -137,11 +137,9 @@ The overall pipeline is composed of several nodes. At a minimum, these are
 ``TranscoderNode`` (which runs FFmpeg) and ``PackagerNode`` (which runs Shaka
 Packager). They communicate via named pipes on Linux and macOS.
 
-If the input type is ``looped_file``, then ``LoopInputNode`` is placed before
-``TranscoderNode`` in the pipeline. ``LoopInputNode`` runs another instance of
-FFmpeg to encode the input file in a never-ending loop, and output to a named
-pipe. For all other input types, the input files are read directly by
-``TranscoderNode``.
+All input types are read directly by ``TranscoderNode``. If the input type is
+``looped_file``, then ``TranscoderNode`` will add additional FFmpeg options to
+loop that input file indefinitely.
 
 If the ``-c`` option is given with a Google Cloud Storage URL, then an
 additional node called ``CloudNode`` is added after ``PackagerNode``. It runs a

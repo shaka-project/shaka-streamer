@@ -79,8 +79,39 @@ class TranscoderNode(node_base.NodeBase):
       # almost anything ffmpeg could ingest.
       args += input.extra_input_args
 
+      # These are like hard-coded extra_input_args for certain input types.
+      # This means users don't have to know much about FFmpeg options to handle
+      # these common cases.
+      if input.input_type == InputType.looped_file:
+        args += [
+          # Loop the input forever.
+          '-stream_loop', '-1',
+          # Read input in real time; don't go above 1x processing speed.
+          '-re',
+        ]
+      elif input.input_type == InputType.raw_images:
+        args += [
+            # Parse the input as a stream of images fed into a pipe.
+            '-f', 'image2pipe',
+            # Set the frame rate to the one specified in the input config.
+            # Note that this is the input framerate for the image2 dexuxer, which
+            # is not what the similar '-r' option is meant for.
+            '-framerate', str(input.frame_rate),
+        ]
+      elif input.input_type == InputType.webcam:
+        args += [
+            # Format the input using the webcam format.
+            '-f', 'video4linux2',
+        ]
+
       if self._pipeline_config.streaming_mode == StreamingMode.live:
-        args += self._live_input(input)
+        args += [
+            # A larger queue to buffer input from the pipeline (default is 8).
+            # This is in packets, but for raw images, that means frames.  A
+            # 720p PPM frame is 2.7MB, and a 1080p PPM is 6.2MB.  The entire
+            # queue, when full, must fit into memory.
+            '-thread_queue_size', '200',
+        ]
 
       if input.start_time:
         args += [
@@ -128,32 +159,6 @@ class TranscoderNode(node_base.NodeBase):
       env['FFREPORT'] = 'file=TranscoderNode.log:level=32'
 
     self._process = self._create_process(args, env)
-
-  def _live_input(self, input):
-    args = []
-    if input.input_type == InputType.raw_images:
-      args += [
-          # Parse the input as a stream of images fed into a pipe.
-          '-f', 'image2pipe',
-          # Set the frame rate to the one specified in the input config.
-          # Note that this is the input framerate for the image2 dexuxer, which
-          # is not what the similar '-r' option is meant for.
-          '-framerate', str(input.frame_rate),
-      ]
-    elif input.input_type == InputType.webcam:
-      args += [
-          # Format the input using the webcam format.
-          '-f', 'video4linux2',
-      ]
-    args += [
-        # A larger queue to buffer input from the pipeline (default is 8).
-        # This is in packets, but for raw_images, that means frames.  A 720p PPM
-        # frame is 2.7MB, and a 1080p PPM is 6.2MB.  The entire queue, when
-        # full, must fit into memory.
-        '-thread_queue_size', '200',
-    ]
-
-    return args
 
   def _encode_audio(self, audio, input):
     filters = []

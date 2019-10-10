@@ -29,7 +29,6 @@ import uuid
 from . import cloud_node
 from . import external_command_node
 from . import input_configuration
-from . import loop_input_node
 from . import metadata
 from . import node_base
 from . import packager_node
@@ -120,31 +119,14 @@ class ControllerNode(object):
     input_paths = []
 
     for i in input_config.inputs:
-      if pipeline_config.streaming_mode == StreamingMode.live:
-        if i.input_type == InputType.looped_file:
-          loop_output = self._create_pipe()
-          input_node = loop_input_node.LoopInputNode(
-              pipeline_config, i.name, loop_output)
-          self._nodes.append(input_node)
-          input_paths.append(loop_output)
+      if i.input_type == InputType.external_command:
+        command_output = self._create_pipe()
+        command_node = external_command_node.ExternalCommandNode(
+            i.name, command_output)
+        self._nodes.append(command_node)
+        input_paths.append(command_output)
 
-        elif i.input_type == InputType.external_command:
-          command_output = self._create_pipe()
-          command_node = external_command_node.ExternalCommandNode(
-              i.name, command_output)
-          self._nodes.append(command_node)
-          input_paths.append(command_output)
-
-        elif i.input_type == InputType.raw_images:
-          input_paths.append(i.name)
-
-        elif i.input_type == InputType.webcam:
-          input_paths.append(i.name)
-
-        elif i.input_type == InputType.file:
-          input_paths.append(i.name)
-
-      elif pipeline_config.streaming_mode == StreamingMode.vod:
+      else:
         input_paths.append(i.name)
 
     assert len(input_config.inputs) == len(input_paths)
