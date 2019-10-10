@@ -46,9 +46,9 @@ copyright = '2019, Google'
 author = 'Google'
 
 # The short X.Y version
-version = '.'.join(streamer.VERSION.split('.')[0:2])
+version = '.'.join(streamer.__version__.split('.')[0:2])
 # The full version, including alpha/beta/rc tags
-release = streamer.VERSION
+release = streamer.__version__
 
 
 # -- General configuration ---------------------------------------------------

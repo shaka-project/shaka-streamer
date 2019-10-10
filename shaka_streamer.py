@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """
-Shaka Streamer {version}
+Shaka Streamer v{version}
 
 Shaka Streamer offers a simple config-file based approach to preparing streaming
 media. It greatly simplifies the process of using FFmpeg and Shaka Packager for
@@ -29,8 +29,7 @@ import sys
 import time
 import yaml
 
-from streamer import VERSION
-from streamer import node_base
+from streamer import __version__, node_base
 from streamer.controller_node import ControllerNode
 
 
@@ -44,7 +43,7 @@ class CustomArgParseFormatter(
 
 
 def main():
-  description = __doc__.format(version=VERSION)
+  description = __doc__.format(version=__version__)
 
   parser = argparse.ArgumentParser(description=description,
                                    formatter_class=CustomArgParseFormatter)
