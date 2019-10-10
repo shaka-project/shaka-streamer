@@ -75,7 +75,7 @@ class ControllerNode(object):
       The path to the named pipe, as a string.
     """
 
-    # TODO: mkfifo only works on Unix.  We would need a special case for a
+    # TODO(#8): mkfifo only works on Unix.  We would need a special case for a
     # Windows port some day.
 
     if not hasattr(os, 'mkfifo'):
@@ -112,24 +112,18 @@ class ControllerNode(object):
     pipeline_config = PipelineConfig(pipeline_config_dict)
     self._pipeline_config = pipeline_config
 
-    # Some inputs get processed by Shaka Streamer before being transcoded, so
-    # this array will keep track of the input paths to pass to the transcoder.
-    # Some will be input files/devices, while others will be named pipes.
-    # TODO(joeyparrish): put input paths into input_config.inputs
-    input_paths = []
-
-    for i in input_config.inputs:
-      if i.input_type == InputType.external_command:
+    # External command inputs need to be processed by an additional node before
+    # being transcoded.  In this case, the input doesn't have a filename that
+    # FFmpeg can read, so we generate an intermediate pipe for that node to
+    # write to.  TranscoderNode will then instruct FFmpeg to read from that
+    # pipe for this input.
+    for input in input_config.inputs:
+      if input.input_type == InputType.external_command:
         command_output = self._create_pipe()
         command_node = external_command_node.ExternalCommandNode(
-            i.name, command_output)
+            input.name, command_output)
         self._nodes.append(command_node)
-        input_paths.append(command_output)
-
-      else:
-        input_paths.append(i.name)
-
-    assert len(input_config.inputs) == len(input_paths)
+        input.set_pipe(command_output)
 
     # TODO: This is unnecessary.  Just process each input in turn.
     media_outputs = {
@@ -157,8 +151,7 @@ class ControllerNode(object):
                                            pipeline_config.video_codecs))
 
     # Process input through a transcoder node using ffmpeg.
-    ffmpeg_node = transcoder_node.TranscoderNode(input_paths,
-                                                 audio_outputs,
+    ffmpeg_node = transcoder_node.TranscoderNode(audio_outputs,
                                                  video_outputs,
                                                  input_config,
                                                  pipeline_config)

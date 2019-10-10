@@ -35,16 +35,13 @@ PROFILE_ARGS = {
 
 class TranscoderNode(node_base.NodeBase):
 
-  def __init__(self, input_paths, output_audios, output_videos, input_config,
+  def __init__(self, output_audios, output_videos, input_config,
                pipeline_config):
     super().__init__()
-    self._input_paths = input_paths
     self._output_audios = output_audios
     self._output_videos = output_videos
     self._input_config = input_config
     self._pipeline_config = pipeline_config
-
-    assert len(input_config.inputs) == len(input_paths)
 
   def start(self):
     args = [
@@ -70,10 +67,7 @@ class TranscoderNode(node_base.NodeBase):
           '-vaapi_device', '/dev/dri/renderD128',
       ]
 
-    # TODO(joeyparrish): put input paths into self._input_config.inputs
-    for i, input in enumerate(self._input_config.inputs):
-      input_path = self._input_paths[i]
-
+    for input in self._input_config.inputs:
       # The config file may specify additional args needed for this input.
       # This allows, for example, an external-command-type input to generate
       # almost anything ffmpeg could ingest.
@@ -127,7 +121,7 @@ class TranscoderNode(node_base.NodeBase):
       # The input name always comes after the applicable input arguments.
       args += [
           # The input itself.
-          '-i', input_path,
+          '-i', input.get_path_for_transcode(),
       ]
 
     for i, input in enumerate(self._input_config.inputs):
