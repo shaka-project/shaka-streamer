@@ -4,4 +4,7 @@ test_assets/
 node_modules/
 package-lock.json
 Sintel.*
-docs/build
+docs/build/
+build/
+dist/
+shaka_streamer.egg-info/

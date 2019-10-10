@@ -56,8 +56,21 @@ Multiple VAAPI devices are not yet supported on Linux.  See `issue #17`_.
 Windows is not supported at this time due to our use of ``os.mkfifo``, but we
 are accepting PRs if you’d like to add Windows support. See `issue #8`_.
 
+
 Getting started
 ---------------
+
+Release versions of Shaka Streamer can be installed or upgraded through `pip`
+with:
+
+.. code:: sh
+
+  # To install/upgrade per-user:
+  pip install --upgrade --user shaka-streamer
+
+  # To install/upgrade globally (add sudo on Linux):
+  pip install --upgrade shaka-streamer
+
 
 Shaka Streamer requires at a minimum:
 
@@ -83,7 +96,7 @@ Example command-line for live streaming to Google Cloud Storage:
 
 .. code:: sh
 
-   python3 shaka_streamer.py \
+   python3 shaka-streamer \
      -i config_files/input_looped_file_config.yaml \
      -p config_files/pipeline_live_config.yaml \
      -c gs://my_gcs_bucket/folder/
@@ -93,7 +106,7 @@ Example command-line for live streaming to Amazon S3:
 
 .. code:: sh
 
-   python3 shaka_streamer.py \
+   python3 shaka-streamer \
      -i config_files/input_looped_file_config.yaml \
      -p config_files/pipeline_live_config.yaml \
      -c s3://my_s3_bucket/folder/
@@ -139,7 +152,7 @@ The pipeline and the nodes in it are constructed by ``ControllerNode`` based on
 your config files. If you want to write your own front-end or interface
 directly to the pipeline, you can create a ``ControllerNode`` and call the
 ``start()``, ``stop()``, and ``is_running()`` methods on it. You can use
-``shaka_streamer.py`` as an example of how to do this.  See also
+the ``shaka-streamer`` script as an example of how to do this.  See also
 :doc:`module_api`.
 
 .. _issue #8: https://github.com/google/shaka-streamer/issues/8

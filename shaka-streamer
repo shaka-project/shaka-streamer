@@ -20,6 +20,8 @@ Shaka Streamer v{version}
 Shaka Streamer offers a simple config-file based approach to preparing streaming
 media. It greatly simplifies the process of using FFmpeg and Shaka Packager for
 both VOD and live content.
+
+Full documentation can be found at https://google.github.io/shaka-streamer/
 """
 
 import argparse

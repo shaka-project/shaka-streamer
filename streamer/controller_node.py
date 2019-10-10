@@ -14,8 +14,8 @@
 
 """If you'd like to import Shaka Streamer as a Python module and build it into
 your own application, this is the top-level API you can use for that.  You may
-also want to look at the source code to the command-line front end
-`shaka_streamer.py`."""
+also want to look at the source code to the command-line front end script
+`shaka-streamer`."""
 
 
 import os
