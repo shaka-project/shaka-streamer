@@ -124,11 +124,6 @@ class PackagerNode(node_base.NodeBase):
 
     args += self._setup_manifest_format()
 
-    args += [
-        # use an IO block size of ~65K for a threaded IO file.
-        '--io_block_size', '65536',
-    ]
-
     if self._pipeline_config.encryption.enable:
       args += self._setup_encryption()
 
