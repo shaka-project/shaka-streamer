@@ -101,33 +101,45 @@ class Input(configuration.Base):
   media_type = configuration.Field(MediaType, required=True)
   """The media type of the input stream."""
 
-  # TODO: detect frame rate if not given, require only for raw_images
   frame_rate = configuration.Field(float)
   """The frame rate of the input stream, in frames per second.
 
-  Required for media_type of 'video'.
+  Only valid for media_type of 'video'.
+
+  Can be auto-detected for some input types, but may be required for others.
+  For example, required for input_type of 'webcam'.
   """
 
-  # TODO: detect resolution if not given
   # TODO: support custom resolutions
   resolution = configuration.Field(Resolution)
   """The name of the input resolution (1080p, etc).
 
-  Required for media_type of 'video'.
+  Only valid for media_type of 'video'.
+
+  Can be auto-detected for some input types, but may be required for others.
+  For example, required for input_type of 'webcam'.
   """
 
-  # TODO: detect track number based on media_type
   track_num = configuration.Field(int, default=0)
-  """The track number of the input.  Defaults to 0.
+  """The track number of the input.
 
-  For multiplexed input files, video is usually track 0, and the first audio
-  track is usually track 1.  This may vary, though.
+  The track number is specific to the media_type.  For example, if there is one
+  video track and two audio tracks, media_type of 'audio' and track_num of '0'
+  indicates the first audio track, not the first track overall in that file.
+
+  If unspecified, track_num will default to 0, meaning the first track matching
+  the media_type field will be used.
   """
 
-  is_interlaced = configuration.Field(bool, default=False)
+  is_interlaced = configuration.Field(bool)
   """True if the input video is interlaced.
 
+  Only valid for media_type of 'video'.
+
   If true, the video will be deinterlaced during transcoding.
+
+  Can be auto-detected for some input types, but may be default to False for
+  others.  For example, an input_type of 'webcam' will default to False.
   """
 
   language = configuration.Field(str)
@@ -159,15 +171,33 @@ class Input(configuration.Base):
   def __init__(self, *args):
     super().__init__(*args)
 
+    # FIXME: A late import to avoid circular dependency issues between these two
+    # modules.
+    from . import autodetect
+
     if self.media_type == MediaType.VIDEO:
       # These fields are required for video inputs.
+      # We will attempt to auto-detect them if possible.
+      if self.is_interlaced is None:
+        self.is_interlaced = autodetect.get_interlaced(self)
+
+      if self.frame_rate is None:
+        self.frame_rate = autodetect.get_frame_rate(self)
       if self.frame_rate is None:
         raise configuration.MissingRequiredField(
             self.__class__, 'frame_rate', self.__class__.frame_rate)
 
       if self.resolution is None:
+        self.resolution = autodetect.get_resolution(self)
+      if self.resolution is None:
         raise configuration.MissingRequiredField(
             self.__class__, 'resolution', self.__class__.resolution)
+
+    if self.media_type == MediaType.AUDIO or self.media_type == MediaType.TEXT:
+      # Language is required for audio and text inputs.
+      # We will attempt to auto-detect this.
+      if self.language is None:
+        self.language = autodetect.get_language(self) or 'und'
 
     if self.input_type != InputType.FILE:
       # These fields are only valid for file inputs.
@@ -196,6 +226,7 @@ class Input(configuration.Base):
 
     If set, this is what TranscoderNode will read from instead of .name.
     """
+
     self._pipe = pipe
 
   def get_path_for_transcode(self):
@@ -203,7 +234,28 @@ class Input(configuration.Base):
 
     For some input types, this is a named pipe.  For others, this is .name.
     """
+
     return self._pipe or self.name
+
+  def get_stream_specifier(self):
+    """Get an FFmpeg stream specifier for this input.
+
+    For example, the first video track would be "v:0", and the 3rd text track
+    would be "s:2".  Note that all track numbers are per media type in this
+    format, not overall track numbers from the input file, and that they are
+    indexed starting at 0.
+
+    See also http://ffmpeg.org/ffmpeg.html#Stream-specifiers
+    """
+
+    if self.media_type == MediaType.VIDEO:
+      return 'v:{}'.format(self.track_num)
+    elif self.media_type == MediaType.AUDIO:
+      return 'a:{}'.format(self.track_num)
+    elif self.media_type == MediaType.TEXT:
+      return 's:{}'.format(self.track_num)
+
+    assert False, 'Unrecognized media_type!  This should not happen.'
 
 
 class InputConfig(configuration.Base):

@@ -205,12 +205,11 @@ class ControllerNode(object):
 
   def _add_audio(self, input, channels, codecs):
     audio_outputs = []
-    language = input.language or self._probe_language(input)
     for codec in codecs:
       codec = codec.value
       audio_outputs.append(metadata.Metadata(self._create_pipe(),
                                              channels=channels, codec=codec,
-                                             language=language))
+                                             language=input.language))
     return audio_outputs
 
   def _add_video(self, input, resolutions, codecs):
@@ -236,29 +235,6 @@ class ControllerNode(object):
                                                  hardware=hardware_encoding))
 
     return video_outputs
-
-  # TODO: Move to input_configuration
-  def _probe_language(self, input):
-    # ffprobe {input}: list out metadata of input
-    # -show_entries stream=index:stream_tags=language: list out tracks with
-    # stream and language information
-    # -select_streams {track}: Only return stream/language information for
-    # specified track.
-    # -of compact=p=0:nk=1: Specify no keys printed and don't print the name
-    # at the beginning of each line.
-    command = ['ffprobe', input.name, '-show_entries',
-               'stream=index:stream_tags=language', '-select_streams',
-               str(input.track_num), '-of', 'compact=p=0:nk=1']
-
-    lang_str = subprocess.check_output(
-        command, stderr=subprocess.DEVNULL).decode('utf-8')
-    # The regex is looking for a string that is of the format number|language.
-    # Once it finds a number| match, it will copy the string until the end of
-    # the line.
-    lang_match = re.search(r'\d+\|(.*$)', lang_str)
-    if lang_match:
-      return lang_match.group(1)
-    return 'und'
 
   def is_vod(self):
     """Returns True if the pipeline is running in VOD mode.

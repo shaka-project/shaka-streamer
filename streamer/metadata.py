@@ -14,6 +14,8 @@
 
 """Maps channels and resolutions to bitrate, size, and profile."""
 
+import math
+
 class ChannelData(object):
 
   def __init__(self, aac_bitrate, opus_bitrate):
@@ -22,9 +24,11 @@ class ChannelData(object):
 
 class ResolutionData(object):
 
-  def __init__(self, width, height, h264_bitrate, vp9_bitrate, h264_profile):
+  def __init__(self, width, height, frame_rate, h264_bitrate, vp9_bitrate,
+               h264_profile):
     self.width = width
     self.height = height
+    self.frame_rate = frame_rate
     self.h264_bitrate = h264_bitrate
     self.vp9_bitrate = vp9_bitrate
     self.h264_profile = h264_profile
@@ -49,20 +53,21 @@ CHANNEL_MAP = {
 # A map of resolutions to ResolutionData objects which contain
 # the height and bitrate of a given resolution.
 # TODO(joeyparrish): Break this down into a multi-level map involving codec.
+infinity = math.inf
 RESOLUTION_MAP = {
-    '144p': ResolutionData(256, 144, '108k', '95k', 'baseline'),
-    '240p': ResolutionData(426, 240, '242k', '150k', 'main'),
-    '360p': ResolutionData(640, 360, '400k', '276k', 'main'),
-    '480p': ResolutionData(854, 480, '2M', '750k', 'main'),
-    '576p': ResolutionData(1024, 576, '2.5M', '1M', 'main'),
-    '720p': ResolutionData(1280, 720, '3M', '2M', 'main'),
-    '720p-hfr': ResolutionData(1280, 720, '4M', '4M', 'main'),
-    '1080p': ResolutionData(1920, 1080, '5M', '4M', 'high'),
-    '1080p-hfr': ResolutionData(1920, 1080, '6M', '6M', 'high'),
-    '2k': ResolutionData(2560, 1440, '9M', '6M', 'high'),
-    '2k-hfr': ResolutionData(2560, 1440, '14M', '9M', 'high'),
-    '4k': ResolutionData(3840, 2160, '17M', '12M', 'uhd'),
-    '4k-hfr': ResolutionData(3840, 2160, '25M', '18M', 'uhd'),
+    '144p': ResolutionData(256, 144, 30, '108k', '95k', 'baseline'),
+    '240p': ResolutionData(426, 240, 30, '242k', '150k', 'main'),
+    '360p': ResolutionData(640, 360, 30, '400k', '276k', 'main'),
+    '480p': ResolutionData(854, 480, 30, '2M', '750k', 'main'),
+    '576p': ResolutionData(1024, 576, 30, '2.5M', '1M', 'main'),
+    '720p': ResolutionData(1280, 720, 30, '3M', '2M', 'main'),
+    '720p-hfr': ResolutionData(1280, 720, infinity, '4M', '4M', 'main'),
+    '1080p': ResolutionData(1920, 1080, 30, '5M', '4M', 'high'),
+    '1080p-hfr': ResolutionData(1920, 1080, infinity, '6M', '6M', 'high'),
+    '2k': ResolutionData(2560, 1440, 30, '9M', '6M', 'high'),
+    '2k-hfr': ResolutionData(2560, 1440, infinity, '14M', '9M', 'high'),
+    '4k': ResolutionData(3840, 2160, 30, '17M', '12M', 'uhd'),
+    '4k-hfr': ResolutionData(3840, 2160, infinity, '25M', '18M', 'uhd'),
 }
 
 class Metadata(object):

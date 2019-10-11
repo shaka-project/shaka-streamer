@@ -1,3 +1,8 @@
+## 0.3.0 (?)
+
+ - Added autodetection of frame rate, resolution, interlacing, track numbers
+
+
 ## 0.2.0 (2019-10-14)
 
  - #22: Comprehensive docs now on GitHub Pages: https://google.github.io/shaka-streamer/
@@ -16,6 +21,7 @@
  - Fixed output filename consistency, issues with multiple languages
  - Fixed issues with mapping multiple inputs
  - Flattened pipeline config format
+
 
 ## 0.1.0 (2019-08-30)
 

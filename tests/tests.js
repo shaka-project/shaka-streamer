@@ -91,8 +91,9 @@ describe('Shaka Streamer', () => {
   codecTests(hlsManifestUrl, '(hls)');
   codecTests(dashManifestUrl, '(dash)');
 
-  autoLanguageTests(hlsManifestUrl, '(hls)');
-  autoLanguageTests(dashManifestUrl, '(dash)');
+  // These tests are independent of manifest type, since they are about
+  // auto-detecting input features.
+  autoDetectionTests(dashManifestUrl);
 
   languageTests(hlsManifestUrl, '(hls)');
   languageTests(dashManifestUrl, '(dash)');
@@ -130,6 +131,9 @@ describe('Shaka Streamer', () => {
   // The player doesn't have any framerate or other metadata from an HLS
   // manifest that would let us detect our filters, so only test this in DASH.
   filterTests(dashManifestUrl, '(dash)');
+
+  // TODO: Add tests for interlaced video.  We need interlaced source material
+  // for this.
 });
 
 function errorTests() {
@@ -141,9 +145,6 @@ function errorTests() {
         {
           name: TEST_DIR + 'BigBuckBunny.1080p.mp4',
           media_type: 'video',
-          frame_rate: 24.0,
-          resolution: '1080p',
-          track_num: 0,
         },
       ],
     };
@@ -175,14 +176,24 @@ function errorTests() {
         }));
   });
 
-  it('fails when resolution is missing for video', async () => {
+  it('fails when resolution or frame_rate are missing for webcam', async () => {
     const inputConfig = getBasicInputConfig();
-    delete inputConfig.inputs[0].resolution;
+    inputConfig.inputs[0].input_type = 'webcam';
+    inputConfig.inputs[0].frame_rate = 24;
 
     await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
         .toBeRejectedWith(jasmine.objectContaining({
           error_type: 'MissingRequiredField',
           field_name: 'resolution',
+        }));
+
+    delete inputConfig.inputs[0].frame_rate;
+    inputConfig.inputs[0].resolution = '1080p';
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MissingRequiredField',
+          field_name: 'frame_rate',
         }));
   });
 
@@ -222,6 +233,8 @@ function errorTests() {
   it('fails when start_time/end_time used with non-file inputs', async () => {
     const inputConfig = getBasicInputConfig();
     inputConfig.inputs[0].input_type = 'raw_images'
+    inputConfig.inputs[0].frame_rate = 24;
+    inputConfig.inputs[0].resolution = '1080p';
     inputConfig.inputs[0].start_time = '0:30'
 
     await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
@@ -299,9 +312,7 @@ function resolutionTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
-          'frame_rate': 24.0,
           'resolution': '1080p',
-          'track_num': 0,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -312,6 +323,7 @@ function resolutionTests(manifestUrl, format) {
       // A list of resolutions to encode.
       'resolutions': [
         '4k',
+        '2k',
         '1080p',
         '720p',
         '480p',
@@ -325,7 +337,7 @@ function resolutionTests(manifestUrl, format) {
     const trackList = player.getVariantTracks();
     const heightList = trackList.map(track => track.height);
     heightList.sort((a, b) => a - b);
-    // No 4k, since that is above the input res.
+    // No 4k or 2k, since those are above the 1080p input res.
     expect(heightList).toEqual([144, 240, 480, 720, 1080]);
   });
 }
@@ -338,9 +350,6 @@ function liveTests(manifestUrl, format) {
           'input_type': 'looped_file',
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
-          'frame_rate': 24.0,
-          'resolution': '1080p',
-          'track_num': 0,
         },
       ]
     };
@@ -360,9 +369,6 @@ function drmTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
-          'frame_rate': 24.0,
-          'resolution': '1080p',
-          'track_num': 0,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -403,16 +409,12 @@ function codecTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
-          'track_num': 0,
-          'frame_rate': 24.0,
-          'resolution': '4k',
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
-          'track_num': 1,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -435,9 +437,8 @@ function codecTests(manifestUrl, format) {
   });
 }
 
-function autoLanguageTests(manifestUrl, format) {
-  it('correctly autodetects the language embedded in the stream ' + format,
-      async () => {
+function autoDetectionTests(manifestUrl) {
+  it('correctly autodetects the language embedded in the stream', async () => {
     // No language is specified in the input config, so the streamer will try
     // to find the one embedded in the metadata.
     const inputConfigDict = {
@@ -445,7 +446,6 @@ function autoLanguageTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
-          'track_num': 1,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -461,6 +461,65 @@ function autoLanguageTests(manifestUrl, format) {
     const lang = trackList.map(track => track.language);
     expect(lang).toEqual(['en']);
   });
+
+  it('correctly autodetects the frame_rate of a video stream', async () => {
+    // No frame rate is specified in the input config, so the streamer will try
+    // to find the one embedded in the metadata.
+    const inputConfigDict = {
+      'inputs': [
+        {
+          // NOTE: https://github.com/google/shaka-packager/issues/662 prevents
+          // this from working on Sintel.2010.720p.Small.mkv.  The Packager bug
+          // does not seem to affect typical inputs.
+          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+
+    await player.load(manifestUrl);
+    const trackList = player.getVariantTracks();
+    expect(trackList[0].frameRate).toBe(30);
+  });
+
+  it('correctly autodetects the input resolution of the video', async () => {
+    // No resolution is specified in the input config, so the streamer will try
+    // to find the one embedded in the metadata.
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      // If the 720p input is correctly detected, it will encode 720p only.
+      // If the detected resolution is too high, there will be multiple tracks.
+      // If the detected resolution is too low, startStreamer() will fail
+      // because there will be nothing to encode.
+      'resolutions': [
+        '4k',
+        '2k',
+        '1080p',
+        '720p',
+      ],
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+
+    await player.load(manifestUrl);
+    const trackList = player.getVariantTracks();
+    expect(trackList.length).toBe(1);
+  });
 }
 
 function languageTests(manifestUrl, format) {
@@ -471,7 +530,6 @@ function languageTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
-          'track_num': 1,
           'language': 'zh',
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
@@ -498,9 +556,6 @@ function textTracksTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
-          'frame_rate': 24.0,
-          'resolution': '1080p',
-          'track_num': 0,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -549,9 +604,6 @@ function vodTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
-          'frame_rate': 24.0,
-          'resolution': '1080p',
-          'track_num': 0,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -575,7 +627,6 @@ function channelsTests(manifestUrl, channels, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
-          'track_num': 1,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -602,9 +653,6 @@ function availabilityTests(manifestUrl, format) {
           'input_type': 'looped_file',
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
-          'resolution': '720p',
-          'frame_rate': 24.0,
-          'track_num': 0,
         },
       ],
     };
@@ -632,9 +680,6 @@ function delayTests(manifestUrl, format) {
           'input_type': 'looped_file',
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
-          'resolution': '720p',
-          'frame_rate': 24.0,
-          'track_num': 0,
         },
       ],
     };
@@ -657,9 +702,6 @@ function updateTests(manifestUrl, format) {
           'input_type': 'looped_file',
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
-          'resolution': '720p',
-          'frame_rate': 24.0,
-          'track_num': 0,
         },
       ],
     };
@@ -686,9 +728,6 @@ function durationTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
-          'resolution': '720p',
-          'frame_rate': 24.0,
-          'track_num': 0,
            // The original clip is 10 seconds long.
           'start_time': '00:00:02',
           'end_time': '00:00:05',
@@ -718,16 +757,12 @@ function mapTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
-          'resolution': '720p',
-          'frame_rate': 24.0,
-          'track_num': 0,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
-          'track_num': 1,
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -757,9 +792,6 @@ function filterTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
-          'resolution': '720p',
-          'frame_rate': 24.0,
-          'track_num': 0,
           'filters': [
             // Resample frames to 90fps, which we can later detect.
             'fps=fps=90',
@@ -770,7 +802,6 @@ function filterTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
-          'track_num': 1,
           'filters': [
             // Resample audio to 88.2kHz, which we can later detect.
             'aresample=88200',

@@ -19,14 +19,8 @@ inputs:
     # Name of the input file.
     # This example can be downloaded from https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.4k.mkv
   - name: Sintel.2010.4k.mkv
-    # The track number.
-    track_num: 0
     # The media type of the input. Can be audio or video.
     media_type: video
-    # Frame rate in seconds.
-    frame_rate: 24.0
-    # Resolution of the input.
-    resolution: 4k
     # Start time of video to encode.
     start_time: 00:00:00
     # End time of video to encode.
@@ -34,7 +28,6 @@ inputs:
 
     # A second track (audio) from the same input file.
   - name: Sintel.2010.4k.mkv
-    track_num: 1
     media_type: audio
     start_time: 00:00:00
     end_time: 00:20:00

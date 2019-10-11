@@ -127,11 +127,11 @@ class TranscoderNode(node_base.NodeBase):
     for i, input in enumerate(self._input_config.inputs):
       map_args = [
           # Map corresponding input stream to output file.
-          # The format is "<INPUT FILE NUMBER>:<TRACK NUMBER>", so "i" here is
-          # the input file number, and "input.get_track()" is the track number
-          # from that input file.  The output stream for this input is implied
-          # by where we are in the ffmpeg argument list.
-          '-map', '{0}:{1}'.format(i, input.track_num),
+          # The format is "<INPUT FILE NUMBER>:<STREAM SPECIFIER>", so "i" here
+          # is the input file number, and "input.get_stream_specifier()" builds
+          # the stream specifier for this input.  The output stream for this
+          # input is implied by where we are in the ffmpeg argument list.
+          '-map', '{0}:{1}'.format(i, input.get_stream_specifier()),
       ]
 
       if input.media_type == MediaType.AUDIO:
@@ -216,14 +216,9 @@ class TranscoderNode(node_base.NodeBase):
         '-cmp', 'chroma',
     ]
 
-    # TODO: auto detection of interlacing
     if input.is_interlaced:
-      frame_rate = input.frame_rate
-      # Sanity check: since interlaced files are made up of two interlaced
-      # frames, the frame rate must be even and not too small.
-      assert frame_rate % 2 == 0 and frame_rate >= 48
       filters.append('pp=fd')
-      args.extend(['-r', str(frame_rate / 2)])
+      args.extend(['-r', str(input.frame_rate)])
 
     filters.extend(input.filters)
 
@@ -303,7 +298,6 @@ class TranscoderNode(node_base.NodeBase):
           '-dash', '1',
       ]
 
-    # TODO: auto-detection of framerate?
     keyframe_interval = int(self._pipeline_config.segment_size *
                             input.frame_rate)
     args += [
