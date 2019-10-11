@@ -213,7 +213,9 @@ class PipelineConfig(configuration.Base):
   """Encryption settings."""
 
 
-  def _validate_fields(self):
+  def __init__(self, *args):
+    super().__init__(*args)
+
     if self.streaming_mode == StreamingMode.live and not self.segment_per_file:
       field = self.__class__.segment_per_file
       reason = 'must be true when streaming_mode is "live"'

@@ -156,7 +156,9 @@ class Input(configuration.Base):
   """
 
 
-  def _validate_fields(self):
+  def __init__(self, *args):
+    super().__init__(*args)
+
     if self.media_type == MediaType.video:
       # These fields are required for video inputs.
       if self.frame_rate is None:
@@ -181,13 +183,9 @@ class Input(configuration.Base):
         raise configuration.MalformedField(
             self.__class__, 'end_time', field, reason)
 
-  def _format_fields(self):
     # This needs to be parsed into an argument array.  Note that shlex.split on
     # an empty string will produce an empty array.
     self.extra_input_args = shlex.split(self.extra_input_args)
-
-  def __init__(self, dictionary):
-    super().__init__(dictionary)
 
     # A path to a pipe into which this input's contents are fed.
     # None for most input types.

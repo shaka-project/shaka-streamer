@@ -215,12 +215,6 @@ class Base(object):
         # Otherwise, assign a default.
         setattr(self, key, field.default)
 
-    # Perform any subclass-specific validation.
-    self._validate_fields()
-
-    # Perform any subclass-specific formatting.
-    self._format_fields()
-
   def _check_and_convert_type(self, field, key, value):
     """Check the type of |value| and convert it as necessary.
 
@@ -301,24 +295,4 @@ class Base(object):
     if not isinstance(value, field.type):
       raise WrongType(self.__class__, key, field)
     return value
-
-  def _validate_fields(self):
-    """Additional validation step that the subclass can override.
-
-    This allows subclasses to implement context-specific validation.  For
-    example, some fields may only be required in the presence of others, or may
-    have their values restricted by certain other fields.
-    """
-
-    pass
-
-  def _format_fields(self):
-    """Additional formatting step that the subclass can override.
-
-    This allows subclasses to implement additional formatting or parsing of
-    fields.  For example, some fields contain commands or additional arguments
-    that need to be parsed with shlex.
-    """
-
-    pass
 
