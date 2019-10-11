@@ -28,6 +28,7 @@ Features
 * Supports VOD and live content
 * Supports DASH and HLS output
 * Supports clear and encrypted output
+* Supports hardware encoding (if available from the platform)
 * Supports almost any input FFmpeg can ingest
 * Can push output automatically to Google Cloud Storage or Amazon S3
 * Lots of options for input
@@ -120,11 +121,6 @@ browser using Shaka Player. End-to-end tests can be run like so:
 .. code:: sh
 
    python3 run_end_to_end_tests.py
-
-Hardware encoding
------------------
-
-For details on hardware encoding support, see :doc:`hardware_encoding`.
 
 Technical details
 -----------------
