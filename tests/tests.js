@@ -302,6 +302,8 @@ function resolutionTests(manifestUrl, format) {
           'frame_rate': 24.0,
           'resolution': '1080p',
           'track_num': 0,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ]
     };
@@ -333,8 +335,8 @@ function liveTests(manifestUrl, format) {
     const inputConfigDict = {
       'inputs': [
         {
-          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'input_type': 'looped_file',
+          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
           'frame_rate': 24.0,
           'resolution': '1080p',
@@ -361,6 +363,8 @@ function drmTests(manifestUrl, format) {
           'frame_rate': 24.0,
           'resolution': '1080p',
           'track_num': 0,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ]
     };
@@ -402,11 +406,15 @@ function codecTests(manifestUrl, format) {
           'track_num': 0,
           'frame_rate': 24.0,
           'resolution': '4k',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
           'track_num': 1,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ],
     };
@@ -437,16 +445,14 @@ function autoLanguageTests(manifestUrl, format) {
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
-          'input_type': 'looped_file',
           'track_num': 1,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ],
     };
-    // We particularly want to verify this in live mode, in which we're
-    // transcoding from a FIFO.  This shows that we're auto-detecting from the
-    // original files even in this special case.
     const pipelineConfigDict = {
-      'streaming_mode': 'live',
+      'streaming_mode': 'vod',
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -467,6 +473,8 @@ function languageTests(manifestUrl, format) {
           'media_type': 'audio',
           'track_num': 1,
           'language': 'zh',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ],
     };
@@ -493,6 +501,8 @@ function textTracksTests(manifestUrl, format) {
           'frame_rate': 24.0,
           'resolution': '1080p',
           'track_num': 0,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
         {
           'name': TEST_DIR + 'Sintel.2010.English.vtt',
@@ -518,6 +528,7 @@ function textTracksTests(manifestUrl, format) {
     };
 
     const pipelineConfigDict = {
+      // Text inputs are currently only supported for VOD.
       'streaming_mode': 'vod',
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -541,6 +552,8 @@ function vodTests(manifestUrl, format) {
           'frame_rate': 24.0,
           'resolution': '1080p',
           'track_num': 0,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ],
     };
@@ -563,6 +576,8 @@ function channelsTests(manifestUrl, channels, format) {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
           'track_num': 1,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ],
     };
@@ -584,8 +599,8 @@ function availabilityTests(manifestUrl, format) {
     const inputConfigDict = {
       'inputs': [
         {
-          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'input_type': 'looped_file',
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
           'resolution': '720p',
           'frame_rate': 24.0,
@@ -614,8 +629,8 @@ function delayTests(manifestUrl, format) {
     const inputConfigDict = {
       'inputs': [
         {
-          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'input_type': 'looped_file',
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
           'resolution': '720p',
           'frame_rate': 24.0,
@@ -639,8 +654,8 @@ function updateTests(manifestUrl, format) {
     const inputConfigDict = {
       'inputs': [
         {
-          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'input_type': 'looped_file',
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'video',
           'resolution': '720p',
           'frame_rate': 24.0,
@@ -706,11 +721,15 @@ function mapTests(manifestUrl, format) {
           'resolution': '720p',
           'frame_rate': 24.0,
           'track_num': 0,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
           'media_type': 'audio',
           'track_num': 1,
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ],
     };
@@ -745,6 +764,8 @@ function filterTests(manifestUrl, format) {
             // Resample frames to 90fps, which we can later detect.
             'fps=fps=90',
           ],
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
@@ -754,6 +775,8 @@ function filterTests(manifestUrl, format) {
             // Resample audio to 88.2kHz, which we can later detect.
             'aresample=88200',
           ],
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
         },
       ],
     };
