@@ -37,39 +37,39 @@ WIDEVINE_TEST_SIGNING_IV = 'd58ce954203b7c9a9a9d467f59839249'
 
 
 class StreamingMode(enum.Enum):
-  live = 'live'
+  LIVE = 'live'
   """Indicates a live stream, which has no end."""
 
-  vod = 'vod'
+  VOD = 'vod'
   """Indicates a video-on-demand (VOD) stream, which is finite."""
 
 class AudioCodec(enum.Enum):
-  aac = 'aac'
-  opus = 'opus'
+  AAC = 'aac'
+  OPUS = 'opus'
 
 # TODO: ideally, we wouldn't have to explicitly list hw: variants
 class VideoCodec(enum.Enum):
-  h264 = 'h264'
+  H264 = 'h264'
   """H264, also known as AVC."""
 
-  hardware_h264 = 'hw:h264'
+  HARDWARE_H264 = 'hw:h264'
   """H264 with hardware encoding."""
 
-  vp9 = 'vp9'
+  VP9 = 'vp9'
   """VP9."""
 
-  hardware_vp9 = 'hw:vp9'
+  HARDWARE_VP9 = 'hw:vp9'
   """VP9 with hardware encoding."""
 
 class ManifestFormat(enum.Enum):
-  dash = 'dash'
-  hls = 'hls'
+  DASH = 'dash'
+  HLS = 'hls'
 
 class ProtectionScheme(enum.Enum):
-  cenc = 'cenc'
+  CENC = 'cenc'
   """AES-128-CTR mode."""
 
-  cbcs = 'cbcs'
+  CBCS = 'cbcs'
   """AES-128-CBC mode with pattern encryption."""
 
 
@@ -117,7 +117,7 @@ class EncryptionConfig(configuration.Base):
   """
 
   protection_scheme = configuration.Field(ProtectionScheme,
-                                          default=ProtectionScheme.cenc)
+                                          default=ProtectionScheme.CENC)
   """The protection scheme (cenc or cbcs) to use when encrypting."""
 
   clear_lead = configuration.Field(int, default=10)
@@ -160,11 +160,11 @@ class PipelineConfig(configuration.Base):
   """The number of audio channels to encode."""
 
   audio_codecs = configuration.Field(list, subtype=AudioCodec,
-                                     default=[AudioCodec.aac])
+                                     default=[AudioCodec.AAC])
   """The audio codecs to encode with."""
 
   video_codecs = configuration.Field(list, subtype=VideoCodec,
-                                     default=[VideoCodec.h264])
+                                     default=[VideoCodec.H264])
   """The video codecs to encode with.
 
   Note that the prefix "hw:" indicates that a hardware encoder should be
@@ -173,8 +173,8 @@ class PipelineConfig(configuration.Base):
 
   manifest_format = configuration.Field(list, subtype=ManifestFormat,
                                         default=[
-                                            ManifestFormat.dash,
-                                            ManifestFormat.hls,
+                                            ManifestFormat.DASH,
+                                            ManifestFormat.HLS,
                                         ])
   """A list of manifest formats (dash or hls) to create.
 
@@ -216,7 +216,7 @@ class PipelineConfig(configuration.Base):
   def __init__(self, *args):
     super().__init__(*args)
 
-    if self.streaming_mode == StreamingMode.live and not self.segment_per_file:
+    if self.streaming_mode == StreamingMode.LIVE and not self.segment_per_file:
       field = self.__class__.segment_per_file
       reason = 'must be true when streaming_mode is "live"'
       raise configuration.MalformedField(

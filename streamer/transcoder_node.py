@@ -76,14 +76,14 @@ class TranscoderNode(node_base.NodeBase):
       # These are like hard-coded extra_input_args for certain input types.
       # This means users don't have to know much about FFmpeg options to handle
       # these common cases.
-      if input.input_type == InputType.looped_file:
+      if input.input_type == InputType.LOOPED_FILE:
         args += [
           # Loop the input forever.
           '-stream_loop', '-1',
           # Read input in real time; don't go above 1x processing speed.
           '-re',
         ]
-      elif input.input_type == InputType.raw_images:
+      elif input.input_type == InputType.RAW_IMAGES:
         args += [
             # Parse the input as a stream of images fed into a pipe.
             '-f', 'image2pipe',
@@ -92,13 +92,13 @@ class TranscoderNode(node_base.NodeBase):
             # is not what the similar '-r' option is meant for.
             '-framerate', str(input.frame_rate),
         ]
-      elif input.input_type == InputType.webcam:
+      elif input.input_type == InputType.WEBCAM:
         args += [
             # Format the input using the webcam format.
             '-f', 'video4linux2',
         ]
 
-      if self._pipeline_config.streaming_mode == StreamingMode.live:
+      if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
             # A larger queue to buffer input from the pipeline (default is 8).
             # This is in packets, but for raw images, that means frames.  A
@@ -134,13 +134,13 @@ class TranscoderNode(node_base.NodeBase):
           '-map', '{0}:{1}'.format(i, input.track_num),
       ]
 
-      if input.media_type == MediaType.audio:
+      if input.media_type == MediaType.AUDIO:
         for audio in self._output_audios:
           # Map arguments must be repeated for each output file.
           args += map_args
           args += self._encode_audio(audio, input)
 
-      if input.media_type == MediaType.video:
+      if input.media_type == MediaType.VIDEO:
         for video in self._output_videos:
           # Map arguments must be repeated for each output file.
           args += map_args
@@ -242,7 +242,7 @@ class TranscoderNode(node_base.NodeBase):
           '-f', 'mpegts',
       ]
 
-      if self._pipeline_config.streaming_mode == StreamingMode.live:
+      if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
             # Encodes with highest-speed presets for real-time live streaming.
             '-preset', 'ultrafast',

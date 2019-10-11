@@ -20,27 +20,27 @@ from . import metadata
 
 
 class InputType(enum.Enum):
-  file = 'file'
+  FILE = 'file'
   """A track from a file.  Usable only with VOD."""
 
-  looped_file = 'looped_file'
+  LOOPED_FILE = 'looped_file'
   """A track from a file, looped forever by FFmpeg.  Usable only with live."""
 
-  webcam = 'webcam'
+  WEBCAM = 'webcam'
   """A webcam device.  Usable only with live.
 
   The device path should be given in the name field.  For example, on Linux,
   this might be /dev/video0.
   """
 
-  raw_images = 'raw_images'
+  RAW_IMAGES = 'raw_images'
   """A file or pipe with a sequence of raw images.
 
   Requires the specification of frame_rate.  May require the use of
   extra_input_args if FFmpeg can't guess the format.
   """
 
-  external_command = 'external_command'
+  EXTERNAL_COMMAND = 'external_command'
   """An external command that generates a stream of audio or video.
 
   The command should be given in the name field, using shell quoting rules.
@@ -53,9 +53,9 @@ class InputType(enum.Enum):
   """
 
 class MediaType(enum.Enum):
-  audio = 'audio'
-  video = 'video'
-  text = 'text'
+  AUDIO = 'audio'
+  VIDEO = 'video'
+  TEXT = 'text'
 
 
 # A runtime-created enum for valid resolutions, based on the |metadata| module.
@@ -65,7 +65,7 @@ Resolution = configuration.enum_from_keys('Resolution', metadata.RESOLUTION_MAP)
 class Input(configuration.Base):
   """An object representing a single input stream to Shaka Streamer."""
 
-  input_type = configuration.Field(InputType, default=InputType.file)
+  input_type = configuration.Field(InputType, default=InputType.FILE)
   """The type of the input."""
 
   name = configuration.Field(str, required=True)
@@ -159,7 +159,7 @@ class Input(configuration.Base):
   def __init__(self, *args):
     super().__init__(*args)
 
-    if self.media_type == MediaType.video:
+    if self.media_type == MediaType.VIDEO:
       # These fields are required for video inputs.
       if self.frame_rate is None:
         raise configuration.MissingRequiredField(
@@ -169,7 +169,7 @@ class Input(configuration.Base):
         raise configuration.MissingRequiredField(
             self.__class__, 'resolution', self.__class__.resolution)
 
-    if self.input_type != InputType.file:
+    if self.input_type != InputType.FILE:
       # These fields are only valid for file inputs.
       reason = 'only valid when input_type is "file"'
 

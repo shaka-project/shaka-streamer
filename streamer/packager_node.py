@@ -106,7 +106,7 @@ class PackagerNode(node_base.NodeBase):
         '--segment_duration', str(self._pipeline_config.segment_size),
     ]
 
-    if self._pipeline_config.streaming_mode == StreamingMode.live:
+    if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
       args += [
           # Number of seconds the user can rewind through backwards.
           '--time_shift_buffer_depth',
@@ -170,8 +170,8 @@ class PackagerNode(node_base.NodeBase):
 
   def _setup_manifest_format(self):
     args = []
-    if ManifestFormat.dash in self._pipeline_config.manifest_format:
-      if self._pipeline_config.streaming_mode == StreamingMode.vod:
+    if ManifestFormat.DASH in self._pipeline_config.manifest_format:
+      if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         args += [
             '--generate_static_mpd',
         ]
@@ -180,8 +180,8 @@ class PackagerNode(node_base.NodeBase):
           '--mpd_output',
           os.path.join(self._output_dir, self._pipeline_config.dash_output),
       ]
-    if ManifestFormat.hls in self._pipeline_config.manifest_format:
-      if self._pipeline_config.streaming_mode == StreamingMode.live:
+    if ManifestFormat.HLS in self._pipeline_config.manifest_format:
+      if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
             '--hls_playlist_type', 'LIVE',
         ]

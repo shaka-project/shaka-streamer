@@ -122,7 +122,7 @@ class ControllerNode(object):
     # write to.  TranscoderNode will then instruct FFmpeg to read from that
     # pipe for this input.
     for input in input_config.inputs:
-      if input.input_type == InputType.external_command:
+      if input.input_type == InputType.EXTERNAL_COMMAND:
         command_output = self._create_pipe()
         command_node = external_command_node.ExternalCommandNode(
             input.name, command_output)
@@ -266,7 +266,7 @@ class ControllerNode(object):
     :rtype: bool
     """
 
-    return self._pipeline_config.streaming_mode == StreamingMode.vod
+    return self._pipeline_config.streaming_mode == StreamingMode.VOD
 
 class VersionError(Exception):
   """A version error for one of Shaka Streamer's external dependencies.
