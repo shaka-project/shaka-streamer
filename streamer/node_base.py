@@ -129,8 +129,10 @@ class NodeBase(object):
 
 
 class ThreadedNodeBase(NodeBase):
-  """A base class for nodes that run a thread which repeats some callback in a
-  background thread."""
+  """A base class for nodes that run a thread.
+
+  The thread repeats some callback in a background thread.
+  """
 
   def __init__(self, thread_name, continue_on_exception):
     super().__init__()
@@ -165,7 +167,8 @@ class ThreadedNodeBase(NodeBase):
     this method raises an exception, the behavior depends on the
     continue_on_exception argument in the constructor.  If
     continue_on_exception is true, the the thread will continue.  Otherwise, an
-    exception will stop the thread and therefore the node."""
+    exception will stop the thread and therefore the node.
+    """
     pass
 
   def start(self):

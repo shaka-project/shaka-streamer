@@ -72,8 +72,11 @@ def createCrossOriginResponse(body=None, status=200, mimetype='text/plain'):
   return resp
 
 def dashStreamsReady(manifest_path):
-  """Return True if the DASH manifest exists and each Representation has at
-  least one segment in it."""
+  """Wait for DASH streams to be ready.
+
+  Return True if the DASH manifest exists and each Representation has at least
+  one segment in it.
+  """
 
   # Check to see if the DASH manifest exists yet.
   if not os.path.exists(manifest_path):
@@ -90,9 +93,12 @@ def dashStreamsReady(manifest_path):
   return True
 
 def hlsStreamsReady(master_playlist_path):
-  """Return True if the HLS master playlist exists, and all of the media
-  playlists referenced by it exist, and each of those media playlists have at
-  least one segment in it."""
+  """Wait for HLS streams to be ready.
+
+  Return True if the HLS master playlist exists, and all of the media playlists
+  referenced by it exist, and each of those media playlists have at least one
+  segment in it.
+  """
 
   # Check to see if the HLS master playlist exists yet.
   if not os.path.exists(master_playlist_path):

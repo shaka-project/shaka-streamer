@@ -299,7 +299,8 @@ def skip_member(app, what, name, obj, skip, options):
 def setup(app):
   """Called by Sphinx on startup.
 
-  Allows us to install callbacks for certain events and customize the docs."""
+  Allows us to install callbacks for certain events and customize the docs.
+  """
 
   app.connect('autodoc-process-signature', process_signature)
   app.connect('doctree-resolved', process_doc_nodes)

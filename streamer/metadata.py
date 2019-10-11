@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module that maps channels to its respective bitrate and resolutions to its
-respective height, bitrate and profile."""
+"""Maps channels and resolutions to bitrate, size, and profile."""
 
 class ChannelData(object):
 

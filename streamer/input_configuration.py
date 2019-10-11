@@ -196,13 +196,15 @@ class Input(configuration.Base):
   def set_pipe(self, pipe):
     """Set the path to a pipe into which this input's contents are fed.
 
-    If set, this is what TranscoderNode will read from instead of .name."""
+    If set, this is what TranscoderNode will read from instead of .name.
+    """
     self._pipe = pipe
 
   def get_path_for_transcode(self):
     """Get the path which the transcoder will use to read the input.
 
-    For some input types, this is a named pipe.  For others, this is .name."""
+    For some input types, this is a named pipe.  For others, this is .name.
+    """
     return self._pipe or self.name
 
 

@@ -46,7 +46,8 @@ class ConfigError(Exception):
   """A base class for config errors.
 
   Each subclass provides a meaningful, human-readable string representation in
-  English."""
+  English.
+  """
 
   def __init__(self, class_ref, field_name, field):
     self.class_ref = class_ref

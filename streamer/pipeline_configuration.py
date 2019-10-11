@@ -168,7 +168,8 @@ class PipelineConfig(configuration.Base):
   """The video codecs to encode with.
 
   Note that the prefix "hw:" indicates that a hardware encoder should be
-  used."""
+  used.
+  """
 
   manifest_format = configuration.Field(list, subtype=ManifestFormat,
                                         default=[

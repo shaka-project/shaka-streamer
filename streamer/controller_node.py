@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""If you'd like to import Shaka Streamer as a Python module and build it into
+"""Top-level module API.
+
+If you'd like to import Shaka Streamer as a Python module and build it into
 your own application, this is the top-level API you can use for that.  You may
 also want to look at the source code to the command-line front end script
-`shaka-streamer`."""
+`shaka-streamer`.
+"""
 
 
 import os
@@ -97,7 +100,8 @@ class ControllerNode(object):
 
     :raises: `RuntimeError` if the controller has already started.
     :raises: :class:`streamer.configuration.ConfigError` if the configuration is
-             invalid."""
+             invalid.
+    """
 
     if self._nodes:
       raise RuntimeError('Controller already started!')
@@ -259,13 +263,17 @@ class ControllerNode(object):
   def is_vod(self):
     """Returns True if the pipeline is running in VOD mode.
 
-    :rtype: bool"""
+    :rtype: bool
+    """
 
     return self._pipeline_config.streaming_mode == StreamingMode.vod
 
 class VersionError(Exception):
-  """Raised when a dependency (like FFmpeg) is missing or not new enough to
-  work with Shaka Streamer.  See also :doc:`prerequisites`."""
+  """A version error for one of Shaka Streamer's external dependencies.
+
+  Raised when a dependency (like FFmpeg) is missing or not new enough to work
+  with Shaka Streamer.  See also :doc:`prerequisites`.
+  """
 
   pass
 

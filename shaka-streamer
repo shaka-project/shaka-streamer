@@ -38,9 +38,11 @@ from streamer.controller_node import ControllerNode
 class CustomArgParseFormatter(
     argparse.ArgumentDefaultsHelpFormatter,
     argparse.RawDescriptionHelpFormatter):
-  """A custom argparse formatter that combines the features of multiple base
-     classes.  This gives us defaults for each argument in the help text, plus
-     it preserves whitespace in the description field."""
+  """A custom formatter that combines the features of multiple base classes.
+
+  This gives us defaults for each argument in the help text, plus it preserves
+  whitespace in the description field.
+  """
   pass
 
 
