@@ -24,15 +24,6 @@ MediaType = input_configuration.MediaType
 StreamingMode = pipeline_configuration.StreamingMode
 
 
-# For H264, there are different profiles with different required command line
-# arguments.
-PROFILE_ARGS = {
-  'baseline': ['-profile:v', 'baseline', '-level:v', '3.0'],
-  'main': ['-profile:v', 'main', '-level:v', '3.1'],
-  'high': ['-profile:v', 'high', '-level:v', '4.0'],
-  'uhd': ['-profile:v', 'high', '-level:v', '5.1'],
-}
-
 class TranscoderNode(node_base.NodeBase):
 
   def __init__(self, output_audios, output_videos, input_config,
@@ -264,15 +255,16 @@ class TranscoderNode(node_base.NodeBase):
       args += [
           # Set bitrate to the one specified in the VOD config file.
           '-b:v', '{0}'.format(video.resolution_data.h264_bitrate),
-          # Set maximum number of B frames between non-B frames.
-          '-bf', '0',
           # The only format supported by QT/Apple.
           '-pix_fmt', 'yuv420p',
           # Require a closed GOP.  Some decoders don't support open GOPs.
           '-flags', '+cgop',
+          # Set the H264 profile.  Without this, everything will be "main"
+          # profile.  Note also that this gets overridden to "baseline" in live
+          # streams by the "-preset ultrafast" option, so that encoding speed
+          # is improved.
+          '-profile:v', video.resolution_data.h264_profile,
       ]
-      # Use different ffmpeg options depending on the H264 profile.
-      args += PROFILE_ARGS[video.resolution_data.h264_profile]
 
     elif video.codec == 'vp9':
       args += [

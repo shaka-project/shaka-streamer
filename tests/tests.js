@@ -432,7 +432,7 @@ function codecTests(manifestUrl, format) {
     const trackList = player.getVariantTracks();
     const videoCodecList = trackList.map(track => track.videoCodec);
     const audioCodecList = trackList.map(track => track.audioCodec);
-    expect(videoCodecList).toEqual(['avc1.42c01e']);
+    expect(videoCodecList).toEqual(['avc1.42c00c']);
     expect(audioCodecList).toEqual(['opus']);
   });
 }

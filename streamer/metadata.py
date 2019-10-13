@@ -66,8 +66,8 @@ RESOLUTION_MAP = {
     '1080p-hfr': ResolutionData(1920, 1080, infinity, '6M', '6M', 'high'),
     '2k': ResolutionData(2560, 1440, 30, '9M', '6M', 'high'),
     '2k-hfr': ResolutionData(2560, 1440, infinity, '14M', '9M', 'high'),
-    '4k': ResolutionData(3840, 2160, 30, '17M', '12M', 'uhd'),
-    '4k-hfr': ResolutionData(3840, 2160, infinity, '25M', '18M', 'uhd'),
+    '4k': ResolutionData(3840, 2160, 30, '17M', '12M', 'high'),
+    '4k-hfr': ResolutionData(3840, 2160, infinity, '25M', '18M', 'high'),
 }
 
 class Metadata(object):
