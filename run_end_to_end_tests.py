@@ -26,6 +26,7 @@ import subprocess
 import sys
 import time
 import threading
+import traceback
 import urllib
 
 from streamer import node_base
@@ -152,7 +153,8 @@ def start():
   try:
     controller.start(OUTPUT_DIR,
                      configs['input_config'],
-                     configs['pipeline_config'])
+                     configs['pipeline_config'],
+                     configs['bitrate_config'])
   except Exception as e:
     # If the controller throws an exception during startup, we want to call
     # stop() to shut down any external processes that have already been started.
@@ -171,6 +173,7 @@ def start():
       return createCrossOriginResponse(
           status=418, mimetype='application/json', body=body)
     else:
+      traceback.print_exc()
       return createCrossOriginResponse(status=500, body=str(e))
 
   return createCrossOriginResponse()

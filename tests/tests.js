@@ -19,7 +19,7 @@ const TEST_DIR = 'test_assets/';
 let player;
 let video;
 
-async function startStreamer(inputConfig, pipelineConfig) {
+async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}) {
   // Send a request to flask server to start Shaka Streamer.
   const response = await fetch(flaskServerUrl + 'start', {
     method: 'POST',
@@ -28,7 +28,8 @@ async function startStreamer(inputConfig, pipelineConfig) {
     },
     body: JSON.stringify({
       'input_config': inputConfig,
-      'pipeline_config': pipelineConfig
+      'pipeline_config': pipelineConfig,
+      'bitrate_config': bitrateConfig,
     }),
   });
 
@@ -134,6 +135,8 @@ describe('Shaka Streamer', () => {
 
   // TODO: Add tests for interlaced video.  We need interlaced source material
   // for this.
+
+  customBitrateTests();
 });
 
 function errorTests() {
@@ -152,6 +155,7 @@ function errorTests() {
 
   const minimalPipelineConfig = {
     streaming_mode: 'vod',
+    resolutions: ['144p'],
   };
 
   it('fails when extra fields are present', async () => {
@@ -276,6 +280,7 @@ function errorTests() {
     const inputConfig = getBasicInputConfig();
     const pipelineConfig = {
       streaming_mode: 'live',
+      resolutions: [],
       segment_per_file: false,
     };
 
@@ -290,6 +295,7 @@ function errorTests() {
     const inputConfig = getBasicInputConfig();
     const pipelineConfig = {
       streaming_mode: 'vod',
+      resolutions: [],
       encryption: {
         enable: true,
         content_id: 'foo',
@@ -355,6 +361,7 @@ function liveTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
+      'resolutions': ['144p'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -376,6 +383,7 @@ function drmTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
+      'resolutions': ['144p'],
       'encryption': {
         // Enables encryption.
         'enable': true,
@@ -432,7 +440,7 @@ function codecTests(manifestUrl, format) {
     const trackList = player.getVariantTracks();
     const videoCodecList = trackList.map(track => track.videoCodec);
     const audioCodecList = trackList.map(track => track.audioCodec);
-    expect(videoCodecList).toEqual(['avc1.42c00c']);
+    expect(videoCodecList).toEqual(['avc1.4d400c']);
     expect(audioCodecList).toEqual(['opus']);
   });
 }
@@ -453,6 +461,7 @@ function autoDetectionTests(manifestUrl) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
+      'resolutions': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -480,6 +489,7 @@ function autoDetectionTests(manifestUrl) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
+      'resolutions': ['144p'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
 
@@ -538,6 +548,7 @@ function languageTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
+      'resolutions': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -585,6 +596,7 @@ function textTracksTests(manifestUrl, format) {
     const pipelineConfigDict = {
       // Text inputs are currently only supported for VOD.
       'streaming_mode': 'vod',
+      'resolutions': ['144p'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -612,6 +624,7 @@ function vodTests(manifestUrl, format) {
 
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
+      'resolutions': ['144p'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -635,6 +648,7 @@ function channelsTests(manifestUrl, channels, format) {
 
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
+      'resolutions': [],
       'channels': channels,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -658,6 +672,7 @@ function availabilityTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
+      'resolutions': ['144p'],
       'availability_window': 500,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -685,6 +700,7 @@ function delayTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
+      'resolutions': ['144p'],
       'presentation_delay': 100,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -707,6 +723,7 @@ function updateTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'live',
+      'resolutions': ['144p'],
       'update_period': 42,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -736,6 +753,7 @@ function durationTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
+      'resolutions': ['144p'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -823,5 +841,96 @@ function filterTests(manifestUrl, format) {
     expect(trackList[0].frameRate).toBe(90);
     // TODO(joeyparrish): expose sampleRate through Shaka Player API
     //expect(trackList[0].sampleRate).toBe(88200);
+  });
+}
+
+function customBitrateTests() {
+  const minimalInputConfig = {
+    inputs: [
+      {
+        name: TEST_DIR + 'BigBuckBunny.1080p.mp4',
+        media_type: 'video',
+      },
+    ],
+  };
+
+  function getPipelineConfig(resolutions) {
+    return {
+      streaming_mode: 'vod',
+      resolutions: resolutions,
+    };
+  }
+
+  it('allows custom resolutions', async () => {
+    const bitrateConfig = {
+      video_resolutions: {
+        wee: {
+          max_width: 200,
+          max_height: 100,
+          bitrates: {
+            h264: '10k',
+            vp9: '5k',
+          },
+        },
+        middlin: {
+          max_width: 1920,
+          max_height: 1080,
+          bitrates: {
+            h264: '1M',
+            vp9: '500k',
+          },
+        },
+        fhuge: {
+          max_width: 8675309,
+          max_height: 4390116,
+          bitrates: {
+            h264: '100M',
+            vp9: '50M',
+          },
+        },
+      },
+    };
+
+    const pipelineConfig = getPipelineConfig([
+      'wee',
+      'middlin',
+      'fhuge',
+    ]);
+
+    await startStreamer(minimalInputConfig, pipelineConfig, bitrateConfig);
+    await player.load(dashManifestUrl);
+
+    const trackList = player.getVariantTracks();
+    const heightList = trackList.map(track => track.height);
+    heightList.sort((a, b) => a - b);
+    // We expect 'wee' and 'middlin' to be used, but not 'fhuge', because it's
+    // bigger than the input.
+    expect(heightList).toEqual([100, 1080]);
+  });
+
+  it('rejects standard resolutions when redefined', async () => {
+    const bitrateConfig = {
+      video_resolutions: {
+        foo: {
+          max_width: 3000,
+          max_height: 2000,
+          bitrates: {
+            h264: '4M',
+            vp9: '2M',
+          },
+        },
+      },
+    };
+
+    const pipelineConfig = getPipelineConfig([
+      '1080p',
+    ]);
+
+    const start = startStreamer(
+        minimalInputConfig, pipelineConfig, bitrateConfig);
+    await expectAsync(start).toBeRejectedWith(jasmine.objectContaining({
+      error_type: 'WrongType',
+      field_name: 'resolutions',
+    }));
   });
 }

@@ -14,25 +14,28 @@
 
 """A module that pushes input to ffmpeg to transcode into various formats."""
 
+from . import bitrate_configuration
 from . import input_configuration
 from . import node_base
 from . import pipeline_configuration
 
 # Alias a few classes to avoid repeating namespaces later.
+AudioCodec = bitrate_configuration.AudioCodec
+VideoCodec = bitrate_configuration.VideoCodec
+
 InputType = input_configuration.InputType
 MediaType = input_configuration.MediaType
+
 StreamingMode = pipeline_configuration.StreamingMode
 
 
 class TranscoderNode(node_base.NodeBase):
 
-  def __init__(self, output_audios, output_videos, input_config,
-               pipeline_config):
+  def __init__(self, input_config, pipeline_config, outputs):
     super().__init__()
-    self._output_audios = output_audios
-    self._output_videos = output_videos
     self._input_config = input_config
     self._pipeline_config = pipeline_config
+    self._outputs = outputs
 
   def start(self):
     args = [
@@ -51,9 +54,11 @@ class TranscoderNode(node_base.NodeBase):
           '-loglevel', 'error',
       ]
 
-    if any([output.hardware for output in self._output_videos]):
+    if any([output.is_hardware_accelerated() for output in self._outputs]):
       args += [
           # Hardware acceleration args.
+          # TODO(#17): Support multiple VAAPI devices.
+          # TODO(#23): Support hardware acceleration on Mac.
           '-hwaccel', 'vaapi',
           '-vaapi_device', '/dev/dri/renderD128',
       ]
@@ -100,12 +105,12 @@ class TranscoderNode(node_base.NodeBase):
 
       if input.start_time:
         args += [
-            # Encode from intended starting time of the VOD input.
+            # Encode from intended starting time of the input.
             '-ss', input.start_time,
         ]
       if input.end_time:
         args += [
-            # Encode until intended ending time of the VOD input.
+            # Encode until intended ending time of the input.
             '-to', input.end_time,
         ]
 
@@ -116,6 +121,10 @@ class TranscoderNode(node_base.NodeBase):
       ]
 
     for i, input in enumerate(self._input_config.inputs):
+      if input.media_type == MediaType.TEXT:
+        # We don't yet have the ability to transcode or process text inputs.
+        continue
+
       map_args = [
           # Map corresponding input stream to output file.
           # The format is "<INPUT FILE NUMBER>:<STREAM SPECIFIER>", so "i" here
@@ -125,17 +134,21 @@ class TranscoderNode(node_base.NodeBase):
           '-map', '{0}:{1}'.format(i, input.get_stream_specifier()),
       ]
 
-      if input.media_type == MediaType.AUDIO:
-        for audio in self._output_audios:
-          # Map arguments must be repeated for each output file.
-          args += map_args
-          args += self._encode_audio(audio, input)
+      for output_stream in self._outputs:
+        if output_stream.type != input.media_type:
+          # Skip outputs that don't match this input.
+          continue
 
-      if input.media_type == MediaType.VIDEO:
-        for video in self._output_videos:
-          # Map arguments must be repeated for each output file.
-          args += map_args
-          args += self._encode_video(video, input)
+        # Map arguments must be repeated for each output file.
+        args += map_args
+
+        if input.media_type == MediaType.AUDIO:
+          args += self._encode_audio(output_stream, input)
+        else:
+          args += self._encode_video(output_stream, input)
+
+        # The output pipe.
+        args += [output_stream.pipe]
 
     env = {}
     if self._pipeline_config.debug_logs:
@@ -145,17 +158,17 @@ class TranscoderNode(node_base.NodeBase):
 
     self._process = self._create_process(args, env)
 
-  def _encode_audio(self, audio, input):
+  def _encode_audio(self, stream, input):
     filters = []
     args = [
         # No video encoding for audio.
         '-vn',
-        # Set the number of channels to the one specified in the VOD config
-        # file.
-        '-ac', str(audio.channels),
+        # TODO: This implied downmixing is not ideal.
+        # Set the number of channels to the one specified in the config.
+        '-ac', str(stream.channels),
     ]
 
-    if audio.channels == 6:
+    if stream.channels == 6:
       filters += [
         # Work around for https://github.com/google/shaka-packager/issues/598,
         # as seen on https://trac.ffmpeg.org/ticket/6974
@@ -164,24 +177,24 @@ class TranscoderNode(node_base.NodeBase):
 
     filters.extend(input.filters)
 
-    if audio.codec == 'aac':
+    args += [
+        # Set codec and bitrate.
+        '-c:a', stream.get_ffmpeg_codec_string(),
+        '-b:a', stream.get_bitrate(),
+    ]
+
+    # TODO: Use the same intermediate format as output format?
+    if stream.codec == AudioCodec.AAC:
       args += [
-          # Format with MPEG-TS for a pipe.
+          # MPEG-TS format works well in a pipe.
           '-f', 'mpegts',
-          # AAC audio codec.
-          '-c:a', 'aac',
-          # Set bitrate to the one specified in the VOD config file.
-          '-b:a', '{0}'.format(audio.channel_data.aac_bitrate),
       ]
-    elif audio.codec == 'opus':
+    elif stream.codec == AudioCodec.OPUS:
       args += [
-          # Opus encoding has output format webm.
+          # Format using WebM.
           '-f', 'webm',
-          # Opus audio codec.
-          '-c:a', 'libopus',
-          # Set bitrate to the one specified in the VOD config file.
-          '-b:a', '{0}'.format(audio.channel_data.opus_bitrate),
           # DASH-compatible output format.
+          # TODO: Is this argument necessary?
           '-dash', '1',
       ]
 
@@ -191,21 +204,11 @@ class TranscoderNode(node_base.NodeBase):
           '-af', ','.join(filters),
       ]
 
-    args += [
-        # The output.
-        audio.pipe,
-    ]
     return args
 
-  # TODO(joeyparrish): "video" is a weak variable name
-  def _encode_video(self, video, input):
+  def _encode_video(self, stream, input):
     filters = []
-    args = [
-        # No audio encoding for video.
-        '-an',
-        # Full pelME compare function.
-        '-cmp', 'chroma',
-    ]
+    args = []
 
     if input.is_interlaced:
       filters.append('pp=fd')
@@ -213,21 +216,17 @@ class TranscoderNode(node_base.NodeBase):
 
     filters.extend(input.filters)
 
-    if video.hardware:
+    # -2 in the scale filters means to choose a value to keep the original
+    # aspect ratio.
+    if stream.is_hardware_accelerated():
       filters.append('format=nv12')
       filters.append('hwupload')
-      # -2 here means to choose a width to keep the original aspect ratio.
-      filters.append('scale_vaapi=-2:{0}'.format(video.resolution_data.height))
+      filters.append('scale_vaapi=-2:{0}'.format(stream.resolution.max_height))
     else:
-      # -2 here means to choose a width to keep the original aspect ratio.
-      filters.append('scale=-2:{0}'.format(video.resolution_data.height))
+      filters.append('scale=-2:{0}'.format(stream.resolution.max_height))
 
-    if video.codec == 'h264':
-      args += [
-          # MPEG-TS format works well in a pipe.
-          '-f', 'mpegts',
-      ]
-
+    # TODO: Use the same intermediate format as output format?
+    if stream.codec.get_base_codec() == VideoCodec.H264:
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
             # Encodes with highest-speed presets for real-time live streaming.
@@ -241,63 +240,49 @@ class TranscoderNode(node_base.NodeBase):
             '-flags', '+loop',
         ]
 
-      if video.hardware:
-        args += [
-            # H264 VAAPI video codec.
-            '-c:v', 'h264_vaapi',
-        ]
+      # Use the "high" profile for HD and up, and "main" for everything else.
+      # https://en.wikipedia.org/wiki/Advanced_Video_Coding#Profiles
+      if stream.resolution.max_height >= 720:
+        profile = 'high'
       else:
-        args += [
-            # H264 video codec.
-            '-c:v', 'h264',
-        ]
+        profile = 'main'
 
       args += [
-          # Set bitrate to the one specified in the VOD config file.
-          '-b:v', '{0}'.format(video.resolution_data.h264_bitrate),
+          # MPEG-TS format works well in a pipe.
+          '-f', 'mpegts',
           # The only format supported by QT/Apple.
           '-pix_fmt', 'yuv420p',
           # Require a closed GOP.  Some decoders don't support open GOPs.
           '-flags', '+cgop',
-          # Set the H264 profile.  Without this, everything will be "main"
-          # profile.  Note also that this gets overridden to "baseline" in live
-          # streams by the "-preset ultrafast" option, so that encoding speed
-          # is improved.
-          '-profile:v', video.resolution_data.h264_profile,
+          # Set the H264 profile.  Without this, the default would be "main".
+          # Note that this gets overridden to "baseline" in live streams by the
+          # "-preset ultrafast" option, presumably because the baseline encoder
+          # is faster.
+          '-profile:v', profile,
       ]
 
-    elif video.codec == 'vp9':
+    elif stream.codec.get_base_codec() == VideoCodec.VP9:
+      # TODO: Does -preset apply here?
       args += [
-          # Format using webm.
+          # Format using WebM.
           '-f', 'webm',
-      ]
-
-      if video.hardware:
-        args += [
-            # VP9 VAAPI video codec.
-            '-c:v', 'vp9_vaapi',
-        ]
-      else:
-        args += [
-          # VP9 video codec.
-          '-c:v', 'vp9',
-        ]
-
-      args += [
-          # Set bitrate to the one specified in the VOD config file.
-          '-b:v', '{0}'.format(video.resolution_data.vp9_bitrate),
           # DASH-compatible output format.
+          # TODO: Is this argument necessary?
           '-dash', '1',
       ]
 
     keyframe_interval = int(self._pipeline_config.segment_size *
                             input.frame_rate)
+
     args += [
+        # No audio encoding for video.
+        '-an',
+        # Set codec and bitrate.
+        '-c:v', stream.get_ffmpeg_codec_string(),
+        '-b:v', stream.get_bitrate(),
         # Set minimum and maximum GOP length.
         '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),
         # Set video filters.
         '-vf', ','.join(filters),
-        # The output.
-        video.pipe,
     ]
     return args

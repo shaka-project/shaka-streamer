@@ -17,12 +17,9 @@ import enum
 import os
 import shlex
 
+from . import bitrate_configuration
 from . import configuration
-from . import metadata
 
-
-# A runtime-created enum for valid resolutions, based on the |metadata| module.
-Resolution = configuration.enum_from_keys('Resolution', metadata.RESOLUTION_MAP)
 
 # A randomly-chosen content ID in hex.
 RANDOM_CONTENT_ID = base64.b16encode(os.urandom(16)).decode('UTF-8')
@@ -42,24 +39,6 @@ class StreamingMode(enum.Enum):
 
   VOD = 'vod'
   """Indicates a video-on-demand (VOD) stream, which is finite."""
-
-class AudioCodec(enum.Enum):
-  AAC = 'aac'
-  OPUS = 'opus'
-
-# TODO: ideally, we wouldn't have to explicitly list hw: variants
-class VideoCodec(enum.Enum):
-  H264 = 'h264'
-  """H264, also known as AVC."""
-
-  HARDWARE_H264 = 'hw:h264'
-  """H264 with hardware encoding."""
-
-  VP9 = 'vp9'
-  """VP9."""
-
-  HARDWARE_VP9 = 'hw:vp9'
-  """VP9 with hardware encoding."""
 
 class ManifestFormat(enum.Enum):
   DASH = 'dash'
@@ -144,27 +123,28 @@ class PipelineConfig(configuration.Base):
   for debugging.
   """
 
-  resolutions = configuration.Field(list, subtype=Resolution,
-                                    default=[
-                                        Resolution._720p,
-                                        Resolution._480p,
-                                    ])
+  resolutions = configuration.Field(list,
+                                    subtype=bitrate_configuration.Resolution,
+                                    required=True)
   """A list of resolution names to encode.
 
   Any resolution greater than the input resolution will be ignored, to avoid
-  upscaling the content.  By default, will encode in 480p and 720p.
+  upscaling the content.  This also allows you to reuse a pipeline config for
+  multiple inputs.
   """
 
   # TODO(joeyparrish): Default to whatever is in the input.
   channels = configuration.Field(int, default=2)
   """The number of audio channels to encode."""
 
-  audio_codecs = configuration.Field(list, subtype=AudioCodec,
-                                     default=[AudioCodec.AAC])
+  audio_codecs = configuration.Field(
+      list, subtype=bitrate_configuration.AudioCodec,
+      default=[bitrate_configuration.AudioCodec.AAC])
   """The audio codecs to encode with."""
 
-  video_codecs = configuration.Field(list, subtype=VideoCodec,
-                                     default=[VideoCodec.H264])
+  video_codecs = configuration.Field(
+      list, subtype=bitrate_configuration.VideoCodec,
+      default=[bitrate_configuration.VideoCodec.H264])
   """The video codecs to encode with.
 
   Note that the prefix "hw:" indicates that a hardware encoder should be

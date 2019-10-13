@@ -20,5 +20,5 @@ Module API
 .. automodule:: streamer.controller_node
 .. autoclass:: streamer.node_base.ProcessStatus
 .. automodule:: streamer.configuration
-   :exclude-members: Base, Field, enum_from_keys
+   :exclude-members: Base, Field, ValidatingType, RuntimeMapType
    :no-inherited-members:

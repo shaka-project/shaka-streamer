@@ -17,89 +17,55 @@
 import os
 import subprocess
 
-from . import metadata
+from . import input_configuration
 from . import node_base
 from . import pipeline_configuration
 
 # Alias a few classes to avoid repeating namespaces later.
+MediaType = input_configuration.MediaType
+
 ManifestFormat = pipeline_configuration.ManifestFormat
 StreamingMode = pipeline_configuration.StreamingMode
 
 
 INIT_SEGMENT = {
-  'audio': {
-    'mp4': '{dir}/audio_{language}_{channels}c_{bitrate}_init.mp4',
-    'webm': '{dir}/audio_{language}_{channels}c_{bitrate}_init.webm',
-  },
-  'video': {
-    'mp4': '{dir}/video_{resolution_name}_{bitrate}_init.mp4',
-    'webm': '{dir}/video_{resolution_name}_{bitrate}_init.webm',
-  },
-  'text': '{dir}/text_{language}_init.mp4',
+  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_init.{format}',
+  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_init.{format}',
+  MediaType.TEXT: '{dir}/text_{language}_init.{format}',
 }
 
 MEDIA_SEGMENT = {
-  'audio': {
-    'mp4': '{dir}/audio_{language}_{channels}c_{bitrate}_$Number$.m4s',
-    'webm': '{dir}/audio_{language}_{channels}c_{bitrate}_$Number$.webm',
-  },
-  'video': {
-    'mp4': '{dir}/video_{resolution_name}_{bitrate}_$Number$.m4s',
-    'webm': '{dir}/video_{resolution_name}_{bitrate}_$Number$.webm',
-  },
-  'text': '{dir}/text_{language}_$Number$.m4s',
+  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_$Number$.{format}',
+  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_$Number$.{format}',
+  MediaType.TEXT: '{dir}/text_{language}_$Number$.{format}',
 }
 
 SINGLE_SEGMENT = {
-  'audio': {
-    'mp4': '{dir}/audio_{language}_{channels}c_{bitrate}_output.mp4',
-    'webm': '{dir}/audio_{language}_{channels}c_{bitrate}_output.webm',
-  },
-  'video': {
-    'mp4': '{dir}/video_{resolution_name}_{bitrate}_output.mp4',
-    'webm': '{dir}/video_{resolution_name}_{bitrate}_output.webm',
-  },
-  'text': '{dir}/text_{language}_output.mp4',
+  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}.{format}',
+  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}.{format}',
+  MediaType.TEXT: '{dir}/text_{language}.{format}',
 }
 
 class SegmentError(Exception):
   """Raise when segment is incompatible with format."""
   pass
 
+
 class PackagerNode(node_base.NodeBase):
 
-  def __init__(self, audio_inputs, video_inputs, text_inputs, output_dir,
-               pipeline_config):
+  def __init__(self, pipeline_config, output_dir, output_streams):
     super().__init__()
-    self._audio_inputs = audio_inputs
-    self._video_inputs = video_inputs
-    self._text_inputs = text_inputs
+    self._pipeline_config = pipeline_config
     self._output_dir = output_dir
     self._segment_dir = os.path.join(output_dir, pipeline_config.segment_folder)
-    self._pipeline_config = pipeline_config
+    self._output_streams = output_streams
 
   def start(self):
     args = [
         'packager',
     ]
 
-    for input in self._audio_inputs:
-      dict = {'in': input.pipe, 'stream': 'audio'}
-      if input.language != 'und':
-        dict['language'] = input.language
-      args += self._create_audio_or_video(dict, input)
-
-    for input in self._video_inputs:
-      dict = {'in': input.pipe, 'stream': 'video'}
-      args += self._create_audio_or_video(dict, input)
-
-    for input in self._text_inputs:
-      dict = {
-          'in': input.name,
-          'stream': 'text',
-          'language': input.language,
-      }
-      args += self._create_text(dict, input.language)
+    args += [self._setup_stream(stream) for stream in self._output_streams]
 
     args += [
         # Segment duration given in seconds.
@@ -138,30 +104,30 @@ class PackagerNode(node_base.NodeBase):
                                          stderr=subprocess.STDOUT,
                                          stdout=stdout)
 
-  def _create_text(self, dict, language):
-    # TODO: Format using text Metadata objects, which don't exist yet
-    # TODO: Generalize and combine with _create_audio_or_video
-    if self._pipeline_config.segment_per_file:
-      dict['init_segment'] = INIT_SEGMENT['text'].format(
-          dir=self._segment_dir, language=language)
-      dict['segment_template'] = MEDIA_SEGMENT['text'].format(
-          dir=self._segment_dir, language=language)
-    else:
-      dict['output'] = SINGLE_SEGMENT['text'].format(
-          dir=self._segment_dir, language=language)
-    return [_packager_stream_arg(dict)]
+  def _setup_stream(self, stream):
+    dict = {
+        'in': stream.pipe,
+        'stream': stream.type.value,
+    }
 
-  def _create_audio_or_video(self, dict, input):
-    if self._pipeline_config.segment_per_file:
-      dict['init_segment'] = input.fill_template(
-          INIT_SEGMENT[input.type][input.format], dir=self._segment_dir)
-      dict['segment_template'] = input.fill_template(
-          MEDIA_SEGMENT[input.type][input.format], dir=self._segment_dir)
-    else:
-      dict['output'] = input.fill_template(
-          SINGLE_SEGMENT[input.type][input.format], dir=self._segment_dir)
+    if stream.input.language:
+      dict['language'] = stream.input.language
 
-    return [_packager_stream_arg(dict)]
+    if self._pipeline_config.segment_per_file:
+      dict['init_segment'] = stream.fill_template(
+          INIT_SEGMENT[stream.type],
+          dir=self._segment_dir)
+      dict['segment_template'] = stream.fill_template(
+          MEDIA_SEGMENT[stream.type],
+          dir=self._segment_dir)
+    else:
+      dict['output'] = stream.fill_template(
+          SINGLE_SEGMENT[stream.type],
+          dir=self._segment_dir)
+
+    # The format of this argument to Shaka Packager is a single string of
+    # key=value pairs separated by commas.
+    return ','.join(key + '=' + value for key, value in dict.items())
 
   def _setup_manifest_format(self):
     args = []
@@ -205,11 +171,3 @@ class PackagerNode(node_base.NodeBase):
       '--clear_lead', str(self._pipeline_config.encryption.clear_lead),
     ]
     return args
-
-
-def _packager_stream_arg(opts):
-  ret = ''
-  for key, value in opts.items():
-    ret += key + '=' + value + ','
-  return ret
-

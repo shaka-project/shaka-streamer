@@ -16,8 +16,8 @@
 
 import subprocess
 
+from . import bitrate_configuration
 from . import input_configuration
-from . import metadata
 
 # Alias a few classes to avoid repeating namespaces later.
 InputType = input_configuration.InputType
@@ -123,13 +123,13 @@ def get_resolution(input):
   width, height = int(width_string), int(height_string)
   input_resolution = (width, height)
 
-  for key, value in metadata.RESOLUTION_MAP.items():
-    resolution = (value.width, value.height)
-    frame_rate = value.frame_rate
+  for bucket in bitrate_configuration.Resolution.sorted_values():
+    resolution = (bucket.max_width, bucket.max_height)
+    frame_rate = bucket.max_frame_rate
 
     # The first bucket this fits into is the one.
     if input_resolution <= resolution and input.frame_rate <= frame_rate:
-      return input_configuration.Resolution(key)
+      return bucket
 
   return None
 

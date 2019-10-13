@@ -16,31 +16,6 @@ import abc
 import enum
 import re
 
-from . import metadata
-
-
-def enum_from_keys(name, dictionary):
-  """Create an enum dynamically from the keys of a dictionary.
-
-  Used to create enums for config validation based on the hard-coded resolution
-  settings in the |metadata| module.
-  """
-
-  # This is the functional API of the enum module, which is documented here:
-  # https://docs.python.org/3/library/enum.html#functional-api
-
-  # Here the keys match the values, unless the key starts with a numeral.
-  # Keys starting with numbers would be unusable as enum keys in Python (for
-  # example, "480p").  So these will be prefixed with an underscore.
-  enum_keys_and_values = []
-  for key in dictionary:
-    if key[0] >= '0' and key[0] <= '9':
-      enum_keys_and_values.append(('_' + key, key))
-    else:
-      enum_keys_and_values.append((key, key))
-
-  return enum.Enum(name, enum_keys_and_values)
-
 
 class ConfigError(Exception):
   """A base class for config errors.
@@ -128,28 +103,83 @@ class HexString(ValidatingType):
       raise ValueError('not a hexadecimal string')
 
 
+class RuntimeMapType(object):
+  """A base wrapper type that allows valid values to be chosen at runtime.
+
+  This means a Field can have its type defined before the valid values of that
+  type are known.  For example, this is used for resolutions, which are defined
+  by a config file.
+
+  After calling set_map on the subclass, the subclass constructor can be used
+  to type cast valid keys to their values.  For example, after setting the map
+  to {'foo': 'bar'}, 'foo' becomes the only valid key.  Passing the key 'foo'
+  to the subclass constructor then results in the value 'bar' being returned.
+  This is different from an Enum in that Enum constructors take a value and
+  return an Enum instance.
+  """
+
+  _map = {}
+
+  @classmethod
+  def set_map(cls, map):
+    """Set the map of valid values for this class."""
+
+    assert cls != RuntimeMapType, 'Do not use the base class directly!'
+    cls._map = map
+
+    # Synthesize a method on each value to allow the key to be recovered.
+    for key, value in map.items():
+      setattr(value, 'get_key', lambda: key)
+
+  # __new__ is special and doesn't use @classmethod
+  def __new__(cls, key):
+    """A magic method to change the constructor behavior for the class.
+
+    This will map valid values into the map set by set_map.
+    """
+
+    assert cls != RuntimeMapType, 'Do not use the base class directly!'
+    try:
+      return cls._map[key]
+    except KeyError:
+      raise ValueError(
+          '{} is not a valid {}'.format(key, cls.__name__)) from None
+
+  @classmethod
+  def keys(cls):
+    """This allows the config system to print the list of allowed strings."""
+    return cls._map.keys()
+
+  @classmethod
+  def sorted_values(cls):
+    return sorted(cls._map.values())
+
+
 class Field(object):
   """A container for metadata about individual config fields."""
 
-  def __init__(self, type, required=False, subtype=None, default=None):
+  def __init__(self, type, required=False, keytype=str, subtype=None,
+               default=None):
     """
     Args:
         type (class): The required type for values of this field.
         required (bool): True if this field is required on input.
-        subtype (class): The required type inside lists (type=list).
+        keytype (class): The required type of keys inside dicts.
+        subtype (class): The required type of values inside lists or dicts.
         default: The default value if the field is not specified.
     """
     self.type = type
     self.required = required
+    self.keytype = keytype
     self.subtype = subtype
     self.default = default
 
   def get_type_name(self):
     """Get a human-readable string for the name of self.type."""
-    return Field.get_type_name_static(self.type, self.subtype)
+    return Field.get_type_name_static(self.type, self.keytype, self.subtype)
 
   @staticmethod
-  def get_type_name_static(type, subtype):
+  def get_type_name_static(type, keytype, subtype):
     """Get a human-readable string for the name of type."""
 
     # Make these special cases a little more readable.
@@ -158,13 +188,23 @@ class Field(object):
       return 'string'
     elif type is list:
       # Mention the subtype.
-      return 'list of {}'.format(Field.get_type_name_static(subtype, None))
+      return 'list of {}'.format(
+          Field.get_type_name_static(subtype, None, None))
+    elif type is dict:
+      # Mention the subtype.
+      return 'dictionary of {} to {}'.format(
+          Field.get_type_name_static(keytype, None, None),
+          Field.get_type_name_static(subtype, None, None))
     elif type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'
     elif issubclass(type, enum.Enum):
       # Get the list of valid options as quoted strings.
       options = [repr(str(member.value)) for member in type]
+      return '{} (one of {})'.format(type.__name__, ', '.join(options))
+    elif issubclass(type, RuntimeMapType):
+      # Get the list of valid options as quoted strings.
+      options = [repr(str(key)) for key in type.keys()]
       return '{} (one of {})'.format(type.__name__, ', '.join(options))
     elif issubclass(type, ValidatingType):
       return type.name
@@ -255,19 +295,40 @@ class Base(object):
         return [self._check_and_convert_type(subfield, key, v) for v in value]
       except WrongType as e:
         # If conversion raises WrongType on the subfield, raise a WrongType
-        # error on this field instead.  For any other error, just re-raise.  If
-        # conversion succeeds, replace the original item with the converted
-        # one.
+        # error on this field instead, so that the printed error makes sense.
         if e.field == subfield:
           raise WrongType(self.__class__, key, field) from None
         else:
           raise
 
-      return value
+    # For dictionaries, check the type of the value itself, then check the
+    # type of the dictionary keys, then the type of the dictionary values.
+    if field.type is dict:
+      if not isinstance(value, dict):
+        raise WrongType(self.__class__, key, field)
 
-    # For enums, try to cast the value to the enum type, and raise a WrongType
-    # error if this fails.
-    if issubclass(field.type, enum.Enum):
+      keyfield = Field(field.keytype)
+      subfield = Field(field.subtype)
+      try:
+        converted_dict = {}
+        for subkey, subvalue in value.items():
+          subkey = self._check_and_convert_type(keyfield, key, subkey)
+          subvalue = self._check_and_convert_type(subfield, key, subvalue)
+          converted_dict[subkey] = subvalue
+        return converted_dict
+      except WrongType as e:
+        # If conversion raises WrongType on the subfield or keyfield, raise a
+        # WrongType error on this field instead, so that the printed error
+        # makes sense.
+        if e.field == keyfield or e.field == subfield:
+          raise WrongType(self.__class__, key, field) from None
+        else:
+          raise
+
+    # For enums or RuntimeMapTypes, try to cast the value to the enum type, and
+    # raise a WrongType error if this fails.
+    if (issubclass(field.type, enum.Enum) or
+        issubclass(field.type, RuntimeMapType)):
       try:
         return field.type(value)
       except ValueError:
@@ -285,9 +346,9 @@ class Base(object):
       try:
         field.type.validate(value)
       except TypeError:
-        raise WrongType(self.__class__, key, field)
+        raise WrongType(self.__class__, key, field) from None
       except ValueError as e:
-        raise MalformedField(self.__class__, key, field, str(e))
+        raise MalformedField(self.__class__, key, field, str(e)) from None
       return value
 
     # For all other types, just do a basic type check and return the original

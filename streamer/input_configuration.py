@@ -15,8 +15,8 @@
 import enum
 import shlex
 
+from . import bitrate_configuration
 from . import configuration
-from . import metadata
 
 
 class InputType(enum.Enum):
@@ -56,10 +56,6 @@ class MediaType(enum.Enum):
   AUDIO = 'audio'
   VIDEO = 'video'
   TEXT = 'text'
-
-
-# A runtime-created enum for valid resolutions, based on the |metadata| module.
-Resolution = configuration.enum_from_keys('Resolution', metadata.RESOLUTION_MAP)
 
 
 class Input(configuration.Base):
@@ -110,8 +106,7 @@ class Input(configuration.Base):
   For example, required for input_type of 'webcam'.
   """
 
-  # TODO: support custom resolutions
-  resolution = configuration.Field(Resolution)
+  resolution = configuration.Field(bitrate_configuration.Resolution)
   """The name of the input resolution (1080p, etc).
 
   Only valid for media_type of 'video'.

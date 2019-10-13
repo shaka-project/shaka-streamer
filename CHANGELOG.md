@@ -1,6 +1,7 @@
 ## 0.3.0 (?)
 
  - Added autodetection of frame rate, resolution, interlacing, track numbers
+ - #5: Added support for custom resolutions and bitrates
 
 
 ## 0.2.0 (2019-10-14)

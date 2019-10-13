@@ -55,9 +55,9 @@ Pipeline Configs
 ----------------
 
 The pipeline config describes the encoding pipeline.  The only required
-parameter is the streaming mode (live or VOD).  Everything else has default
-values, but you may want to customize the codecs, resolutions, availability
-window, and/or encryption settings.
+parameters are the streaming mode (live or VOD) and the resolutions.
+Everything else has default values, but you may want to customize the codecs,
+resolutions, availability window, and/or encryption settings.
 
 ..
   Sphinx wants to sort these, but we should put the top-level config structure
@@ -65,3 +65,17 @@ window, and/or encryption settings.
 .. autoclass:: streamer.pipeline_configuration.PipelineConfig
 .. automodule:: streamer.pipeline_configuration
   :exclude-members: PipelineConfig
+
+
+Custom Bitrate and Resolution Configs
+-------------------------------------
+
+To customize bitrates or resolution, you may provide a third config file
+defining these.  If this config is given, it replaces the default definitions.
+
+..
+  Sphinx wants to sort these, but we should put the top-level config structure
+  first, then the others.
+.. autoclass:: streamer.bitrate_configuration.BitrateConfig
+.. automodule:: streamer.bitrate_configuration
+  :exclude-members: BitrateConfig, BitrateString, ChannelLayout, Resolution
