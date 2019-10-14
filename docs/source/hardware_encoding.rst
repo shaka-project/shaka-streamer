@@ -22,18 +22,11 @@ Setup on Linux
 Hardware encoding on Linux can be enabled through FFmpeg’s vaapi support.
 
 To get started, install the appropriate vaapi package for your device.  For
-example, for Intel’s Kaby Lake family of processors, which support hardware VP9
-encoding, you would install this on Ubuntu:
+example, on Ubuntu, you can install all available vaapi drivers with:
 
 .. code:: sh
 
-   sudo apt install i965-va-driver
-
-Or build and install from source here:
-https://github.com/intel/intel-vaapi-driver
-
-You will need to install the correct vaapi drivers for your device.  These are
-only examples.
+   sudo apt install va-driver-all
 
 If hardware encoding still does not work, you may need to recompile FFmpeg from
 source. See instructions in :doc:`prerequisites` for details.
