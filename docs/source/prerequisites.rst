@@ -19,17 +19,26 @@ Installing Prerequisites
 Yaml Module
 -----------
 
-We use the Python YAML module to parse config files. To install it on Ubuntu:
+We use the Python YAML module to parse config files.  If you install Shaka
+Streamer via ``pip3``, then this dependency will be installed for you
+automatically.  If you got Shaka Streamer source from GitHub, you will need to
+install the YAML module separately.
+
+To install it on Ubuntu:
 
 .. code:: sh
 
-   sudo apt -y install python3-yaml
+  sudo apt -y install python3-yaml
 
-This can also be installed via pip on any platform:
+This can also be installed via ``pip3`` on any platform:
 
 .. code:: sh
 
-   pip3 install --user pyyaml
+  # To install/upgrade globally (drop the "sudo" for Windows):
+  sudo pip3 install --upgrade pyyaml
+
+  # To install/upgrade per-user:
+  pip3 install --user --upgrade pyyaml
 
 Shaka Packager
 --------------
@@ -118,15 +127,20 @@ To run the end-to-end tests, you must install Flask and NPM. In Ubuntu 19.04+:
 
 .. code:: sh
 
-   sudo apt -y python3-flask nodejs npm
-   # Upgrade to a recent npm, which is not packaged:
-   sudo npm install -g npm
+  sudo apt -y python3-flask nodejs npm
+  # Upgrade to a recent npm, which is not packaged:
+  sudo npm install -g npm
 
-Flask can also be installed via pip on any platform:
+Flask can also be installed via ``pip3`` on any platform:
 
 .. code:: sh
 
-   pip3 install --user flask
+  # To install/upgrade globally (drop the "sudo" for Windows):
+  sudo pip3 install --upgrade flask
+
+  # To install/upgrade per-user:
+  pip3 install --user --upgrade flask
+
 
 To install Node.js and NPM on any other platform, you can try one of these:
 

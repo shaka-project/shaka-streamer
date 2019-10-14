@@ -59,16 +59,16 @@ are accepting PRs if you’d like to add Windows support. See `issue #8`_.
 Getting started
 ---------------
 
-Release versions of Shaka Streamer can be installed or upgraded through `pip`
+Release versions of Shaka Streamer can be installed or upgraded through ``pip3``
 with:
 
 .. code:: sh
 
-  # To install/upgrade per-user:
-  pip install --upgrade --user shaka-streamer
+  # To install/upgrade globally (drop the "sudo" for Windows):
+  sudo pip3 install --upgrade shaka-streamer
 
-  # To install/upgrade globally (add sudo on Linux):
-  pip install --upgrade shaka-streamer
+  # To install/upgrade per-user:
+  pip3 install --user --upgrade shaka-streamer
 
 
 Shaka Streamer requires at a minimum:
@@ -83,7 +83,7 @@ and optional dependencies.
 
 To use Shaka Streamer, you need two YAML config files: one to describe the
 input, and one to describe the encoding pipeline. Sample configs can be found
-in the ``config_files/`` folder. Sample inputs referenced there can be
+in the `config_files/`_ folder. Sample inputs referenced there can be
 downloaded individually over HTTPS or all at once through gsutil:
 
 .. code:: sh
@@ -147,6 +147,7 @@ directly to the pipeline, you can create a ``ControllerNode`` and call the
 the ``shaka-streamer`` script as an example of how to do this.  See also
 :doc:`module_api`.
 
+.. _config_files/: https://github.com/google/shaka-streamer/tree/master/config_files
 .. _issue #8: https://github.com/google/shaka-streamer/issues/8
 .. _issue #17: https://github.com/google/shaka-streamer/issues/17
 .. _issue #23: https://github.com/google/shaka-streamer/issues/23

@@ -21,16 +21,10 @@ inputs:
   - name: Sintel.2010.4k.mkv
     # The media type of the input. Can be audio or video.
     media_type: video
-    # Start time of video to encode.
-    start_time: 00:00:00
-    # End time of video to encode.
-    end_time: 00:20:00
 
     # A second track (audio) from the same input file.
   - name: Sintel.2010.4k.mkv
     media_type: audio
-    start_time: 00:00:00
-    end_time: 00:20:00
 
     # Several text tracks of different languages.
     # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Arabic.vtt

@@ -4,6 +4,7 @@
  - #5: Added support for custom resolutions and bitrates
  - #23: Added hardware encoding on macOS
  - Added support for NVENC-backed hardware encoding on Linux
+ - Correct several issues in the docs, including installation instructions
 
 
 ## 0.2.0 (2019-10-14)

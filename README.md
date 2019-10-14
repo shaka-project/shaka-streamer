@@ -8,10 +8,17 @@ Live documentation can be found at https://google.github.io/shaka-streamer/
 and is generated from the `docs/source/` folder, as well as the source code
 itself.
 
-Release versions of Shaka Streamer can be installed or upgraded through `pip`
+Sample configs can be found in the [`config_files/`] folder in the repo.
+
+[`config_files/`]: https://github.com/google/shaka-streamer/tree/master/config_files
+
+Release versions of Shaka Streamer can be installed or upgraded through `pip3`
 with:
 
 ```sh
-# Use sudo on Linux to install globally
-pip install --upgrade shaka-streamer
+# To install globally (drop the "sudo" for Windows):
+sudo pip3 install --upgrade shaka-streamer
+
+# To install per-user:
+pip3 install --user --upgrade shaka-streamer
 ```

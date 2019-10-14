@@ -26,9 +26,11 @@ parsed as `YAML files <https://gettaurus.org/docs/YAMLTutorial/>`_.
 except that it's more readable and can contain comments.)*
 
 If you are just getting started with Shaka Streamer, you should probably look in
-the `config_files/` folder and browse through some examples.  If you are trying
+the `config_files/`_ folder and browse through some examples.  If you are trying
 to customize one of those examples or get more details on supported options,
 this document is for you.
+
+.. _config_files/: https://github.com/google/shaka-streamer/tree/master/config_files
 
 
 Input Configs
