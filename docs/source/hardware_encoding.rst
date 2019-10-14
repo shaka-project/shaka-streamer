@@ -16,27 +16,53 @@
 Hardware Encoding
 =================
 
-Setup on Linux
---------------
+Setup on Linux (Intel)
+----------------------
 
-Hardware encoding on Linux can be enabled through FFmpeg’s vaapi support.
+By default, hardware encoding on Linux uses FFmpeg’s VAAPI support, which
+supports Intel devices.
 
-To get started, install the appropriate vaapi package for your device.  For
-example, on Ubuntu, you can install all available vaapi drivers with:
+To use VAAPI, you must also install the appropriate VAAPI driver for your
+device.  For example, on Ubuntu, you can install all available VAAPI drivers
+with:
 
 .. code:: sh
 
-   sudo apt install va-driver-all
+   sudo apt -y install va-driver-all
 
-If hardware encoding still does not work, you may need to recompile FFmpeg from
-source. See instructions in :doc:`prerequisites` for details.
+VAAPI support is enabled by default in Debian & Ubuntu packages for FFmpeg.
 
-Setup on Mac and Windows
-------------------------
+Setup on Linux (Nvidia)
+-----------------------
 
-Hardware encoding for Mac and Windows is not yet supported, but we are
-accepting PRs if you’d like to contribute additional platform support.  This
-doc may be a useful reference for hardware-related options in FFmpeg:
+You may also use FFmpeg's NVENC support on Linux, which supports Nvidia devices.
+
+For this, set ``hwaccel_api`` in the pipeline config to ``'nvenc'``.
+
+The underlying driver and special FFmpeg headers can be installed with:
+
+.. code:: sh
+
+  sudo apt -y install libnvidia-encode1
+  git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git
+  (cd nv-codec-headers && make & sudo make install)
+
+NVENC support is **not** enabled by default in Debian & Ubuntu packages for
+FFmpeg.  To use it, you may need to build FFmpeg from source and pass
+``--enable-nvenc`` to configure.  See instructions in :doc:`prerequisites` for
+details on building FFmpeg from source.
+
+Setup on macOS
+--------------
+
+Hardware encoding on macOS uses Apple's VideoToolbox API.  No setup is required.
+
+Setup on Windows
+----------------
+
+Hardware encoding for Windows is not yet supported, but we are accepting PRs if
+you’d like to contribute additional platform support.  This doc may be a useful
+reference for hardware-related options in FFmpeg:
 https://trac.ffmpeg.org/wiki/HWAccelIntro
 
 Configuration
@@ -56,3 +82,6 @@ For example, see this snippet from
    video_codecs:
      - h264
      - hw:vp9
+
+Note that not all codecs are supported by all devices or APIs.  For a list of
+supported hardware codecs, see: https://trac.ffmpeg.org/wiki/HWAccelIntro

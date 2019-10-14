@@ -64,20 +64,20 @@ new enough version of FFmpeg, you can build it from source. For example:
 
    sudo apt -y install \
      libx264-dev libvpx-dev libopus-dev libfreetype6-dev \
-     libfontconfig1-dev libsdl2-dev yasm
+     libfontconfig1-dev libsdl2-dev yasm \
+     va-driver-all libnvidia-encode1
 
    git clone https://github.com/FFmpeg/FFmpeg ffmpeg
    cd ffmpeg
    git checkout n4.1.3
    ./configure \
      --enable-libx264 --enable-libvpx --enable-libopus \
-     --enable-gpl --enable-libfreetype --enable-libfontconfig \
-     --enable-vaapi
+     --enable-gpl --enable-libfreetype --enable-libfontconfig
    make
    sudo make install
 
-For Mac, you can either build FFmpeg from source or you can use `Homebrew`_ to
-install it:
+For macOS, you can either build FFmpeg from source or you can use `Homebrew`_
+to install it:
 
 .. code:: sh
 

@@ -50,8 +50,6 @@ Platform support
 
 We support common Linux distributions and macOS.
 
-Hardware encoding is not yet supported on macOS.  See `issue #23`_.
-
 Multiple VAAPI devices are not yet supported on Linux.  See `issue #17`_.
 
 Windows is not supported at this time due to our use of ``os.mkfifo``, but we

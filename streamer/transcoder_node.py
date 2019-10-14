@@ -55,13 +55,12 @@ class TranscoderNode(node_base.NodeBase):
       ]
 
     if any([output.is_hardware_accelerated() for output in self._outputs]):
-      args += [
-          # Hardware acceleration args.
-          # TODO(#17): Support multiple VAAPI devices.
-          # TODO(#23): Support hardware acceleration on Mac.
-          '-hwaccel', 'vaapi',
-          '-vaapi_device', '/dev/dri/renderD128',
-      ]
+      if self._pipeline_config.hwaccel_api == 'vaapi':
+        args += [
+            # Hardware acceleration args.
+            # TODO(#17): Support multiple VAAPI devices.
+            '-vaapi_device', '/dev/dri/renderD128',
+        ]
 
     for input in self._input_config.inputs:
       # The config file may specify additional args needed for this input.
@@ -177,9 +176,10 @@ class TranscoderNode(node_base.NodeBase):
 
     filters.extend(input.filters)
 
+    hwaccel_api = self._pipeline_config.hwaccel_api
     args += [
         # Set codec and bitrate.
-        '-c:a', stream.get_ffmpeg_codec_string(),
+        '-c:a', stream.get_ffmpeg_codec_string(hwaccel_api),
         '-b:a', stream.get_bitrate(),
     ]
 
@@ -216,9 +216,12 @@ class TranscoderNode(node_base.NodeBase):
 
     filters.extend(input.filters)
 
+    hwaccel_api = self._pipeline_config.hwaccel_api
+
     # -2 in the scale filters means to choose a value to keep the original
     # aspect ratio.
-    if stream.is_hardware_accelerated():
+    if stream.is_hardware_accelerated() and hwaccel_api == 'vaapi':
+      # These filters are specific to Linux's vaapi.
       filters.append('format=nv12')
       filters.append('hwupload')
       filters.append('scale_vaapi=-2:{0}'.format(stream.resolution.max_height))
@@ -226,7 +229,9 @@ class TranscoderNode(node_base.NodeBase):
       filters.append('scale=-2:{0}'.format(stream.resolution.max_height))
 
     # TODO: Use the same intermediate format as output format?
-    if stream.codec.get_base_codec() == VideoCodec.H264:
+
+    if stream.codec == VideoCodec.H264:
+      # These presets are specifically recognized by the software encoder.
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
             # Encodes with highest-speed presets for real-time live streaming.
@@ -240,6 +245,7 @@ class TranscoderNode(node_base.NodeBase):
             '-flags', '+loop',
         ]
 
+    if stream.codec.get_base_codec() == VideoCodec.H264:  # Software or hardware
       # Use the "high" profile for HD and up, and "main" for everything else.
       # https://en.wikipedia.org/wiki/Advanced_Video_Coding#Profiles
       if stream.resolution.max_height >= 720:
@@ -278,7 +284,7 @@ class TranscoderNode(node_base.NodeBase):
         # No audio encoding for video.
         '-an',
         # Set codec and bitrate.
-        '-c:v', stream.get_ffmpeg_codec_string(),
+        '-c:v', stream.get_ffmpeg_codec_string(hwaccel_api),
         '-b:v', stream.get_bitrate(),
         # Set minimum and maximum GOP length.
         '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),

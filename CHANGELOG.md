@@ -2,6 +2,8 @@
 
  - Added autodetection of frame rate, resolution, interlacing, track numbers
  - #5: Added support for custom resolutions and bitrates
+ - #23: Added hardware encoding on macOS
+ - Added support for NVENC-backed hardware encoding on Linux
 
 
 ## 0.2.0 (2019-10-14)

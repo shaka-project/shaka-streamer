@@ -42,7 +42,7 @@ class AudioCodec(enum.Enum):
     """Returns True if this codec is hardware accelerated."""
     return False
 
-  def get_ffmpeg_codec_string(self):
+  def get_ffmpeg_codec_string(self, hwaccel_api):
     """Returns a codec string accepted by FFmpeg for this codec."""
     # FFmpeg warns:
     #   The encoder 'opus' is experimental but experimental codecs are not
@@ -91,10 +91,11 @@ class VideoCodec(enum.Enum):
 
     return self
 
-  def get_ffmpeg_codec_string(self):
+  def get_ffmpeg_codec_string(self, hwaccel_api):
     """Returns a codec string accepted by FFmpeg for this codec."""
     if self.is_hardware_accelerated():
-      return self.get_base_codec().value + '_vaapi'
+      assert hwaccel_api, 'No hardware encoding support on this platform!'
+      return self.get_base_codec().value + '_' + hwaccel_api
 
     return self.value
 

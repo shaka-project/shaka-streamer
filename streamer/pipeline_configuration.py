@@ -15,6 +15,7 @@
 import base64
 import enum
 import os
+import platform
 import shlex
 
 from . import bitrate_configuration
@@ -31,6 +32,14 @@ UAT_SERVER = 'https://license.uat.widevine.com/cenc/getcontentkey/widevine_test'
 WIDEVINE_TEST_ACCOUNT = 'widevine_test'
 WIDEVINE_TEST_SIGNING_KEY = '1ae8ccd0e7985cc0b6203a55855a1034afc252980e970ca90e5202689f947ab9'
 WIDEVINE_TEST_SIGNING_IV = 'd58ce954203b7c9a9a9d467f59839249'
+
+# The default hardware acceleration API to use, per platform.
+if platform.system() == 'Linux':
+  DEFAULT_HWACCEL_API = 'vaapi'
+elif platform.system() == 'Darwin':  # AKA macOS
+  DEFAULT_HWACCEL_API = 'videotoolbox'
+else:
+  DEFAULT_HWACCEL_API = None
 
 
 class StreamingMode(enum.Enum):
@@ -121,6 +130,14 @@ class PipelineConfig(configuration.Base):
   No control is given over log filenames.  Logs are written to the current
   working directory.  We do not yet support log rotation.  This is meant only
   for debugging.
+  """
+
+  hwaccel_api = configuration.Field(str, default=DEFAULT_HWACCEL_API)
+  """The FFmpeg hardware acceleration API to use with hardware codecs.
+
+  A per-platform default will be chosen if this field is omitted.
+
+  See documentation here: https://trac.ffmpeg.org/wiki/HWAccelIntro
   """
 
   resolutions = configuration.Field(list,

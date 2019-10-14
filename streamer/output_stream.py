@@ -40,9 +40,9 @@ class OutputStream(object):
     """Returns True if this output stream uses hardware acceleration."""
     return self.codec and self.codec.is_hardware_accelerated()
 
-  def get_ffmpeg_codec_string(self):
+  def get_ffmpeg_codec_string(self, hwaccel_api):
     """Returns a codec string accepted by FFmpeg for this stream's codec."""
-    return self.codec and self.codec.get_ffmpeg_codec_string()
+    return self.codec and self.codec.get_ffmpeg_codec_string(hwaccel_api)
 
 
 class AudioOutputStream(OutputStream):
