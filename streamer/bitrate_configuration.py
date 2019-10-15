@@ -307,6 +307,23 @@ DEFAULT_VIDEO_RESOLUTIONS = {
       'vp9': '18M',
     },
   }),
+  '8k': VideoResolution({
+    'max_width': 8192,
+    'max_height': 4320,
+    'max_frame_rate': 30,
+    'bitrates': {
+      'h264': '40M',
+      'vp9': '24M',
+    },
+  }),
+  '8k-hfr': VideoResolution({
+    'max_width': 8192,
+    'max_height': 4320,
+    'bitrates': {
+      'h264': '60M',
+      'vp9': '36M',
+    },
+  }),
 }
 
 
