@@ -128,8 +128,12 @@ class RuntimeMapType(object):
     cls._map = map
 
     # Synthesize a method on each value to allow the key to be recovered.
+    # Use a default parameter in the lambda to effectively bind the parameter,
+    # as described here: https://stackoverflow.com/a/19837683
+    # Not doing this causes the lambda to always return the key from the final
+    # iteration of the loop (a problem familiar to many JavaScript developers).
     for key, value in map.items():
-      setattr(value, 'get_key', lambda: key)
+      setattr(value, 'get_key', lambda bound_key=key: bound_key)
 
   # __new__ is special and doesn't use @classmethod
   def __new__(cls, key):
