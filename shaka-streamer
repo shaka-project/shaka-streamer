@@ -83,14 +83,14 @@ def main():
   controller = ControllerNode()
 
   with open(args.input_config) as f:
-    input_config_dict = yaml.load(f)
+    input_config_dict = yaml.safe_load(f)
   with open(args.pipeline_config) as f:
-    pipeline_config_dict = yaml.load(f)
+    pipeline_config_dict = yaml.safe_load(f)
 
   bitrate_config_dict = {}
   if args.bitrate_config:
     with open(args.bitrate_config) as f:
-      bitrate_config_dict = yaml.load(f)
+      bitrate_config_dict = yaml.safe_load(f)
 
   if args.cloud_url:
     if (not args.cloud_url.startswith('gs://') and

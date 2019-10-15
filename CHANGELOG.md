@@ -6,6 +6,7 @@
  - Added support for NVENC-backed hardware encoding on Linux
  - Correct several issues in the docs, including installation instructions
  - #35: Complain if ffprobe is missing
+ - #35: Fix PyYAML deprecation warning and YAML loading vulnerability
 
 
 ## 0.2.0 (2019-10-14)
