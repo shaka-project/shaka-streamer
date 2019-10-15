@@ -63,34 +63,25 @@ class TranscoderNode(node_base.NodeBase):
         ]
 
     for input in self._input_config.inputs:
+      # Get any required input arguments for this input.
+      # These are like hard-coded extra_input_args for certain input types.
+      # This means users don't have to know much about FFmpeg options to handle
+      # these common cases.
+      args += input.get_input_args()
+
       # The config file may specify additional args needed for this input.
       # This allows, for example, an external-command-type input to generate
       # almost anything ffmpeg could ingest.
       args += input.extra_input_args
 
-      # These are like hard-coded extra_input_args for certain input types.
-      # This means users don't have to know much about FFmpeg options to handle
-      # these common cases.
       if input.input_type == InputType.LOOPED_FILE:
+        # These are handled here instead of in get_input_args() because these
+        # arguments are specific to ffmpeg and are not understood by ffprobe.
         args += [
-          # Loop the input forever.
-          '-stream_loop', '-1',
-          # Read input in real time; don't go above 1x processing speed.
-          '-re',
-        ]
-      elif input.input_type == InputType.RAW_IMAGES:
-        args += [
-            # Parse the input as a stream of images fed into a pipe.
-            '-f', 'image2pipe',
-            # Set the frame rate to the one specified in the input config.
-            # Note that this is the input framerate for the image2 dexuxer, which
-            # is not what the similar '-r' option is meant for.
-            '-framerate', str(input.frame_rate),
-        ]
-      elif input.input_type == InputType.WEBCAM:
-        args += [
-            # Format the input using the webcam format.
-            '-f', 'video4linux2',
+            # Loop the input forever.
+            '-stream_loop', '-1',
+            # Read input in real time; don't go above 1x processing speed.
+            '-re',
         ]
 
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:

@@ -14,7 +14,9 @@
 
 """A module to contain auto-detection logic; based on ffprobe."""
 
+import shlex
 import subprocess
+import time
 
 from . import bitrate_configuration
 from . import input_configuration
@@ -26,7 +28,6 @@ InputType = input_configuration.InputType
 TYPES_WE_CANT_PROBE = [
   InputType.EXTERNAL_COMMAND,
   InputType.RAW_IMAGES,
-  InputType.WEBCAM,  # TODO: Can we actually probe webcam inputs? Needs testing.
 ]
 
 
@@ -45,9 +46,15 @@ def _probe(input, field):
     # Not supported for this type.
     return None
 
-  command = [
+  args = [
       # Probe this input file
       'ffprobe', input.name,
+  ]
+
+  # Add any required input arguments for this input type
+  args += input.get_input_args()
+
+  args += [
       # Specifically, this stream
       '-select_streams', input.get_stream_specifier(),
       # Show the needed metadata only
@@ -56,11 +63,20 @@ def _probe(input, field):
       '-of', 'compact=p=0:nk=1'
   ]
 
-  output_bytes = subprocess.check_output(command, stderr=subprocess.DEVNULL)
+  print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
+
+  output_bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
   # The output is either the language code or just a blank line.
   output_string = output_bytes.decode('utf-8').strip()
   # After stripping the newline, we can fall back to None if it's empty.
-  return output_string or None
+  output_string = output_string or None
+
+  # Webcams on Linux seem to behave badly if the device is rapidly opened and
+  # closed.  Therefore, sleep for 1 second after a webcam probe.
+  if input.input_type == InputType.WEBCAM:
+    time.sleep(1)
+
+  return output_string
 
 
 def get_language(input):

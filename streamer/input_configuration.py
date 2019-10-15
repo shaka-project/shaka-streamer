@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import enum
+import platform
 import shlex
 
 from . import bitrate_configuration
@@ -103,7 +104,7 @@ class Input(configuration.Base):
   Only valid for media_type of 'video'.
 
   Can be auto-detected for some input types, but may be required for others.
-  For example, required for input_type of 'webcam'.
+  For example, required for input_type of 'external_command'.
   """
 
   resolution = configuration.Field(bitrate_configuration.Resolution)
@@ -112,7 +113,7 @@ class Input(configuration.Base):
   Only valid for media_type of 'video'.
 
   Can be auto-detected for some input types, but may be required for others.
-  For example, required for input_type of 'webcam'.
+  For example, required for input_type of 'external_command'.
   """
 
   track_num = configuration.Field(int, default=0)
@@ -134,7 +135,8 @@ class Input(configuration.Base):
   If true, the video will be deinterlaced during transcoding.
 
   Can be auto-detected for some input types, but may be default to False for
-  others.  For example, an input_type of 'webcam' will default to False.
+  others.  For example, an input_type of 'external_command', it will default to
+  False.
   """
 
   language = configuration.Field(str)
@@ -251,6 +253,37 @@ class Input(configuration.Base):
       return 's:{}'.format(self.track_num)
 
     assert False, 'Unrecognized media_type!  This should not happen.'
+
+  def get_input_args(self):
+    """Get any required input arguments for this input.
+
+    These are like hard-coded extra_input_args for certain input types.
+    This means users don't have to know much about FFmpeg options to handle
+    these common cases.
+
+    Note that for types which support autodetect, these arguments must be
+    understood by ffprobe as well as ffmpeg.
+    """
+    if self.input_type == InputType.RAW_IMAGES:
+      return [
+          # Parse the input as a stream of images fed into a pipe.
+          '-f', 'image2pipe',
+          # Set the frame rate to the one specified in the input config.
+          # Note that this is the input framerate for the image2 dexuxer, which
+          # is not what the similar '-r' option is meant for.
+          '-framerate', str(input.frame_rate),
+      ]
+    elif self.input_type == InputType.WEBCAM:
+      if platform.system() == 'Linux':
+        return [
+            # Treat the input as a video4linux device, which is how webcams show
+            # up on Linux.
+            '-f', 'video4linux2',
+        ]
+      else:
+        assert False, 'Webcams not supported on this platform!'
+
+    return []
 
 
 class InputConfig(configuration.Base):

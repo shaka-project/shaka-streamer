@@ -22,7 +22,3 @@ inputs:
     name: /dev/video0
     # The media type.
     media_type: video
-    # Frame rate in seconds.
-    frame_rate: 24.0
-    # Resolution of the input.
-    resolution: 1080p

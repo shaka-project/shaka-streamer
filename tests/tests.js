@@ -180,10 +180,13 @@ function errorTests() {
         }));
   });
 
-  it('fails when resolution or frame_rate are missing for webcam', async () => {
+  it('fails when missing fields cannot be autodetected', async () => {
     const inputConfig = getBasicInputConfig();
-    inputConfig.inputs[0].input_type = 'webcam';
+    // This input_type doesn't support autodetection.
+    inputConfig.inputs[0].input_type = 'external_command';
+    // frame_rate is required.
     inputConfig.inputs[0].frame_rate = 24;
+    // resolution is required, but missing.
 
     await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
         .toBeRejectedWith(jasmine.objectContaining({
@@ -191,6 +194,7 @@ function errorTests() {
           field_name: 'resolution',
         }));
 
+    // now resolution is present, but frame_rate is missing.
     delete inputConfig.inputs[0].frame_rate;
     inputConfig.inputs[0].resolution = '1080p';
 
