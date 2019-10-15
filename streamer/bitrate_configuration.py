@@ -291,7 +291,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     },
   }),
   '4k': VideoResolution({
-    'max_width': 3840,
+    'max_width': 4096,
     'max_height': 2160,
     'max_frame_rate': 30,
     'bitrates': {
@@ -300,7 +300,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     },
   }),
   '4k-hfr': VideoResolution({
-    'max_width': 3840,
+    'max_width': 4096,
     'max_height': 2160,
     'bitrates': {
       'h264': '25M',
