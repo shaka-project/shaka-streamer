@@ -273,7 +273,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
       'vp9': '6M',
     },
   }),
-  '2k': VideoResolution({
+  '1440p': VideoResolution({
     'max_width': 2560,
     'max_height': 1440,
     'max_frame_rate': 30,
@@ -282,7 +282,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
       'vp9': '6M',
     },
   }),
-  '2k-hfr': VideoResolution({
+  '1440p-hfr': VideoResolution({
     'max_width': 2560,
     'max_height': 1440,
     'bitrates': {

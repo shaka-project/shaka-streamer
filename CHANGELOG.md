@@ -4,9 +4,10 @@
  - #5: Added support for custom resolutions and bitrates
  - #23: Added hardware encoding on macOS
  - Added support for NVENC-backed hardware encoding on Linux
- - Correct several issues in the docs, including installation instructions
+ - Fixed several issues in the docs, including installation instructions
  - #35: Complain if ffprobe is missing
  - #35: Fix PyYAML deprecation warning and YAML loading vulnerability
+ - Fixed resolution name (1440p vs 2k)
 
 
 ## 0.2.0 (2019-10-14)

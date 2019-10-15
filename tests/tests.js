@@ -333,7 +333,7 @@ function resolutionTests(manifestUrl, format) {
       // A list of resolutions to encode.
       'resolutions': [
         '4k',
-        '2k',
+        '1440p',
         '1080p',
         '720p',
         '480p',
@@ -347,7 +347,7 @@ function resolutionTests(manifestUrl, format) {
     const trackList = player.getVariantTracks();
     const heightList = trackList.map(track => track.height);
     heightList.sort((a, b) => a - b);
-    // No 4k or 2k, since those are above the 1080p input res.
+    // No 4k or 1440p, since those are above the 1080p input res.
     expect(heightList).toEqual([144, 240, 480, 720, 1080]);
   });
 }
@@ -523,7 +523,7 @@ function autoDetectionTests(manifestUrl) {
       // because there will be nothing to encode.
       'resolutions': [
         '4k',
-        '2k',
+        '1440p',
         '1080p',
         '720p',
       ],
