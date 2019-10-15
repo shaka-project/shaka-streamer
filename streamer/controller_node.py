@@ -120,8 +120,11 @@ class ControllerNode(object):
     # Check that ffmpeg version is 4.1 or above.
     _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
 
+    # Check that ffprobe version (used for autodetect features) is 4.1 or above.
+    _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
+
     # Check that Shaka Packager version is 2.1 or above.
-    _check_version('Packager', ['packager', '-version'], (2, 1))
+    _check_version('Shaka Packager', ['packager', '-version'], (2, 1))
 
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)

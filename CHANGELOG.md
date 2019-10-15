@@ -5,6 +5,7 @@
  - #23: Added hardware encoding on macOS
  - Added support for NVENC-backed hardware encoding on Linux
  - Correct several issues in the docs, including installation instructions
+ - #35: Complain if ffprobe is missing
 
 
 ## 0.2.0 (2019-10-14)
