@@ -10,6 +10,7 @@
  - Fixed resolution name (1440p vs 2k)
  - Updated default bitrates
  - Added definition of 8k resolution
+ - #34: Now rejects unsupported features in text inputs
 
 
 ## 0.2.0 (2019-10-14)

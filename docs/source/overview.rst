@@ -45,6 +45,17 @@ Features
   * Add arbitrary FFmpeg filters for input or output
 
 
+Caveat: text processing
+~~~~~~~~~~~~~~~~~~~~~~~
+
+We do support subtitles/captions (``media_type`` set to ``text``) for VOD
+content.  But please note that at this time, we have no way to pipeline text
+for live streams, loop a single text input with ``input_type`` of
+``looped_file``, transform text streams from one format to another, or cut a
+snippet of text using the ``start_time`` and ``end_time`` fields of the input
+config.
+
+
 Platform support
 ----------------
 

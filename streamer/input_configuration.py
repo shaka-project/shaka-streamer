@@ -25,13 +25,18 @@ class InputType(enum.Enum):
   """A track from a file.  Usable only with VOD."""
 
   LOOPED_FILE = 'looped_file'
-  """A track from a file, looped forever by FFmpeg.  Usable only with live."""
+  """A track from a file, looped forever by FFmpeg.  Usable only with live.
+
+  Does not support media_type of 'text'.
+  """
 
   WEBCAM = 'webcam'
   """A webcam device.  Usable only with live.
 
   The device path should be given in the name field.  For example, on Linux,
   this might be /dev/video0.
+
+  Does not support media_type of 'text'.
   """
 
   RAW_IMAGES = 'raw_images'
@@ -39,6 +44,8 @@ class InputType(enum.Enum):
 
   Requires the specification of frame_rate.  May require the use of
   extra_input_args if FFmpeg can't guess the format.
+
+  Does not support media_type of 'text' or 'audio'.
   """
 
   EXTERNAL_COMMAND = 'external_command'
@@ -51,6 +58,8 @@ class InputType(enum.Enum):
 
   May require the user of extra_input_args if FFmpeg can't guess the format or
   framerate.
+
+  Does not support media_type of 'text'.
   """
 
 class MediaType(enum.Enum):
@@ -150,18 +159,24 @@ class Input(configuration.Base):
   """The start time of the slice of the input to use.
 
   Only valid for VOD and with input_type set to 'file'.
+
+  Not supported with media_type of 'text'.
   """
 
   end_time = configuration.Field(str)
   """The end time of the slice of the input to use.
 
   Only valid for VOD and with input_type set to 'file'.
+
+  Not supported with media_type of 'text'.
   """
 
   filters = configuration.Field(list, subtype=str, default=[])
   """A list of FFmpeg filter strings to add to the transcoding of this input.
 
   Each filter is a single string.  For example, 'pad=1280:720:20:20'.
+
+  Not supported with media_type of 'text'.
   """
 
 
@@ -172,6 +187,18 @@ class Input(configuration.Base):
     # modules.
     from . import autodetect
 
+    def require_field(name):
+      """Raise MissingRequiredField if the named field is still missing."""
+      if getattr(self, name) is None:
+        raise configuration.MissingRequiredField(
+            self.__class__, name, getattr(self.__class__, name))
+
+    def disallow_field(name, reason):
+      """Raise MalformedField if the named field is present."""
+      if getattr(self, name):
+        raise configuration.MalformedField(
+            self.__class__, name, getattr(self.__class__, name), reason)
+
     if self.media_type == MediaType.VIDEO:
       # These fields are required for video inputs.
       # We will attempt to auto-detect them if possible.
@@ -180,15 +207,11 @@ class Input(configuration.Base):
 
       if self.frame_rate is None:
         self.frame_rate = autodetect.get_frame_rate(self)
-      if self.frame_rate is None:
-        raise configuration.MissingRequiredField(
-            self.__class__, 'frame_rate', self.__class__.frame_rate)
+      require_field('frame_rate')
 
       if self.resolution is None:
         self.resolution = autodetect.get_resolution(self)
-      if self.resolution is None:
-        raise configuration.MissingRequiredField(
-            self.__class__, 'resolution', self.__class__.resolution)
+      require_field('resolution')
 
     if self.media_type == MediaType.AUDIO or self.media_type == MediaType.TEXT:
       # Language is required for audio and text inputs.
@@ -196,19 +219,30 @@ class Input(configuration.Base):
       if self.language is None:
         self.language = autodetect.get_language(self) or 'und'
 
+    if self.media_type == MediaType.TEXT:
+      # Text streams are only supported in plain file inputs.
+      if self.input_type != InputType.FILE:
+        reason = 'text streams are not supported in input_type "{}"'.format(
+            self.input_type.value)
+        disallow_field('input_type', reason)
+
+      # These fields are not supported with text, because we don't process or
+      # transcode it.
+      reason = 'not supported with media_type "text"'
+      disallow_field('start_time', reason)
+      disallow_field('end_time', reason)
+      disallow_field('filters', reason)
+
+    if self.input_type == InputType.RAW_IMAGES:
+      if self.media_type != MediaType.VIDEO:
+        reason = 'input_type "raw_images" only supports media_type "video"'
+        disallow_field('media_type', reason)
+
     if self.input_type != InputType.FILE:
       # These fields are only valid for file inputs.
       reason = 'only valid when input_type is "file"'
-
-      if self.start_time:
-        field = self.__class__.start_time
-        raise configuration.MalformedField(
-            self.__class__, 'start_time', field, reason)
-
-      if self.end_time:
-        field = self.__class__.end_time
-        raise configuration.MalformedField(
-            self.__class__, 'end_time', field, reason)
+      disallow_field('start_time', reason)
+      disallow_field('end_time', reason)
 
     # This needs to be parsed into an argument array.  Note that shlex.split on
     # an empty string will produce an empty array.
