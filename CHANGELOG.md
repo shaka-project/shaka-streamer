@@ -8,6 +8,7 @@
  - #35: Complain if ffprobe is missing
  - #35: Fix PyYAML deprecation warning and YAML loading vulnerability
  - Fixed resolution name (1440p vs 2k)
+ - Updated default bitrates
 
 
 ## 0.2.0 (2019-10-14)

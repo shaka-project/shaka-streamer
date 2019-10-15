@@ -204,7 +204,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'max_height': 144,
     'bitrates': {
       'h264': '108k',
-      'vp9': '95k',
+      'vp9': '96k',
     },
   }),
   '240p': VideoResolution({
@@ -212,7 +212,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'max_height': 240,
     'bitrates': {
       'h264': '242k',
-      'vp9': '150k',
+      'vp9': '151k',
     },
   }),
   '360p': VideoResolution({
@@ -220,23 +220,23 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'max_height': 360,
     'bitrates': {
       'h264': '400k',
-      'vp9': '276k',
+      'vp9': '277k',
     },
   }),
   '480p': VideoResolution({
     'max_width': 854,
     'max_height': 480,
     'bitrates': {
-      'h264': '2M',
-      'vp9': '750k',
+      'h264': '1M',
+      'vp9': '512k',
     },
   }),
   '576p': VideoResolution({
     'max_width': 1024,
     'max_height': 576,
     'bitrates': {
-      'h264': '2.5M',
-      'vp9': '1M',
+      'h264': '1.5M',
+      'vp9': '768k',
     },
   }),
   '720p': VideoResolution({
@@ -244,16 +244,16 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'max_height': 720,
     'max_frame_rate': 30,
     'bitrates': {
-      'h264': '3M',
-      'vp9': '2M',
+      'h264': '2M',
+      'vp9': '1M',
     },
   }),
   '720p-hfr': VideoResolution({
     'max_width': 1280,
     'max_height': 720,
     'bitrates': {
-      'h264': '4M',
-      'vp9': '4M',
+      'h264': '3M',
+      'vp9': '2M',
     },
   }),
   '1080p': VideoResolution({
@@ -261,16 +261,16 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'max_height': 1080,
     'max_frame_rate': 30,
     'bitrates': {
-      'h264': '5M',
-      'vp9': '4M',
+      'h264': '4M',
+      'vp9': '2M',
     },
   }),
   '1080p-hfr': VideoResolution({
     'max_width': 1920,
     'max_height': 1080,
     'bitrates': {
-      'h264': '6M',
-      'vp9': '6M',
+      'h264': '5M',
+      'vp9': '3M',
     },
   }),
   '1440p': VideoResolution({
