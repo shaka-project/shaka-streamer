@@ -110,7 +110,10 @@ class PackagerNode(node_base.NodeBase):
         'stream': stream.type.value,
     }
 
-    if stream.input.language:
+    # Note: Shaka Packager will not accept 'und' as a language, but Shaka
+    # Player will fill that in if the language metadata is missing from the
+    # manifest/playlist.
+    if stream.input.language and stream.input.language != 'und':
       dict['language'] = stream.input.language
 
     if self._pipeline_config.segment_per_file:
