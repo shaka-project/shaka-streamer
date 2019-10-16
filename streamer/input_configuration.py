@@ -82,8 +82,9 @@ class Input(configuration.Base):
   With input_type set to 'looped_file', this is a path to a file name to be
   looped indefinitely in FFmpeg.
 
-  With input_type set to 'webcam', this is a path to the device node for the
-  webcam.  For example, on Linux, this might be /dev/video0.
+  With input_type set to 'webcam', this is which webcam.  On Linux, this is a
+  path to the device node for the webcam, such as '/dev/video0'.  On macOS, this
+  is a device name, such as 'default'.
 
   With input_type set to 'raw_images', this is a path to a file or pipe
   containing a sequence of raw images.
@@ -313,6 +314,13 @@ class Input(configuration.Base):
             # Treat the input as a video4linux device, which is how webcams show
             # up on Linux.
             '-f', 'video4linux2',
+        ]
+      elif platform.system() == 'Darwin':  # AKA macOS
+        return [
+            # Webcams on macOS use FFmpeg's avfoundation input format.  With
+            # this, you also have to specify an input framerate, unfortunately.
+            '-f', 'avfoundation',
+            '-framerate', '30',
         ]
       else:
         assert False, 'Webcams not supported on this platform!'

@@ -18,7 +18,8 @@
 inputs:
     # The type of input.
   - input_type: webcam
-    # Name of the input device.
+    # Name of the input device.  On Linux, this is a device node path.  On
+    # macOS, this is a device name, typically "default".
     name: /dev/video0
     # The media type.
     media_type: video
