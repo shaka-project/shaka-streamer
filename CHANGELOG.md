@@ -11,6 +11,7 @@
  - Updated default bitrates
  - Added definition of 8k resolution
  - #34: Now rejects unsupported features in text inputs
+ - #30: Fixed cloud upload for VOD
 
 
 ## 0.2.0 (2019-10-14)

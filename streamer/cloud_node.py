@@ -45,11 +45,12 @@ COMMON_GSUTIL_ARGS = [
 ]
 
 class CloudNode(node_base.ThreadedNodeBase):
-  def __init__(self, input_dir, bucket_url, temp_dir):
+  def __init__(self, input_dir, bucket_url, temp_dir, is_vod):
     super().__init__(thread_name='cloud', continue_on_exception=True)
     self._input_dir = input_dir
     self._bucket_url = bucket_url
     self._temp_dir = temp_dir
+    self._is_vod = is_vod
 
   def _thread_single_pass(self):
     # With recursive=True, glob's ** will also match the base dir.
@@ -69,7 +70,9 @@ class CloudNode(node_base.ThreadedNodeBase):
 
       # Capture manifest contents, and retry until the file is non-empty or
       # until the thread is killed.
-      contents = b''
+      with open(manifest_path, 'rb') as f:
+        contents = f.read()
+
       while (not contents and
              self.check_status() == node_base.ProcessStatus.Running):
         time.sleep(0.1)
@@ -106,3 +109,15 @@ class CloudNode(node_base.ThreadedNodeBase):
         self._bucket_url, # destination in cloud storage
     ]
     subprocess.check_call(args)
+
+  def stop(self):
+    super().stop()
+
+    # A fix for issue #30:
+    if self._is_vod:
+      # After processing the stop, run _one more_ pass.  This is how we ensure
+      # that the final version of a VOD asset gets uploaded to cloud storage.
+      # Otherwise, we might not have the final manifest or every single segment
+      # uploaded.
+      self._thread_single_pass()
+

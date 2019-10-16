@@ -190,7 +190,8 @@ class ControllerNode(object):
 
       self._nodes.append(cloud_node.CloudNode(output_dir,
                                               bucket_url,
-                                              cloud_temp_dir))
+                                              cloud_temp_dir,
+                                              self.is_vod()))
 
     for node in self._nodes:
       node.start()
