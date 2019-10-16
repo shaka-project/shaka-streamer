@@ -29,7 +29,7 @@ MediaType = input_configuration.MediaType
 StreamingMode = pipeline_configuration.StreamingMode
 
 
-class TranscoderNode(node_base.NodeBase):
+class TranscoderNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
 
   def __init__(self, input_config, pipeline_config, outputs):
     super().__init__()

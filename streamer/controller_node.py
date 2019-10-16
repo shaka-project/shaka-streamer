@@ -214,8 +214,9 @@ class ControllerNode(object):
 
   def stop(self):
     """Stop all nodes."""
+    status = self.check_status()
     for node in self._nodes:
-      node.stop()
+      node.stop(status)
     self._nodes = []
 
   def is_vod(self):

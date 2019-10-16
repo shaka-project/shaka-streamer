@@ -22,6 +22,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 
 
 class ProcessStatus(enum.Enum):
@@ -47,7 +48,7 @@ class NodeBase(object):
   def __del__(self):
     # If the process isn't stopped by now, stop it here.  It is preferable to
     # explicitly call stop().
-    self.stop()
+    self.stop(None)
 
   @abc.abstractmethod
   def start(self):
@@ -109,7 +110,7 @@ class NodeBase(object):
     else:
       return ProcessStatus.Errored
 
-  def stop(self):
+  def stop(self, status):
     """Stop the subprocess if it's still running."""
     if self._process:
       # Slightly more polite than kill.  Try this first.
@@ -127,6 +128,23 @@ class NodeBase(object):
         # this, it can create a zombie process.
         self._process.wait()
 
+class PolitelyWaitOnFinishMixin(object):
+  """A mixin that makes stop() wait for the subprocess if status is Finished.
+
+  This is as opposed to the base class behavior, in which stop() forces
+  the subprocesses of a node to terminate.
+  """
+
+  def stop(self, status):
+    if status == ProcessStatus.Finished:
+      try:
+        print('Waiting for', self.__class__.__name__)
+        self._process.wait(timeout=300)  # 5m timeout
+      except subprocess.TimeoutExpired:
+        traceback.print_exc()  # print the exception
+        # Fall through.
+
+    super().stop(status)
 
 class ThreadedNodeBase(NodeBase):
   """A base class for nodes that run a thread.
@@ -175,7 +193,7 @@ class ThreadedNodeBase(NodeBase):
     self._status = ProcessStatus.Running
     self._thread.start()
 
-  def stop(self):
+  def stop(self, status):
     self._status = ProcessStatus.Finished
     self._thread.join()
 

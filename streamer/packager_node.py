@@ -51,7 +51,7 @@ class SegmentError(Exception):
   pass
 
 
-class PackagerNode(node_base.NodeBase):
+class PackagerNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
 
   def __init__(self, pipeline_config, output_dir, output_streams):
     super().__init__()
