@@ -238,13 +238,15 @@ class VersionError(Exception):
 def _check_version(name, command, minimum_version):
   min_version_string = '.'.join([str(x) for x in minimum_version])
 
+  version_error_string = (
+      name + ' not installed! Please install version ' + min_version_string +
+      ' or higher of ' + name + '.')
   try:
     version_string = str(subprocess.check_output(command))
   except (subprocess.CalledProcessError, OSError) as e:
     if isinstance(e, subprocess.CalledProcessError):
       print(e.stdout, file=sys.stderr)
-    raise FileNotFoundError(name + ' not installed! Please install version ' +
-                            min_version_string + ' or higher of ' + name + '.')
+    raise VersionError(version_error_string) from None
 
   version_match = re.search(r'([0-9]+)\.([0-9]+)\.([0-9]+)', version_string)
 
@@ -253,5 +255,4 @@ def _check_version(name, command, minimum_version):
 
   version = (int(version_match.group(1)), int(version_match.group(2)))
   if version < minimum_version:
-    raise VersionError(name + ' not installed! Please install version ' +
-                       min_version_string + ' or higher of ' + name + '.')
+    raise VersionError(version_error_string)

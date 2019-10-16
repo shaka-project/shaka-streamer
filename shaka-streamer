@@ -31,8 +31,7 @@ import sys
 import time
 import yaml
 
-from streamer import __version__, node_base
-from streamer.controller_node import ControllerNode
+import streamer
 
 
 class CustomArgParseFormatter(
@@ -47,7 +46,7 @@ class CustomArgParseFormatter(
 
 
 def main():
-  description = __doc__.format(version=__version__)
+  description = __doc__.format(version=streamer.__version__)
 
   parser = argparse.ArgumentParser(description=description,
                                    formatter_class=CustomArgParseFormatter)
@@ -80,7 +79,7 @@ def main():
     shutil.rmtree(args.output)
   os.mkdir(args.output)
 
-  controller = ControllerNode()
+  controller = streamer.controller_node.ControllerNode()
 
   with open(args.input_config) as f:
     input_config_dict = yaml.safe_load(f)
@@ -97,15 +96,23 @@ def main():
         not args.cloud_url.startswith('s3://')):
       parser.error('Invalid cloud URL! Only gs:// and s3:// URLs are supported')
 
-  with controller.start(args.output, input_config_dict, pipeline_config_dict,
-                        bitrate_config_dict, args.cloud_url):
-    # Sleep so long as the pipeline is still running.
-    while True:
-      status = controller.check_status()
-      if status != node_base.ProcessStatus.Running:
-        return 0 if status == node_base.ProcessStatus.Finished else 1
+  try:
+    with controller.start(args.output, input_config_dict, pipeline_config_dict,
+                          bitrate_config_dict, args.cloud_url):
+      # Sleep so long as the pipeline is still running.
+      while True:
+        status = controller.check_status()
+        if status != streamer.node_base.ProcessStatus.Running:
+          return 0 if status == streamer.node_base.ProcessStatus.Finished else 1
 
-      time.sleep(1)
+        time.sleep(1)
+  except (streamer.controller_node.VersionError,
+          streamer.configuration.ConfigError) as e:
+    # These are common errors meant to give the user specific, helpful
+    # information.  Format these errors in a relatively friendly way, with no
+    # backtrace or other Python-specific information.
+    print('Fatal error:')
+    print('  ' + str(e))
 
 if __name__ == '__main__':
   sys.exit(main())

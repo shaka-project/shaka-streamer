@@ -13,6 +13,7 @@
  - #34: Now rejects unsupported features in text inputs
  - #30: Fixed cloud upload for VOD
  - #29: Added webcam support on macOS
+ - Make common errors easier to read
 
 
 ## 0.2.0 (2019-10-14)
