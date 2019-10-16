@@ -15,6 +15,7 @@
  - #29: Added webcam support on macOS
  - Make common errors easier to read
  - #32: Fix early shutdown and missing files
+ - Added a check for gsutil and for cloud destination write access
 
 
 ## 0.2.0 (2019-10-14)

@@ -126,6 +126,17 @@ class ControllerNode(object):
     # Check that Shaka Packager version is 2.1 or above.
     _check_version('Shaka Packager', ['packager', '-version'], (2, 1))
 
+    if bucket_url:
+      # Check that the Google Cloud SDK is at least v254, which introduced
+      # gsutil 4.40 with an important rsync bug fix.
+      # https://cloud.google.com/sdk/docs/release-notes
+      # https://github.com/GoogleCloudPlatform/gsutil/blob/master/CHANGES.md
+      # This is only required if the user asked for upload to cloud storage.
+      _check_version('Google Cloud SDK', ['gcloud', '--version'], (254, 0, 0))
+
+      # Also, make sure the user is logged in and can access the destination.
+      cloud_node.CloudNode.check_access(bucket_url)
+
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
 
@@ -237,7 +248,7 @@ class VersionError(Exception):
   pass
 
 def _check_version(name, command, minimum_version):
-  min_version_string = '.'.join([str(x) for x in minimum_version])
+  min_version_string = '.'.join(str(x) for x in minimum_version)
 
   version_error_string = (
       name + ' not installed! Please install version ' + min_version_string +

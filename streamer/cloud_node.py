@@ -44,6 +44,10 @@ COMMON_GSUTIL_ARGS = [
     '-r', # recurse into folders
 ]
 
+class CloudAccessError(Exception):
+  """Raised when the cloud URL cannot be written to by the user."""
+  pass
+
 class CloudNode(node_base.ThreadedNodeBase):
   def __init__(self, input_dir, bucket_url, temp_dir, is_vod):
     super().__init__(thread_name='cloud', continue_on_exception=True)
@@ -51,6 +55,40 @@ class CloudNode(node_base.ThreadedNodeBase):
     self._bucket_url = bucket_url
     self._temp_dir = temp_dir
     self._is_vod = is_vod
+
+  @staticmethod
+  def check_access(bucket_url):
+    """Called early to test that the user can write to the destination bucket.
+
+    Writes an empty file called ".shaka-streamer-access-check" to the
+    destination.  Raises CloudAccessError if the destination cannot be written
+    to.
+    """
+
+    # Note that we make sure there are not two slashes in a row here, which
+    # would create a subdirectory whose name is "".
+    destination = bucket_url.rstrip('/') + '/.shaka-streamer-access-check'
+    # Note that this can't be "gsutil ls" on the destination, because the user
+    # might have read-only access.  In fact, some buckets grant read-only
+    # access to anonymous (non-logged-in) users.  So writing to the bucket is
+    # the only way to check.
+    args = ['gsutil', 'cp', '-', destination]
+    status = subprocess.run(args,
+                            stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.PIPE,
+                            text=True)
+    # If the command failed, raise an error.
+    if status.returncode != 0:
+      message = """Unable to write to cloud storage URL: {}
+
+Please double-check that the URL is correct, that you are signed into the
+Google Cloud SDK or Amazon AWS CLI, and that you have access to the
+destination bucket.
+
+Additional output from gsutil:
+  {}""".format(bucket_url, status.stderr)
+      raise CloudAccessError(message)
 
   def _thread_single_pass(self):
     # With recursive=True, glob's ** will also match the base dir.

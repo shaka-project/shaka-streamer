@@ -107,7 +107,8 @@ def main():
 
         time.sleep(1)
   except (streamer.controller_node.VersionError,
-          streamer.configuration.ConfigError) as e:
+          streamer.configuration.ConfigError,
+          streamer.cloud_node.CloudAccessError) as e:
     # These are common errors meant to give the user specific, helpful
     # information.  Format these errors in a relatively friendly way, with no
     # backtrace or other Python-specific information.
