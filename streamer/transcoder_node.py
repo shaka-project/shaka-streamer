@@ -219,6 +219,14 @@ class TranscoderNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
     else:
       filters.append('scale=-2:{0}'.format(stream.resolution.max_height))
 
+    # To avoid weird rounding errors in Sample Aspect Ratio, set it explicitly
+    # to 1:1.  Without this, you wind up with SAR set to weird values in DASH
+    # that are very close to 1, such as 5120:5123.  In HLS, the behavior is
+    # worse.  Some of the width values in the playlist wind up off by one,
+    # which causes playback failures in ExoPlayer.
+    # https://github.com/google/shaka-streamer/issues/36
+    filters.append('setsar=1:1')
+
     # TODO: Use the same intermediate format as output format?
 
     if stream.codec == VideoCodec.H264:

@@ -14,9 +14,10 @@
  - #30: Fixed cloud upload for VOD
  - #29: Added webcam support on macOS
  - Make common errors easier to read
- - #32: Fix early shutdown and missing files
+ - #32: Fixed early shutdown and missing files
  - Added a check for gsutil and for cloud destination write access
  - Speed up VP9 software encoding
+ - #36: Fixed rounding errors in width in HLS playlist
 
 
 ## 0.2.0 (2019-10-14)
