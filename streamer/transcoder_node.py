@@ -266,6 +266,11 @@ class TranscoderNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
           # DASH-compatible output format.
           # TODO: Is this argument necessary?
           '-dash', '1',
+          # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/VP9),
+          # this allows threaded encoding in VP9, which makes better use of CPU
+          # resources and speeds up encoding.  This is still not the default
+          # setting as of libvpx v1.7.
+          '-row-mt', '1',
       ]
 
     keyframe_interval = int(self._pipeline_config.segment_size *

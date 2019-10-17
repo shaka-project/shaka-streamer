@@ -16,6 +16,7 @@
  - Make common errors easier to read
  - #32: Fix early shutdown and missing files
  - Added a check for gsutil and for cloud destination write access
+ - Speed up VP9 software encoding
 
 
 ## 0.2.0 (2019-10-14)
