@@ -271,7 +271,7 @@ function errorTests() {
           field_name: 'filters',
         }));
 
-    inputConfig.inputs[0].filters = [1, 2, 3];
+    inputConfig.inputs[0].filters = [{}];
 
     await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
         .toBeRejectedWith(jasmine.objectContaining({

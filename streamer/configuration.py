@@ -331,8 +331,7 @@ class Base(object):
 
     # For enums or RuntimeMapTypes, try to cast the value to the enum type, and
     # raise a WrongType error if this fails.
-    if (issubclass(field.type, enum.Enum) or
-        issubclass(field.type, RuntimeMapType)):
+    if issubclass(field.type, (enum.Enum, RuntimeMapType)):
       try:
         return field.type(value)
       except ValueError:
@@ -340,9 +339,18 @@ class Base(object):
 
     # A float should be permissive and accept an int, as well.
     if field.type is float:
-      if not isinstance(value, float) and not isinstance(value, int):
+      if not isinstance(value, (float, int)):
         raise WrongType(self.__class__, key, field)
       return value
+
+    # For strings, accept bools, ints, and floats, too.  For example, "true",
+    # "7", and "10.2" are all valid strings, but will come out of the YAML
+    # parser as a bool, and int, and a float, respectively.  Convert these to
+    # string.
+    if field.type is str:
+      if isinstance(value, (bool, float, int, str)):
+        return str(value)
+      raise WrongType(self.__class__, key, field)
 
     # These aren't true types, but validation classes for specific types of
     # limited input.  Run the validate() method to check the input.
