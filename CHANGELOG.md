@@ -1,36 +1,54 @@
-## 0.3.0 (?)
+## 0.3.0 (2019-10-18)
 
  - Added autodetection of frame rate, resolution, interlacing, track numbers
- - #5: Added support for custom resolutions and bitrates
- - #23: Added hardware encoding on macOS
+ - Added support for custom resolutions and bitrates
+   (https://github.com/google/shaka-streamer/issues/5)
+ - Added hardware encoding on macOS
+   (https://github.com/google/shaka-streamer/issues/23)
  - Added support for NVENC-backed hardware encoding on Linux
  - Fixed several issues in the docs, including installation instructions
- - #35: Complain if ffprobe is missing
- - #35: Fix PyYAML deprecation warning and YAML loading vulnerability
+ - Complain if ffprobe is missing
+   (https://github.com/google/shaka-streamer/issues/35)
+ - Fix PyYAML deprecation warning and YAML loading vulnerability
+   (https://github.com/google/shaka-streamer/issues/35)
  - Fixed resolution name (1440p vs 2k)
  - Updated default bitrates
  - Added definition of 8k resolution
- - #34: Now rejects unsupported features in text inputs
- - #30: Fixed cloud upload for VOD
- - #29: Added webcam support on macOS
+ - Now rejects unsupported features in text inputs
+   (https://github.com/google/shaka-streamer/issues/34)
+ - Fixed cloud upload for VOD
+   (https://github.com/google/shaka-streamer/issues/30)
+ - Added webcam support on macOS
+   (https://github.com/google/shaka-streamer/issues/29)
  - Make common errors easier to read
- - #32: Fixed early shutdown and missing files
+ - Fixed early shutdown and missing files
+   (https://github.com/google/shaka-streamer/issues/32)
  - Added a check for gsutil and for cloud destination write access
  - Speed up VP9 software encoding
- - #36: Fixed rounding errors in width in HLS playlist
+ - Fixed rounding errors in width in HLS playlist
+   (https://github.com/google/shaka-streamer/issues/36)
 
 
 ## 0.2.0 (2019-10-14)
 
- - #22: Comprehensive docs now on GitHub Pages: https://google.github.io/shaka-streamer/
- - #20: Fixed orphaned processes on shutdown
- - #19: Improved cloud upload performance
- - #12: Added a setting for debug logging
- - #6: Fixed support for 6-channel audio
- - #4: Added support for arbitrary FFmpeg filters
- - #3: Added support for setting presentation delay
- - #2: Added support for setting availability window
- - #1: Added support for extracting a small time range for VOD
+ - Comprehensive docs now on GitHub Pages: https://google.github.io/shaka-streamer/
+   (https://github.com/google/shaka-streamer/issues/22)
+ - Fixed orphaned processes on shutdown
+   (https://github.com/google/shaka-streamer/issues/20)
+ - Improved cloud upload performance
+   (https://github.com/google/shaka-streamer/issues/19)
+ - Added a setting for debug logging
+   (https://github.com/google/shaka-streamer/issues/12)
+ - Fixed support for 6-channel audio
+   (https://github.com/google/shaka-streamer/issues/6)
+ - Added support for arbitrary FFmpeg filters
+   (https://github.com/google/shaka-streamer/issues/4)
+ - Added support for setting presentation delay
+   (https://github.com/google/shaka-streamer/issues/3)
+ - Added support for setting availability window
+   (https://github.com/google/shaka-streamer/issues/2)
+ - Added support for extracting a small time range for VOD
+   (https://github.com/google/shaka-streamer/issues/1)
  - Added support for external commands that generate input streams
  - Added support for push to Amazon S3 (gsutil supports both GCS and S3)
  - Added a quiet mode
