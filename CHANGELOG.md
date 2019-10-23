@@ -1,6 +1,7 @@
 ## 0.4.0 (???)
  - Fix shutdown of cloud upload
  - Improve the formatting of minimum version errors
+ - Fix several issues with Ubuntu 16.04 and Python 3.5
 
 
 ## 0.3.0 (2019-10-18)

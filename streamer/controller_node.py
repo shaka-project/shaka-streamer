@@ -127,12 +127,12 @@ class ControllerNode(object):
     _check_version('Shaka Packager', ['packager', '-version'], (2, 1))
 
     if bucket_url:
-      # Check that the Google Cloud SDK is at least v254, which introduced
-      # gsutil 4.40 with an important rsync bug fix.
+      # Check that the Google Cloud SDK is at least v212, which introduced
+      # gsutil 4.33 with an important rsync bug fix.
       # https://cloud.google.com/sdk/docs/release-notes
       # https://github.com/GoogleCloudPlatform/gsutil/blob/master/CHANGES.md
       # This is only required if the user asked for upload to cloud storage.
-      _check_version('Google Cloud SDK', ['gcloud', '--version'], (254, 0, 0))
+      _check_version('Google Cloud SDK', ['gcloud', '--version'], (212, 0, 0))
 
       # Also, make sure the user is logged in and can access the destination.
       cloud_node.CloudNode.check_access(bucket_url)
