@@ -250,21 +250,22 @@ class VersionError(Exception):
 def _check_version(name, command, minimum_version):
   min_version_string = '.'.join(str(x) for x in minimum_version)
 
-  version_error_string = (
-      name + ' not installed! Please install version ' + min_version_string +
-      ' or higher of ' + name + '.')
+  def make_error_string(problem):
+    return '{0} {1}! Please install version {2} or higher of {0}.'.format(
+        name, problem, min_version_string)
+
   try:
     version_string = str(subprocess.check_output(command))
   except (subprocess.CalledProcessError, OSError) as e:
     if isinstance(e, subprocess.CalledProcessError):
       print(e.stdout, file=sys.stderr)
-    raise VersionError(version_error_string) from None
+    raise VersionError(make_error_string('not found')) from None
 
   version_match = re.search(r'([0-9]+)\.([0-9]+)\.([0-9]+)', version_string)
 
   if version_match == None:
-    raise VersionError(name + ' version not found in string output!')
+    raise VersionError(name + ' version could not be parsed!')
 
   version = (int(version_match.group(1)), int(version_match.group(2)))
   if version < minimum_version:
-    raise VersionError(version_error_string)
+    raise VersionError(make_error_string('out of date'))

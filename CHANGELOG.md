@@ -1,5 +1,6 @@
 ## 0.4.0 (???)
  - Fix shutdown of cloud upload
+ - Improve the formatting of minimum version errors
 
 
 ## 0.3.0 (2019-10-18)
