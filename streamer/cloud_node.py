@@ -77,7 +77,7 @@ class CloudNode(node_base.ThreadedNodeBase):
                             stdin=subprocess.DEVNULL,
                             stdout=subprocess.DEVNULL,
                             stderr=subprocess.PIPE,
-                            text=True)
+                            universal_newlines=True)
     # If the command failed, raise an error.
     if status.returncode != 0:
       message = """Unable to write to cloud storage URL: {}
