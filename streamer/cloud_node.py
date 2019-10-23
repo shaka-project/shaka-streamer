@@ -148,8 +148,8 @@ Additional output from gsutil:
     ]
     subprocess.check_call(args)
 
-  def stop(self):
-    super().stop()
+  def stop(self, status):
+    super().stop(status)
 
     # A fix for issue #30:
     if self._is_vod:

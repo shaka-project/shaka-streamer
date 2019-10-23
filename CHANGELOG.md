@@ -1,3 +1,7 @@
+## 0.4.0 (???)
+ - Fix shutdown of cloud upload
+
+
 ## 0.3.0 (2019-10-18)
 
  - Added autodetection of frame rate, resolution, interlacing, track numbers
