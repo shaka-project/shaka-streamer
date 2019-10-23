@@ -261,11 +261,13 @@ def _check_version(name, command, minimum_version):
       print(e.stdout, file=sys.stderr)
     raise VersionError(make_error_string('not found')) from None
 
-  version_match = re.search(r'([0-9]+)\.([0-9]+)\.([0-9]+)', version_string)
+  # Matches two or more numbers (one or more digits each) separated by dots.
+  # For example: 4.1.3 or 7.2 or 216.999.8675309
+  version_match = re.search(r'[0-9]+(?:\.[0-9]+)+', version_string)
 
   if version_match == None:
     raise VersionError(name + ' version could not be parsed!')
 
-  version = (int(version_match.group(1)), int(version_match.group(2)))
+  version = tuple([int(piece) for piece in version_match.group(0).split('.')])
   if version < minimum_version:
     raise VersionError(make_error_string('out of date'))
