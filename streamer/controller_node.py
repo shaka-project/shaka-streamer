@@ -106,7 +106,8 @@ class ControllerNode(object):
   def start(self, output_dir,
             input_config_dict, pipeline_config_dict,
             bitrate_config_dict={},
-            bucket_url=None):
+            bucket_url=None,
+            check_deps=True):
     """Create and start all other nodes.
 
     :raises: `RuntimeError` if the controller has already started.
@@ -117,24 +118,29 @@ class ControllerNode(object):
     if self._nodes:
       raise RuntimeError('Controller already started!')
 
-    # Check that ffmpeg version is 4.1 or above.
-    _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
+    if check_deps:
+      # Check that ffmpeg version is 4.1 or above.
+      _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
 
-    # Check that ffprobe version (used for autodetect features) is 4.1 or above.
-    _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
+      # Check that ffprobe version (used for autodetect features) is 4.1 or
+      # above.
+      _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
 
-    # Check that Shaka Packager version is 2.1 or above.
-    _check_version('Shaka Packager', ['packager', '-version'], (2, 1))
+      # Check that Shaka Packager version is 2.1 or above.
+      _check_version('Shaka Packager', ['packager', '-version'], (2, 1))
+
+      if bucket_url:
+        # Check that the Google Cloud SDK is at least v212, which introduced
+        # gsutil 4.33 with an important rsync bug fix.
+        # https://cloud.google.com/sdk/docs/release-notes
+        # https://github.com/GoogleCloudPlatform/gsutil/blob/master/CHANGES.md
+        # This is only required if the user asked for upload to cloud storage.
+        _check_version('Google Cloud SDK', ['gcloud', '--version'], (212, 0, 0))
+
 
     if bucket_url:
-      # Check that the Google Cloud SDK is at least v212, which introduced
-      # gsutil 4.33 with an important rsync bug fix.
-      # https://cloud.google.com/sdk/docs/release-notes
-      # https://github.com/GoogleCloudPlatform/gsutil/blob/master/CHANGES.md
-      # This is only required if the user asked for upload to cloud storage.
-      _check_version('Google Cloud SDK', ['gcloud', '--version'], (212, 0, 0))
-
-      # Also, make sure the user is logged in and can access the destination.
+      # If using cloud storage, make sure the user is logged in and can access
+      # the destination, independent of the version check above.
       cloud_node.CloudNode.check_access(bucket_url)
 
     # Define resolutions and bitrates before parsing other configs.

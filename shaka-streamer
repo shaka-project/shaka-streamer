@@ -70,6 +70,12 @@ def main():
                       default='output_files',
                       help='The output folder to write files to. ' +
                            'Used even if uploading to cloud storage.')
+  parser.add_argument('--skip_deps_check',
+                      action='store_true',
+                      default=False,
+                      help='Skip checks for dependencies and their versions. ' +
+                           'This can be useful for testing pre-release ' +
+                           'versions of FFmpeg or Shaka Packager.')
 
   args = parser.parse_args()
 
@@ -98,7 +104,8 @@ def main():
 
   try:
     with controller.start(args.output, input_config_dict, pipeline_config_dict,
-                          bitrate_config_dict, args.cloud_url):
+                          bitrate_config_dict, args.cloud_url,
+                          not args.skip_deps_check):
       # Sleep so long as the pipeline is still running.
       while True:
         status = controller.check_status()
