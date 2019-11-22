@@ -26,6 +26,7 @@ import re
 import shutil
 import string
 import subprocess
+import sys
 import tempfile
 import uuid
 
@@ -39,6 +40,8 @@ from . import packager_node
 from . import pipeline_configuration
 from . import transcoder_node
 
+from typing import Any, Dict, List, Tuple, Union
+
 # Alias a few classes to avoid repeating namespaces later.
 BitrateConfig = bitrate_configuration.BitrateConfig
 
@@ -50,6 +53,8 @@ AudioOutputStream = output_stream.AudioOutputStream
 TextOutputStream = output_stream.TextOutputStream
 VideoOutputStream = output_stream.VideoOutputStream
 
+
+
 PipelineConfig = pipeline_configuration.PipelineConfig
 StreamingMode = pipeline_configuration.StreamingMode
 
@@ -57,28 +62,28 @@ StreamingMode = pipeline_configuration.StreamingMode
 class ControllerNode(object):
   """Controls all other nodes and manages shared resources."""
 
-  def __init__(self):
+  def __init__(self) -> None:
     global_temp_dir = tempfile.gettempdir()
 
     # The docs state that if any of prefix, suffix, or dir are specified, all
     # must be specified (and not None).  Create a temp dir of our own, inside
     # the global temp dir, and with a name that indicates who made it.
-    self._temp_dir = tempfile.mkdtemp(
+    self._temp_dir: str = tempfile.mkdtemp(
         dir=global_temp_dir, prefix='shaka-live-', suffix='')
 
-    self._nodes = []
+    self._nodes: List[node_base.NodeBase] = []
 
-  def __del__(self):
+  def __del__(self) -> None:
     # Clean up named pipes by removing the temp directory we placed them in.
     shutil.rmtree(self._temp_dir)
 
-  def __enter__(self):
+  def __enter__(self) -> ControllerNode:
     return self
 
-  def __exit__(self, *unused_args):
+  def __exit__(self, *unused_args) -> None:
     self.stop()
 
-  def _create_pipe(self):
+  def _create_pipe(self) -> str:
     """Create a uniquely-named named pipe in the node's temp directory.
 
     Raises:
@@ -103,11 +108,12 @@ class ControllerNode(object):
 
     return path
 
-  def start(self, output_dir,
-            input_config_dict, pipeline_config_dict,
-            bitrate_config_dict={},
-            bucket_url=None,
-            check_deps=True):
+  def start(self, output_dir: str,
+            input_config_dict: Dict[str, Any],
+            pipeline_config_dict: Dict[str, Any],
+            bitrate_config_dict: Dict[Any, Any] = {},
+            bucket_url: Union[str, None] = None,
+            check_deps: bool = True) -> ControllerNode:
     """Create and start all other nodes.
 
     :raises: `RuntimeError` if the controller has already started.
@@ -157,7 +163,7 @@ class ControllerNode(object):
     pipeline_config = PipelineConfig(pipeline_config_dict)
     self._pipeline_config = pipeline_config
 
-    outputs = []
+    outputs: List[output_stream.OutputStream] = []
     for input in input_config.inputs:
       # External command inputs need to be processed by an additional node
       # before being transcoded.  In this case, the input doesn't have a
@@ -214,7 +220,7 @@ class ControllerNode(object):
       node.start()
     return self
 
-  def check_status(self):
+  def check_status(self) -> node_base.ProcessStatus:
     """Checks the status of all the nodes.
 
     :rtype: streamer.node_base.ProcessStatus
@@ -229,14 +235,14 @@ class ControllerNode(object):
     value = max(node.check_status().value for node in self._nodes)
     return node_base.ProcessStatus(value)
 
-  def stop(self):
+  def stop(self) -> None:
     """Stop all nodes."""
     status = self.check_status()
     for node in self._nodes:
       node.stop(status)
     self._nodes = []
 
-  def is_vod(self):
+  def is_vod(self) -> bool:
     """Returns True if the pipeline is running in VOD mode.
 
     :rtype: bool
@@ -253,7 +259,9 @@ class VersionError(Exception):
 
   pass
 
-def _check_version(name, command, minimum_version):
+def _check_version(name: str,
+                   command: List[str],
+                   minimum_version: Union[Tuple[int, int], Tuple[int, int, int]]) -> None:
   min_version_string = '.'.join(str(x) for x in minimum_version)
 
   def make_error_string(problem):
@@ -271,9 +279,9 @@ def _check_version(name, command, minimum_version):
   # For example: 4.1.3 or 7.2 or 216.999.8675309
   version_match = re.search(r'[0-9]+(?:\.[0-9]+)+', version_string)
 
-  if version_match == None:
+  if version_match:
+    version = tuple([int(piece) for piece in version_match.group(0).split('.')])
+    if version < minimum_version:
+      raise VersionError(make_error_string('out of date'))
+  else:
     raise VersionError(name + ' version could not be parsed!')
-
-  version = tuple([int(piece) for piece in version_match.group(0).split('.')])
-  if version < minimum_version:
-    raise VersionError(make_error_string('out of date'))
