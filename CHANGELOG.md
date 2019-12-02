@@ -2,6 +2,7 @@
  - Fix shutdown of cloud upload
  - Improve the formatting of minimum version errors
  - Fix several issues with Ubuntu 16.04 and Python 3.5
+ - Add `--skip_deps_check` to bypass version checks on dependencies
 
 
 ## 0.3.0 (2019-10-18)
