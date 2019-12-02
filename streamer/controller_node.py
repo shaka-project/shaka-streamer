@@ -77,7 +77,7 @@ class ControllerNode(object):
     # Clean up named pipes by removing the temp directory we placed them in.
     shutil.rmtree(self._temp_dir)
 
-  def __enter__(self) -> ControllerNode:
+  def __enter__(self) -> 'ControllerNode':
     return self
 
   def __exit__(self, *unused_args) -> None:
@@ -113,7 +113,7 @@ class ControllerNode(object):
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
             bucket_url: Union[str, None] = None,
-            check_deps: bool = True) -> ControllerNode:
+            check_deps: bool = True) -> 'ControllerNode':
     """Create and start all other nodes.
 
     :raises: `RuntimeError` if the controller has already started.
