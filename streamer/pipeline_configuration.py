@@ -39,7 +39,7 @@ if platform.system() == 'Linux':
 elif platform.system() == 'Darwin':  # AKA macOS
   DEFAULT_HWACCEL_API = 'videotoolbox'
 else:
-  DEFAULT_HWACCEL_API = None
+  DEFAULT_HWACCEL_API = ''
 
 
 class StreamingMode(enum.Enum):
@@ -210,7 +210,7 @@ class PipelineConfig(configuration.Base):
   """Encryption settings."""
 
 
-  def __init__(self, *args):
+  def __init__(self, *args) -> None:
     super().__init__(*args)
 
     if self.streaming_mode == StreamingMode.LIVE and not self.segment_per_file:

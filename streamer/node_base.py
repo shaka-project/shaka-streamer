@@ -24,6 +24,8 @@ import threading
 import time
 import traceback
 
+from . import node_base
+from typing import Any, Dict, IO, List, Optional, Union
 
 class ProcessStatus(enum.Enum):
   # Use number values so we can sort based on value.
@@ -42,10 +44,10 @@ class NodeBase(object):
   """A base class for nodes that run a single subprocess."""
 
   @abc.abstractmethod
-  def __init__(self):
+  def __init__(self) -> None:
     self._process = None
 
-  def __del__(self):
+  def __del__(self) -> None:
     # If the process isn't stopped by now, stop it here.  It is preferable to
     # explicitly call stop().
     self.stop(None)
@@ -59,8 +61,13 @@ class NodeBase(object):
     """
     pass
 
-  def _create_process(self, args, env={}, merge_env=True, stdout=None,
-                      stderr=None, shell=False):
+  def _create_process(self,
+                      args: Union[str, List[str]],
+                      env: Dict[str, str] = {},
+                      merge_env: bool = True,
+                      stdout: Union[int, IO[Any], None] = None,
+                      stderr: Union[int, IO[Any], None] = None,
+                      shell: bool = False) -> subprocess.Popen:
     """A central point to create subprocesses, so that we can debug the
     command-line arguments.
 
@@ -85,10 +92,15 @@ class NodeBase(object):
     # debugging in a shell.
     if shell:
       assert type(args) is str
-      print('+ ' + args)
+      # The type checker doesn't seem to be able to determine from the assert
+      # that the type of args is str in this case. The explicit cast is a
+      # workaround for that.
+      # TODO: Look for a better way to do it.
+      print('+ ' + str(args))
     else:
       assert type(args) is list
       print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
+
 
     return subprocess.Popen(args,
                             env=child_env,
@@ -96,7 +108,7 @@ class NodeBase(object):
                             stdout=stdout, stderr=stderr,
                             shell=shell)
 
-  def check_status(self):
+  def check_status(self) -> ProcessStatus:
     """Returns the current ProcessStatus of the node."""
     if not self._process:
       raise ValueError('Must have a process to check')
@@ -110,7 +122,7 @@ class NodeBase(object):
     else:
       return ProcessStatus.Errored
 
-  def stop(self, status):
+  def stop(self, status: Optional[ProcessStatus]) -> None:
     """Stop the subprocess if it's still running."""
     if self._process:
       # Slightly more polite than kill.  Try this first.
@@ -128,15 +140,15 @@ class NodeBase(object):
         # this, it can create a zombie process.
         self._process.wait()
 
-class PolitelyWaitOnFinishMixin(object):
+class PolitelyWaitOnFinish(node_base.NodeBase):
   """A mixin that makes stop() wait for the subprocess if status is Finished.
 
   This is as opposed to the base class behavior, in which stop() forces
   the subprocesses of a node to terminate.
   """
 
-  def stop(self, status):
-    if status == ProcessStatus.Finished:
+  def stop(self, status: Optional[ProcessStatus]) -> None:
+    if self._process and status == ProcessStatus.Finished:
       try:
         print('Waiting for', self.__class__.__name__)
         self._process.wait(timeout=300)  # 5m timeout
@@ -152,14 +164,14 @@ class ThreadedNodeBase(NodeBase):
   The thread repeats some callback in a background thread.
   """
 
-  def __init__(self, thread_name, continue_on_exception):
+  def __init__(self, thread_name: str, continue_on_exception: bool):
     super().__init__()
     self._status = ProcessStatus.Finished
     self._thread_name = thread_name
     self._continue_on_exception = continue_on_exception
     self._thread = threading.Thread(target=self._thread_main, name=thread_name)
 
-  def _thread_main(self):
+  def _thread_main(self) -> None:
     while self._status == ProcessStatus.Running:
       try:
         self._thread_single_pass()
@@ -189,13 +201,13 @@ class ThreadedNodeBase(NodeBase):
     """
     pass
 
-  def start(self):
+  def start(self) -> None:
     self._status = ProcessStatus.Running
     self._thread.start()
 
-  def stop(self, status):
+  def stop(self, status: Optional[ProcessStatus]) -> None:
     self._status = ProcessStatus.Finished
     self._thread.join()
 
-  def check_status(self):
+  def check_status(self) -> ProcessStatus:
     return self._status

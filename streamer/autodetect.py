@@ -18,11 +18,9 @@ import shlex
 import subprocess
 import time
 
-from . import bitrate_configuration
-from . import input_configuration
-
-# Alias a few classes to avoid repeating namespaces later.
-InputType = input_configuration.InputType
+from streamer.bitrate_configuration import VideoResolution, Resolution
+from streamer.input_configuration import Input, InputType
+from typing import Optional
 
 # These cannot be probed by ffprobe.
 TYPES_WE_CANT_PROBE = [
@@ -31,7 +29,7 @@ TYPES_WE_CANT_PROBE = [
 ]
 
 
-def _probe(input, field):
+def _probe(input: Input, field: str) -> Optional[str]:
   """Autodetect some feature of the input, if possible, using ffprobe.
 
   Args:
@@ -65,9 +63,9 @@ def _probe(input, field):
 
   print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
 
-  output_bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
+  output_bytes: bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
   # The output is either the language code or just a blank line.
-  output_string = output_bytes.decode('utf-8').strip()
+  output_string: Optional[str] = output_bytes.decode('utf-8').strip()
   # After stripping the newline, we can fall back to None if it's empty.
   output_string = output_string or None
 
@@ -79,11 +77,11 @@ def _probe(input, field):
   return output_string
 
 
-def get_language(input):
+def get_language(input: Input) -> Optional[str]:
   """Returns the autodetected the language of the input."""
   return _probe(input, 'stream_tags=language')
 
-def get_interlaced(input):
+def get_interlaced(input: Input) -> bool:
   """Returns True if we detect that the input is interlaced."""
   interlaced_string = _probe(input, 'stream=field_order')
 
@@ -99,7 +97,7 @@ def get_interlaced(input):
     'bt',
   ]
 
-def get_frame_rate(input):
+def get_frame_rate(input: Input) -> Optional[float]:
   """Returns the autodetected frame rate of the input."""
 
   frame_rate_string = _probe(input, 'stream=r_frame_rate')
@@ -111,7 +109,7 @@ def get_frame_rate(input):
   # float.
   fraction = frame_rate_string.split('/')
   if len(fraction) == 1:
-    frame_rate = float(fraction)
+    frame_rate = float(fraction[0])
   else:
     frame_rate = float(fraction[0]) / float(fraction[1])
 
@@ -125,7 +123,7 @@ def get_frame_rate(input):
 
   return frame_rate
 
-def get_resolution(input):
+def get_resolution(input: Input) -> Optional[VideoResolution]:
   """Returns the autodetected resolution of the input."""
 
   resolution_string = _probe(input, 'stream=width,height')
@@ -139,7 +137,7 @@ def get_resolution(input):
   width, height = int(width_string), int(height_string)
   input_resolution = (width, height)
 
-  for bucket in bitrate_configuration.Resolution.sorted_values():
+  for bucket in Resolution.sorted_values():
     resolution = (bucket.max_width, bucket.max_height)
     frame_rate = bucket.max_frame_rate
 

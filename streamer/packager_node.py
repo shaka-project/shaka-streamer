@@ -21,6 +21,10 @@ from . import input_configuration
 from . import node_base
 from . import pipeline_configuration
 
+from streamer.output_stream import OutputStream
+from streamer.pipeline_configuration import PipelineConfig
+from typing import List, Union
+
 # Alias a few classes to avoid repeating namespaces later.
 MediaType = input_configuration.MediaType
 
@@ -51,16 +55,19 @@ class SegmentError(Exception):
   pass
 
 
-class PackagerNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
+class PackagerNode(node_base.PolitelyWaitOnFinish):
 
-  def __init__(self, pipeline_config, output_dir, output_streams):
+  def __init__(self,
+               pipeline_config: PipelineConfig,
+               output_dir: str,
+               output_streams: List[OutputStream]) -> None:
     super().__init__()
-    self._pipeline_config = pipeline_config
-    self._output_dir = output_dir
-    self._segment_dir = os.path.join(output_dir, pipeline_config.segment_folder)
-    self._output_streams = output_streams
+    self._pipeline_config: PipelineConfig = pipeline_config
+    self._output_dir: str = output_dir
+    self._segment_dir: str = os.path.join(output_dir, pipeline_config.segment_folder)
+    self._output_streams: List[OutputStream] = output_streams
 
-  def start(self):
+  def start(self) -> None:
     args = [
         'packager',
     ]
@@ -100,11 +107,11 @@ class PackagerNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
       # the screen.
       stdout = open('PackagerNode.log', 'w')
 
-    self._process = self._create_process(args,
+    self._process: subprocess.Popen = self._create_process(args,
                                          stderr=subprocess.STDOUT,
                                          stdout=stdout)
 
-  def _setup_stream(self, stream):
+  def _setup_stream(self, stream: OutputStream) -> str:
     dict = {
         'in': stream.pipe,
         'stream': stream.type.value,
@@ -132,8 +139,8 @@ class PackagerNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
     # key=value pairs separated by commas.
     return ','.join(key + '=' + value for key, value in dict.items())
 
-  def _setup_manifest_format(self):
-    args = []
+  def _setup_manifest_format(self) -> List[str]:
+    args: List[str] = []
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         args += [
@@ -160,7 +167,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
       ]
     return args
 
-  def _setup_encryption(self):
+  def _setup_encryption(self) -> List[str]:
     # Sets up encryption of content.
     args = [
       '--enable_widevine_encryption',

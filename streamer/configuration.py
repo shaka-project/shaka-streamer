@@ -16,6 +16,7 @@ import abc
 import enum
 import re
 
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 class ConfigError(Exception):
   """A base class for config errors.
@@ -71,7 +72,7 @@ class MalformedField(ConfigError):
         self.class_name, self.field_name, self.reason)
 
 
-class ValidatingType(object):
+class ValidatingType(metaclass=abc.ABCMeta):
   """A base wrapper type that validates the input against a limited range.
 
   Subclasses of this are handled specially by the config system, but this is
@@ -85,15 +86,23 @@ class ValidatingType(object):
   type.
   """
 
+  @staticmethod
   @abc.abstractmethod
-  def __init__(self):
+  def validate(value: str) -> None:
+    pass
+
+  @staticmethod
+  @abc.abstractmethod
+  def name() -> str:
     pass
 
 
 class HexString(ValidatingType):
   """A wrapper that can be used in Field() to require a hex string."""
 
-  name = 'hexadecimal string'
+  @staticmethod
+  def name() -> str:
+    return 'hexadecimal string'
 
   @staticmethod
   def validate(value):
@@ -101,7 +110,6 @@ class HexString(ValidatingType):
       raise TypeError()
     if not re.match(r'^[a-fA-F0-9]+$', value):
       raise ValueError('not a hexadecimal string')
-
 
 class RuntimeMapType(object):
   """A base wrapper type that allows valid values to be chosen at runtime.
@@ -118,10 +126,11 @@ class RuntimeMapType(object):
   return an Enum instance.
   """
 
-  _map = {}
+  _map: Dict[str, Any] = {}
 
   @classmethod
-  def set_map(cls, map):
+  def set_map(cls,
+              map: Dict[str, 'Base']) -> None:
     """Set the map of valid values for this class."""
 
     assert cls != RuntimeMapType, 'Do not use the base class directly!'
@@ -136,7 +145,7 @@ class RuntimeMapType(object):
       setattr(value, 'get_key', lambda bound_key=key: bound_key)
 
   # __new__ is special and doesn't use @classmethod
-  def __new__(cls, key):
+  def __new__(cls, key: str):
     """A magic method to change the constructor behavior for the class.
 
     This will map valid values into the map set by set_map.
@@ -155,15 +164,18 @@ class RuntimeMapType(object):
     return cls._map.keys()
 
   @classmethod
-  def sorted_values(cls):
+  def sorted_values(cls) -> List['Base']:
     return sorted(cls._map.values())
-
 
 class Field(object):
   """A container for metadata about individual config fields."""
 
-  def __init__(self, type, required=False, keytype=str, subtype=None,
-               default=None):
+  def __init__(self,
+               type: Optional[Type],
+               required: bool = False,
+               keytype: Any = str,
+               subtype: Optional[Type] = None,
+               default: Optional[Type] = None) -> None:
     """
     Args:
         type (class): The required type for values of this field.
@@ -172,18 +184,20 @@ class Field(object):
         subtype (class): The required type of values inside lists or dicts.
         default: The default value if the field is not specified.
     """
-    self.type = type
-    self.required = required
-    self.keytype = keytype
-    self.subtype = subtype
-    self.default = default
+    self.type: Optional[Type] = type
+    self.required: bool = required
+    self.keytype: Optional[Type] = keytype
+    self.subtype: Optional[Type] = subtype
+    self.default: Optional[Type] = default
 
-  def get_type_name(self):
+  def get_type_name(self) -> str:
     """Get a human-readable string for the name of self.type."""
     return Field.get_type_name_static(self.type, self.keytype, self.subtype)
 
   @staticmethod
-  def get_type_name_static(type, keytype, subtype):
+  def get_type_name_static(type: Optional[Type],
+                           keytype: Optional[Type],
+                           subtype: Optional[Type]) -> str:
     """Get a human-readable string for the name of type."""
 
     # Make these special cases a little more readable.
@@ -211,7 +225,7 @@ class Field(object):
       options = [repr(str(key)) for key in type.keys()]
       return '{} (one of {})'.format(type.__name__, ', '.join(options))
     elif issubclass(type, ValidatingType):
-      return type.name
+      return type.name()
 
     # Otherwise, return the name of the type.
     return type.__name__
@@ -227,7 +241,7 @@ class Base(object):
   The base class does the rest.
   """
 
-  def __init__(self, dictionary):
+  def __init__(self, dictionary: Dict[str, Any]) -> None:
     """Ingests, type-checks, and validates the input dictionary."""
 
     # Collect all the config fields for this type.
@@ -259,7 +273,10 @@ class Base(object):
         # Otherwise, assign a default.
         setattr(self, key, field.default)
 
-  def _check_and_convert_type(self, field, key, value):
+  def _check_and_convert_type(self,
+                              field: Field,
+                              key: str,
+                              value: Any) -> Any:
     """Check the type of |value| and convert it as necessary.
 
     Args:
@@ -277,6 +294,7 @@ class Base(object):
 
     # For fields containing other config objects, specially check and convert
     # them.
+    assert field.type is not None
     if issubclass(field.type, Base):
       # A config object at this stage should be a dictionary.
       if not isinstance(value, dict):

@@ -20,6 +20,8 @@ from . import bitrate_configuration
 from . import configuration
 
 
+from typing import Any, List, Optional
+
 class InputType(enum.Enum):
   FILE = 'file'
   """A track from a file.  Usable only with VOD."""
@@ -181,20 +183,20 @@ class Input(configuration.Base):
   """
 
 
-  def __init__(self, *args):
+  def __init__(self, *args) -> None:
     super().__init__(*args)
 
     # FIXME: A late import to avoid circular dependency issues between these two
     # modules.
     from . import autodetect
 
-    def require_field(name):
+    def require_field(name: str) -> None:
       """Raise MissingRequiredField if the named field is still missing."""
       if getattr(self, name) is None:
         raise configuration.MissingRequiredField(
             self.__class__, name, getattr(self.__class__, name))
 
-    def disallow_field(name, reason):
+    def disallow_field(name: str, reason: str) -> None:
       """Raise MalformedField if the named field is present."""
       if getattr(self, name):
         raise configuration.MalformedField(
@@ -251,9 +253,9 @@ class Input(configuration.Base):
 
     # A path to a pipe into which this input's contents are fed.
     # None for most input types.
-    self._pipe = None
+    self._pipe: Optional[str] = None
 
-  def set_pipe(self, pipe):
+  def set_pipe(self, pipe: str) -> None:
     """Set the path to a pipe into which this input's contents are fed.
 
     If set, this is what TranscoderNode will read from instead of .name.
@@ -261,7 +263,7 @@ class Input(configuration.Base):
 
     self._pipe = pipe
 
-  def get_path_for_transcode(self):
+  def get_path_for_transcode(self) -> str:
     """Get the path which the transcoder will use to read the input.
 
     For some input types, this is a named pipe.  For others, this is .name.
@@ -269,7 +271,7 @@ class Input(configuration.Base):
 
     return self._pipe or self.name
 
-  def get_stream_specifier(self):
+  def get_stream_specifier(self) -> str:
     """Get an FFmpeg stream specifier for this input.
 
     For example, the first video track would be "v:0", and the 3rd text track
@@ -289,7 +291,7 @@ class Input(configuration.Base):
 
     assert False, 'Unrecognized media_type!  This should not happen.'
 
-  def get_input_args(self):
+  def get_input_args(self) -> List[Any]:
     """Get any required input arguments for this input.
 
     These are like hard-coded extra_input_args for certain input types.
@@ -306,7 +308,7 @@ class Input(configuration.Base):
           # Set the frame rate to the one specified in the input config.
           # Note that this is the input framerate for the image2 dexuxer, which
           # is not what the similar '-r' option is meant for.
-          '-framerate', str(input.frame_rate),
+          '-framerate', str(self.frame_rate),
       ]
     elif self.input_type == InputType.WEBCAM:
       if platform.system() == 'Linux':

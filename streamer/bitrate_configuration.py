@@ -20,13 +20,16 @@ import re
 from . import configuration
 
 
+from typing import Tuple, Union
 class BitrateString(configuration.ValidatingType):
   """A wrapper that can be used in Field() to require a bitrate string."""
 
-  name = 'bitrate string'
+  @staticmethod
+  def name() -> str:
+    return 'bitrate string'
 
   @staticmethod
-  def validate(value):
+  def validate(value: str) -> None:
     if type(value) is not str:
       raise TypeError()
     if not re.match(r'^[\d\.]+(?:[kM])?$', value):
@@ -35,25 +38,25 @@ class BitrateString(configuration.ValidatingType):
 
 class AudioCodec(enum.Enum):
 
-  AAC = 'aac'
-  OPUS = 'opus'
+  AAC: str = 'aac'
+  OPUS: str = 'opus'
 
-  def is_hardware_accelerated(self):
+  def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
     return False
 
-  def get_ffmpeg_codec_string(self, hwaccel_api):
+  def get_ffmpeg_codec_string(self, hwaccel_api: str) -> str:
     """Returns a codec string accepted by FFmpeg for this codec."""
     # FFmpeg warns:
     #   The encoder 'opus' is experimental but experimental codecs are not
     #   enabled, add '-strict -2' if you want to use it. Alternatively use the
     #   non experimental encoder 'libopus'.
-    if self.value == 'opus':
+    if self == AudioCodec.OPUS:
       return 'libopus'
 
     return self.value
 
-  def get_output_format(self):
+  def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
     if self == AudioCodec.OPUS:
       return 'webm'
@@ -79,11 +82,11 @@ class VideoCodec(enum.Enum):
   HARDWARE_VP9 = 'hw:vp9'
   """VP9 with hardware encoding."""
 
-  def is_hardware_accelerated(self):
+  def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
     return self.value.startswith('hw:')
 
-  def get_base_codec(self):
+  def get_base_codec(self) -> 'VideoCodec':
     """Returns an instance of the same codec without hardware acceleration."""
     if self.is_hardware_accelerated():
       value_without_prefix = self.value.split(':')[1]
@@ -91,7 +94,7 @@ class VideoCodec(enum.Enum):
 
     return self
 
-  def get_ffmpeg_codec_string(self, hwaccel_api):
+  def get_ffmpeg_codec_string(self, hwaccel_api: str) -> str:
     """Returns a codec string accepted by FFmpeg for this codec."""
     if self.is_hardware_accelerated():
       assert hwaccel_api, 'No hardware encoding support on this platform!'
@@ -99,7 +102,7 @@ class VideoCodec(enum.Enum):
 
     return self.value
 
-  def get_output_format(self):
+  def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
     if self.get_base_codec() == VideoCodec.VP9:
       return 'webm'
@@ -133,10 +136,14 @@ class AudioChannelLayout(configuration.Base):
   For example, this could be '500k' or '7.5M'.
   """
 
-  def __eq__(self, other):
+  # The __eq__ method, defined on the object level is supposed to
+  # take in any object as an argument, not just AudioChannelLayout.
+  # The typechecker freaks out at the signature. The 'type: ignore'
+  # comment on the next line silences the error.
+  def __eq__(self, other: 'AudioChannelLayout') -> bool: # type: ignore
     return self.max_channels == other.max_channels
 
-  def __lt__(self, other):
+  def __lt__(self, other: 'AudioChannelLayout') -> bool:
     return self.max_channels < other.max_channels
 
 
@@ -187,14 +194,18 @@ class VideoResolution(configuration.Base):
   For example, this could be '500k' or '7.5M'.
   """
 
-  def _sortable_properties(self):
+  def _sortable_properties(self) -> Tuple:
     """Return a tuple of properties we can sort on."""
     return (self.max_width, self.max_height, self.max_frame_rate)
 
-  def __eq__(self, other):
+  # The __eq__ method, defined on the object level is supposed to
+  # take in any object as an argument, not just AudioChannelLayout.
+  # The typechecker freaks out at the signature. The 'type: ignore'
+  # comment on the next line silences the error.
+  def __eq__(self, other: 'VideoResolution') -> bool: # type: ignore
     return self._sortable_properties() == other._sortable_properties()
 
-  def __lt__(self, other):
+  def __lt__(self, other: 'VideoResolution') -> bool:
     return self._sortable_properties() < other._sortable_properties()
 
 

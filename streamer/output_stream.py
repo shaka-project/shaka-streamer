@@ -17,18 +17,32 @@
 from . import bitrate_configuration
 from . import input_configuration
 
+from streamer.bitrate_configuration import AudioCodec, VideoCodec, VideoResolution
+from streamer.input_configuration import Input, MediaType
+from typing import Any, Dict, Union
+
 # Alias a few classes to avoid repeating namespaces later.
 ChannelLayout = bitrate_configuration.ChannelLayout
-MediaType = input_configuration.MediaType
 
 
 class OutputStream(object):
   """Base class for output streams."""
 
-  def fill_template(self, template, **kwargs):
+  def __init__(self,
+               type: MediaType,
+               pipe: str,
+               input: Input,
+               codec: Union[AudioCodec, VideoCodec, None]) -> None:
+    self.type: MediaType = type
+    self.pipe: str = pipe
+    self.input: Input = input
+    self.codec: Union[AudioCodec, VideoCodec, None] = codec
+    self._features: Dict[str, Any] = {}
+
+  def fill_template(self, template: str, **kwargs) -> str:
     """Fill in a template string using **kwargs and features of the output."""
 
-    value_map = {}
+    value_map: Dict[str, str] = {}
     # First take any feature values from this object.
     value_map.update(self._features)
     # Then fill in any values from kwargs.
@@ -36,22 +50,29 @@ class OutputStream(object):
     # Now fill in the template with these values.
     return template.format(**value_map)
 
-  def is_hardware_accelerated(self):
+  def is_hardware_accelerated(self) -> bool:
     """Returns True if this output stream uses hardware acceleration."""
-    return self.codec and self.codec.is_hardware_accelerated()
+    if self.codec:
+      return self.codec.is_hardware_accelerated()
+    return False
 
-  def get_ffmpeg_codec_string(self, hwaccel_api):
+  def get_ffmpeg_codec_string(self, hwaccel_api: str) -> str:
     """Returns a codec string accepted by FFmpeg for this stream's codec."""
-    return self.codec and self.codec.get_ffmpeg_codec_string(hwaccel_api)
+    assert self.codec is not None
+    return self.codec.get_ffmpeg_codec_string(hwaccel_api)
 
 
 class AudioOutputStream(OutputStream):
 
-  def __init__(self, pipe, input, codec, channels):
-    self.type = MediaType.AUDIO
-    self.pipe = pipe
-    self.input = input
-    self.codec = codec
+  def __init__(self,
+               pipe: str,
+               input: Input,
+               codec: AudioCodec,
+               channels: int) -> None:
+
+    super().__init__(MediaType.AUDIO, pipe, input, codec)
+    # Override the codec type and specify that it's an audio codec
+    self.codec: AudioCodec = codec
 
     # TODO: Make channels an input feature instead of an output feature
     self.channels = channels
@@ -75,18 +96,22 @@ class AudioOutputStream(OutputStream):
       'format': self.codec.get_output_format(),
     }
 
-  def get_bitrate(self):
+  def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
+    assert self.layout is not None
     return self.layout.bitrates[self.codec]
 
 
 class VideoOutputStream(OutputStream):
 
-  def __init__(self, pipe, input, codec, resolution):
-    self.type = MediaType.VIDEO
-    self.pipe = pipe
-    self.input = input
-    self.codec = codec
+  def __init__(self,
+               pipe: str,
+               input: Input,
+               codec: VideoCodec,
+               resolution: VideoResolution) -> None:
+    super().__init__(MediaType.VIDEO, pipe, input, codec)
+    # Override the codec type and specify that it's an audio codec
+    self.codec: VideoCodec = codec
     self.resolution = resolution
 
     # The features that will be used to generate the output filename.
@@ -96,7 +121,7 @@ class VideoOutputStream(OutputStream):
       'format': self.codec.get_output_format(),
     }
 
-  def get_bitrate(self):
+  def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
     return self.resolution.bitrates[self.codec.get_base_codec()]
 
@@ -104,16 +129,21 @@ class VideoOutputStream(OutputStream):
 class TextOutputStream(OutputStream):
 
   def __init__(self, input):
-    self.type = MediaType.TEXT
-    # We don't transcode or process text yet, so this isn't really a pipe.
-    # But assigning the input name to pipe for text allows PackagerNode to be
-    # ignorant of these details.
-    self.pipe = input.name
-    self.input = input
-    # We don't have a codec per se for text, but we'd like to generically
-    # process OutputStream objects in ways that are easier with this attribute
-    # set, so set it to None.
-    self.codec = None
+    super().__init__(
+        MediaType.TEXT,
+        # We don't transcode or process text yet,
+        # so this isn't really a pipe.
+        # But assigning the input name to pipe for
+        # text allows PackagerNode to be
+        # ignorant of these details.
+        input.name,
+        input,
+        # We don't have a codec per se for text,
+        # but we'd like to generically
+        # process OutputStream objects in ways that
+        # are easier with this attribute set, so set it to None.
+        None)
+
 
     # The features that will be used to generate the output filename.
     self._features = {

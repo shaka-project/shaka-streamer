@@ -14,30 +14,25 @@
 
 """A module that pushes input to ffmpeg to transcode into various formats."""
 
-from . import bitrate_configuration
-from . import input_configuration
-from . import node_base
-from . import pipeline_configuration
+from streamer.bitrate_configuration import AudioCodec, VideoCodec
+from streamer.input_configuration import Input, InputConfig, InputType, MediaType
+from streamer.node_base import PolitelyWaitOnFinish
+from streamer.output_stream import AudioOutputStream, VideoOutputStream, OutputStream
+from streamer.pipeline_configuration import PipelineConfig, StreamingMode
+from typing import List, Union
 
-# Alias a few classes to avoid repeating namespaces later.
-AudioCodec = bitrate_configuration.AudioCodec
-VideoCodec = bitrate_configuration.VideoCodec
+class TranscoderNode(PolitelyWaitOnFinish):
 
-InputType = input_configuration.InputType
-MediaType = input_configuration.MediaType
-
-StreamingMode = pipeline_configuration.StreamingMode
-
-
-class TranscoderNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
-
-  def __init__(self, input_config, pipeline_config, outputs):
+  def __init__(self,
+               input_config: InputConfig,
+               pipeline_config: PipelineConfig,
+               outputs: List[OutputStream]) -> None:
     super().__init__()
     self._input_config = input_config
     self._pipeline_config = pipeline_config
     self._outputs = outputs
 
-  def start(self):
+  def start(self) -> None:
     args = [
         'ffmpeg',
         # Do not prompt for output files that already exist. Since we created
@@ -148,9 +143,9 @@ class TranscoderNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
 
     self._process = self._create_process(args, env)
 
-  def _encode_audio(self, stream, input):
-    filters = []
-    args = [
+  def _encode_audio(self, stream: AudioOutputStream, input: Input) -> List[str]:
+    filters: List[str] = []
+    args: List[str] = [
         # No video encoding for audio.
         '-vn',
         # TODO: This implied downmixing is not ideal.
@@ -197,9 +192,9 @@ class TranscoderNode(node_base.PolitelyWaitOnFinishMixin, node_base.NodeBase):
 
     return args
 
-  def _encode_video(self, stream, input):
-    filters = []
-    args = []
+  def _encode_video(self, stream: VideoOutputStream, input: Input) -> List[str]:
+    filters: List[str] = []
+    args: List[str] = []
 
     if input.is_interlaced:
       filters.append('pp=fd')

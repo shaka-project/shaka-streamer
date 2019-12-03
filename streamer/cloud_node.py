@@ -49,15 +49,19 @@ class CloudAccessError(Exception):
   pass
 
 class CloudNode(node_base.ThreadedNodeBase):
-  def __init__(self, input_dir, bucket_url, temp_dir, is_vod):
+  def __init__(self,
+               input_dir: str,
+               bucket_url: str,
+               temp_dir: str,
+               is_vod: bool):
     super().__init__(thread_name='cloud', continue_on_exception=True)
-    self._input_dir = input_dir
-    self._bucket_url = bucket_url
-    self._temp_dir = temp_dir
-    self._is_vod = is_vod
+    self._input_dir: str = input_dir
+    self._bucket_url: str = bucket_url
+    self._temp_dir: str = temp_dir
+    self._is_vod: bool = is_vod
 
   @staticmethod
-  def check_access(bucket_url):
+  def check_access(bucket_url: str) -> None:
     """Called early to test that the user can write to the destination bucket.
 
     Writes an empty file called ".shaka-streamer-access-check" to the
@@ -90,7 +94,7 @@ Additional output from gsutil:
   {}""".format(bucket_url, status.stderr)
       raise CloudAccessError(message)
 
-  def _thread_single_pass(self):
+  def _thread_single_pass(self) -> None:
     # With recursive=True, glob's ** will also match the base dir.
     manifest_files = (
         glob.glob(self._input_dir + '/**/*.mpd', recursive=True) +
@@ -148,7 +152,8 @@ Additional output from gsutil:
     ]
     subprocess.check_call(args)
 
-  def stop(self, status):
+  def stop(self,
+           status: node_base.ProcessStatus) -> None:
     super().stop(status)
 
     # A fix for issue #30:
