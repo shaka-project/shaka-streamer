@@ -45,7 +45,7 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 # Changes relative path to where this file is.
-os.chdir(os.path.dirname(__file__))
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 controller = None
 
 app = flask.Flask(__name__, static_folder=OUTPUT_DIR)
