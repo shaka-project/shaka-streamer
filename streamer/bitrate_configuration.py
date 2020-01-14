@@ -144,7 +144,7 @@ class AudioChannelLayout(configuration.Base):
     return self.max_channels == other.max_channels
 
   def __lt__(self, other: 'AudioChannelLayout') -> bool:
-    return self.max_channels < other.max_channels
+    return self.max_channels < other.max_channels # type: ignore
 
 
 DEFAULT_AUDIO_CHANNEL_LAYOUTS = {

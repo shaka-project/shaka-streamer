@@ -30,33 +30,16 @@ import sys
 import tempfile
 import uuid
 
-from . import bitrate_configuration
-from . import cloud_node
-from . import external_command_node
-from . import input_configuration
-from . import node_base
-from . import output_stream
-from . import packager_node
-from . import pipeline_configuration
-from . import transcoder_node
-
 from typing import Any, Dict, List, Tuple, Union
-
-# Alias a few classes to avoid repeating namespaces later.
-BitrateConfig = bitrate_configuration.BitrateConfig
-
-InputConfig = input_configuration.InputConfig
-InputType = input_configuration.InputType
-MediaType = input_configuration.MediaType
-
-AudioOutputStream = output_stream.AudioOutputStream
-TextOutputStream = output_stream.TextOutputStream
-VideoOutputStream = output_stream.VideoOutputStream
-
-
-
-PipelineConfig = pipeline_configuration.PipelineConfig
-StreamingMode = pipeline_configuration.StreamingMode
+from streamer.cloud_node import CloudNode
+from streamer.bitrate_configuration import BitrateConfig, ChannelLayout, Resolution
+from streamer.external_command_node import ExternalCommandNode
+from streamer.input_configuration import InputConfig, InputType, MediaType
+from streamer.node_base import NodeBase, ProcessStatus
+from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
+from streamer.packager_node import PackagerNode
+from streamer.pipeline_configuration import PipelineConfig, StreamingMode
+from streamer.transcoder_node import TranscoderNode
 
 
 class ControllerNode(object):
@@ -71,7 +54,7 @@ class ControllerNode(object):
     self._temp_dir: str = tempfile.mkdtemp(
         dir=global_temp_dir, prefix='shaka-live-', suffix='')
 
-    self._nodes: List[node_base.NodeBase] = []
+    self._nodes: List[NodeBase] = []
 
   def __del__(self) -> None:
     # Clean up named pipes by removing the temp directory we placed them in.
@@ -147,7 +130,7 @@ class ControllerNode(object):
     if bucket_url:
       # If using cloud storage, make sure the user is logged in and can access
       # the destination, independent of the version check above.
-      cloud_node.CloudNode.check_access(bucket_url)
+      CloudNode.check_access(bucket_url)
 
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
@@ -155,16 +138,15 @@ class ControllerNode(object):
     # Now that the definitions have been parsed, register the maps of valid
     # resolutions and channel layouts so that InputConfig and PipelineConfig
     # can be validated accordingly.
-    bitrate_configuration.Resolution.set_map(bitrate_config.video_resolutions)
-    bitrate_configuration.ChannelLayout.set_map(
-        bitrate_config.audio_channel_layouts)
+    Resolution.set_map(bitrate_config.video_resolutions) #type: ignore
+    ChannelLayout.set_map(bitrate_config.audio_channel_layouts) #type: ignore
 
     input_config = InputConfig(input_config_dict)
     pipeline_config = PipelineConfig(pipeline_config_dict)
     self._pipeline_config = pipeline_config
 
-    outputs: List[output_stream.OutputStream] = []
-    for input in input_config.inputs:
+    outputs: List[OutputStream] = []
+    for input in input_config.inputs: #type: ignore
       # External command inputs need to be processed by an additional node
       # before being transcoded.  In this case, the input doesn't have a
       # filename that FFmpeg can read, so we generate an intermediate pipe for
@@ -172,20 +154,20 @@ class ControllerNode(object):
       # read from that pipe for this input.
       if input.input_type == InputType.EXTERNAL_COMMAND:
         command_output = self._create_pipe()
-        self._nodes.append(external_command_node.ExternalCommandNode(
+        self._nodes.append(ExternalCommandNode(
             input.name, command_output))
         input.set_pipe(command_output)
 
       if input.media_type == MediaType.AUDIO:
-        for codec in pipeline_config.audio_codecs:
+        for codec in pipeline_config.audio_codecs: #type: ignore
           outputs.append(AudioOutputStream(self._create_pipe(),
                                            input,
                                            codec,
-                                           pipeline_config.channels))
+                                           pipeline_config.channels)) #type: ignore
 
       elif input.media_type == MediaType.VIDEO:
-        for codec in pipeline_config.video_codecs:
-          for output_resolution in pipeline_config.resolutions:
+        for codec in pipeline_config.video_codecs: #type: ignore
+          for output_resolution in pipeline_config.resolutions: #type: ignore
             # Only going to output lower or equal resolution videos.
             # Upscaling is costly and does not do anything.
             if input.resolution < output_resolution:
@@ -199,11 +181,11 @@ class ControllerNode(object):
       elif input.media_type == MediaType.TEXT:
         outputs.append(TextOutputStream(input))
 
-    self._nodes.append(transcoder_node.TranscoderNode(input_config,
+    self._nodes.append(TranscoderNode(input_config,
                                                       pipeline_config,
                                                       outputs))
 
-    self._nodes.append(packager_node.PackagerNode(pipeline_config,
+    self._nodes.append(PackagerNode(pipeline_config,
                                                   output_dir,
                                                   outputs))
 
@@ -211,7 +193,7 @@ class ControllerNode(object):
       cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
       os.mkdir(cloud_temp_dir)
 
-      self._nodes.append(cloud_node.CloudNode(output_dir,
+      self._nodes.append(CloudNode(output_dir,
                                               bucket_url,
                                               cloud_temp_dir,
                                               self.is_vod()))
@@ -220,20 +202,18 @@ class ControllerNode(object):
       node.start()
     return self
 
-  def check_status(self) -> node_base.ProcessStatus:
+  def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
-
-    :rtype: streamer.node_base.ProcessStatus
 
     If one node is errored, this returns Errored; otherwise if one node is
     finished, this returns Finished; this only returns Running if all nodes are
     running.  If there are no nodes, this returns Finished.
     """
     if not self._nodes:
-      return node_base.ProcessStatus.Finished
+      return ProcessStatus.Finished
 
     value = max(node.check_status().value for node in self._nodes)
-    return node_base.ProcessStatus(value)
+    return ProcessStatus(value)
 
   def stop(self) -> None:
     """Stop all nodes."""

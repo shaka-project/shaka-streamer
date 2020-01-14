@@ -57,7 +57,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
             '-vaapi_device', '/dev/dri/renderD128',
         ]
 
-    for input in self._input_config.inputs:
+    for input in self._input_config.inputs: #type: ignore
       # Get any required input arguments for this input.
       # These are like hard-coded extra_input_args for certain input types.
       # This means users don't have to know much about FFmpeg options to handle
@@ -105,7 +105,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           '-i', input.get_path_for_transcode(),
       ]
 
-    for i, input in enumerate(self._input_config.inputs):
+    for i, input in enumerate(self._input_config.inputs): #type: ignore
       if input.media_type == MediaType.TEXT:
         # We don't yet have the ability to transcode or process text inputs.
         continue
@@ -128,8 +128,10 @@ class TranscoderNode(PolitelyWaitOnFinish):
         args += map_args
 
         if input.media_type == MediaType.AUDIO:
+          assert(isinstance(output_stream, AudioOutputStream))
           args += self._encode_audio(output_stream, input)
         else:
+          assert(isinstance(output_stream, VideoOutputStream))
           args += self._encode_video(output_stream, input)
 
         # The output pipe.
@@ -160,12 +162,12 @@ class TranscoderNode(PolitelyWaitOnFinish):
         'channelmap=channel_layout=5.1',
       ]
 
-    filters.extend(input.filters)
+    filters.extend(input.filters) #type: ignore
 
     hwaccel_api = self._pipeline_config.hwaccel_api
     args += [
         # Set codec and bitrate.
-        '-c:a', stream.get_ffmpeg_codec_string(hwaccel_api),
+        '-c:a', stream.get_ffmpeg_codec_string(hwaccel_api), #type: ignore
         '-b:a', stream.get_bitrate(),
     ]
 
@@ -200,7 +202,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
       filters.append('pp=fd')
       args.extend(['-r', str(input.frame_rate)])
 
-    filters.extend(input.filters)
+    filters.extend(input.filters) #type: ignore
 
     hwaccel_api = self._pipeline_config.hwaccel_api
 
@@ -242,7 +244,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
     if stream.codec.get_base_codec() == VideoCodec.H264:  # Software or hardware
       # Use the "high" profile for HD and up, and "main" for everything else.
       # https://en.wikipedia.org/wiki/Advanced_Video_Coding#Profiles
-      if stream.resolution.max_height >= 720:
+      if stream.resolution.max_height >= 720: #type: ignore
         profile = 'high'
       else:
         profile = 'main'
@@ -276,14 +278,14 @@ class TranscoderNode(PolitelyWaitOnFinish):
           '-row-mt', '1',
       ]
 
-    keyframe_interval = int(self._pipeline_config.segment_size *
+    keyframe_interval = int(self._pipeline_config.segment_size * #type: ignore
                             input.frame_rate)
 
     args += [
         # No audio encoding for video.
         '-an',
         # Set codec and bitrate.
-        '-c:v', stream.get_ffmpeg_codec_string(hwaccel_api),
+        '-c:v', stream.get_ffmpeg_codec_string(hwaccel_api), #type: ignore
         '-b:v', stream.get_bitrate(),
         # Set minimum and maximum GOP length.
         '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),

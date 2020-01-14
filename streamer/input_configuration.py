@@ -226,7 +226,7 @@ class Input(configuration.Base):
       # Text streams are only supported in plain file inputs.
       if self.input_type != InputType.FILE:
         reason = 'text streams are not supported in input_type "{}"'.format(
-            self.input_type.value)
+            self.input_type.value) #type: ignore
         disallow_field('input_type', reason)
 
       # These fields are not supported with text, because we don't process or
@@ -249,7 +249,7 @@ class Input(configuration.Base):
 
     # This needs to be parsed into an argument array.  Note that shlex.split on
     # an empty string will produce an empty array.
-    self.extra_input_args = shlex.split(self.extra_input_args)
+    self.extra_input_args = shlex.split(self.extra_input_args) #type: ignore
 
     # A path to a pipe into which this input's contents are fed.
     # None for most input types.
@@ -269,7 +269,7 @@ class Input(configuration.Base):
     For some input types, this is a named pipe.  For others, this is .name.
     """
 
-    return self._pipe or self.name
+    return self._pipe or self.name #type: ignore
 
   def get_stream_specifier(self) -> str:
     """Get an FFmpeg stream specifier for this input.

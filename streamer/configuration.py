@@ -168,6 +168,14 @@ class RuntimeMapType(object):
     return sorted(cls._map.values())
 
 class Field(object):
+  # TODO: This class is populated with actual configuration
+  # info at runtime. The correctness of the type/value pairs
+  # is checked by Base._check_and_convert_type().
+  # mypy is not able to understand this kind of metaprogramming,
+  # and we silence all Fieled class-related errors.
+  # We should explore better ways of reconciling the type
+  # checker with our Fields.
+
   """A container for metadata about individual config fields."""
 
   def __init__(self,
@@ -175,7 +183,7 @@ class Field(object):
                required: bool = False,
                keytype: Any = str,
                subtype: Optional[Type] = None,
-               default: Optional[Type] = None) -> None:
+               default: Optional[Any] = None) -> None:
     """
     Args:
         type (class): The required type for values of this field.

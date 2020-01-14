@@ -20,7 +20,7 @@ import time
 
 from streamer.bitrate_configuration import VideoResolution, Resolution
 from streamer.input_configuration import Input, InputType
-from typing import Optional
+from typing import Optional, List
 
 # These cannot be probed by ffprobe.
 TYPES_WE_CANT_PROBE = [
@@ -44,9 +44,9 @@ def _probe(input: Input, field: str) -> Optional[str]:
     # Not supported for this type.
     return None
 
-  args = [
+  args: List[str] = [
       # Probe this input file
-      'ffprobe', input.name,
+      'ffprobe', input.name, #type: ignore
   ]
 
   # Add any required input arguments for this input type
@@ -138,12 +138,12 @@ def get_resolution(input: Input) -> Optional[VideoResolution]:
   input_resolution = (width, height)
 
   for bucket in Resolution.sorted_values():
-    resolution = (bucket.max_width, bucket.max_height)
-    frame_rate = bucket.max_frame_rate
+    resolution = (bucket.max_width, bucket.max_height) #type: ignore
+    frame_rate = bucket.max_frame_rate #type: ignore
 
     # The first bucket this fits into is the one.
     if input_resolution <= resolution and input.frame_rate <= frame_rate:
-      return bucket
+      return bucket #type: ignore
 
   return None
 

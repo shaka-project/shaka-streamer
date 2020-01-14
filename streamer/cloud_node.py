@@ -19,7 +19,8 @@ import os
 import subprocess
 import time
 
-from . import node_base
+from streamer.node_base import ProcessStatus, ThreadedNodeBase
+from typing import Optional
 
 # This is the HTTP header "Cache-Control" which will be attached to the Cloud
 # Storage blobs uploaded by this tool.  When the browser requests a file from
@@ -48,7 +49,7 @@ class CloudAccessError(Exception):
   """Raised when the cloud URL cannot be written to by the user."""
   pass
 
-class CloudNode(node_base.ThreadedNodeBase):
+class CloudNode(ThreadedNodeBase):
   def __init__(self,
                input_dir: str,
                bucket_url: str,
@@ -116,7 +117,7 @@ Additional output from gsutil:
         contents = f.read()
 
       while (not contents and
-             self.check_status() == node_base.ProcessStatus.Running):
+             self.check_status() == ProcessStatus.Running):
         time.sleep(0.1)
 
         with open(manifest_path, 'rb') as f:
@@ -153,7 +154,7 @@ Additional output from gsutil:
     subprocess.check_call(args)
 
   def stop(self,
-           status: node_base.ProcessStatus) -> None:
+           status: Optional[ProcessStatus]) -> None:
     super().stop(status)
 
     # A fix for issue #30:

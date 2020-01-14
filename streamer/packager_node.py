@@ -23,7 +23,7 @@ from . import pipeline_configuration
 
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import PipelineConfig
-from typing import List, Union
+from typing import List, Optional, Union
 
 # Alias a few classes to avoid repeating namespaces later.
 MediaType = input_configuration.MediaType
@@ -64,7 +64,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     super().__init__()
     self._pipeline_config: PipelineConfig = pipeline_config
     self._output_dir: str = output_dir
-    self._segment_dir: str = os.path.join(output_dir, pipeline_config.segment_folder)
+    self._segment_dir: str = os.path.join(output_dir, pipeline_config.segment_folder) #type: ignore
     self._output_streams: List[OutputStream] = output_streams
 
   def start(self) -> None:
@@ -99,7 +99,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
 
     args += self._setup_manifest_format()
 
-    if self._pipeline_config.encryption.enable:
+    if self._pipeline_config.encryption.enable: #type: ignore
       args += self._setup_encryption()
 
     stdout = None
@@ -143,7 +143,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
 
   def _setup_manifest_format(self) -> List[str]:
     args: List[str] = []
-    if ManifestFormat.DASH in self._pipeline_config.manifest_format:
+    if ManifestFormat.DASH in self._pipeline_config.manifest_format: #type: ignore
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         args += [
             '--generate_static_mpd',
@@ -151,9 +151,9 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       args += [
           # Generate DASH manifest file.
           '--mpd_output',
-          os.path.join(self._output_dir, self._pipeline_config.dash_output),
+          os.path.join(self._output_dir, self._pipeline_config.dash_output), #type: ignore
       ]
-    if ManifestFormat.HLS in self._pipeline_config.manifest_format:
+    if ManifestFormat.HLS in self._pipeline_config.manifest_format: #type: ignore
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
             '--hls_playlist_type', 'LIVE',
@@ -165,7 +165,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       args += [
           # Generate HLS playlist file(s).
           '--hls_master_playlist_output',
-          os.path.join(self._output_dir, self._pipeline_config.hls_output),
+          os.path.join(self._output_dir, self._pipeline_config.hls_output), #type: ignore
       ]
     return args
 
@@ -173,13 +173,13 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     # Sets up encryption of content.
     args = [
       '--enable_widevine_encryption',
-      '--key_server_url', self._pipeline_config.encryption.key_server_url,
-      '--content_id', self._pipeline_config.encryption.content_id,
-      '--signer', self._pipeline_config.encryption.signer,
-      '--aes_signing_key', self._pipeline_config.encryption.signing_key,
-      '--aes_signing_iv', self._pipeline_config.encryption.signing_iv,
+      '--key_server_url', self._pipeline_config.encryption.key_server_url, #type: ignore
+      '--content_id', self._pipeline_config.encryption.content_id, #type: ignore
+      '--signer', self._pipeline_config.encryption.signer, #type: ignore
+      '--aes_signing_key', self._pipeline_config.encryption.signing_key, #type: ignore
+      '--aes_signing_iv', self._pipeline_config.encryption.signing_iv, #type: ignore
       '--protection_scheme',
-      self._pipeline_config.encryption.protection_scheme.value,
-      '--clear_lead', str(self._pipeline_config.encryption.clear_lead),
+      self._pipeline_config.encryption.protection_scheme.value, #type: ignore
+      '--clear_lead', str(self._pipeline_config.encryption.clear_lead), #type: ignore
     ]
     return args

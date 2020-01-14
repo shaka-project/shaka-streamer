@@ -45,7 +45,7 @@ class NodeBase(object):
 
   @abc.abstractmethod
   def __init__(self) -> None:
-    self._process = None
+    self._process: Optional[subprocess.Popen] = None
 
   def __del__(self) -> None:
     # If the process isn't stopped by now, stop it here.  It is preferable to
