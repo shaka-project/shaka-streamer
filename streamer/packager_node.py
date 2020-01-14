@@ -85,7 +85,9 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
           '--time_shift_buffer_depth',
           str(self._pipeline_config.availability_window),
           # Number of segments preserved outside the current live window.
-          '--preserved_segments_outside_live_window', '1',
+          # NOTE: This must not be set below 3, or the first segment in an HLS
+          # playlist may become unavailable before the playlist is updated.
+          '--preserved_segments_outside_live_window', '3',
           # Number of seconds of content encoded/packaged that is ahead of the
           # live edge.
           '--suggested_presentation_delay',

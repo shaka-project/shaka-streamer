@@ -3,6 +3,8 @@
  - Improve the formatting of minimum version errors
  - Fix several issues with Ubuntu 16.04 and Python 3.5
  - Add `--skip_deps_check` to bypass version checks on dependencies
+ - Increase preserved segments outside of the availability window, improving HLS
+   playback in Shaka Player
 
 
 ## 0.3.0 (2019-10-18)
