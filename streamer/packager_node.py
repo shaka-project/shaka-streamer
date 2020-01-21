@@ -74,6 +74,11 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
 
     args += [self._setup_stream(stream) for stream in self._output_streams]
 
+    if self._pipeline_config.quiet:
+      args += [
+          '--quiet',  # Only output error logs
+      ]
+
     args += [
         # Segment duration given in seconds.
         '--segment_duration', str(self._pipeline_config.segment_size),
@@ -146,7 +151,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     if ManifestFormat.DASH in self._pipeline_config.manifest_format: #type: ignore
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         args += [
-            '--generate_static_mpd',
+            '--generate_static_live_mpd',
         ]
       args += [
           # Generate DASH manifest file.
