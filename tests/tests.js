@@ -447,6 +447,30 @@ function codecTests(manifestUrl, format) {
     expect(videoCodecList).toEqual(['avc1.4d400c']);
     expect(audioCodecList).toEqual(['opus']);
   });
+
+  it('supports AV1 ' + format, async () => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': ['144p'],
+      'video_codecs': ['av1'],
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+
+    const trackList = player.getVariantTracks();
+    const videoCodecList = trackList.map(track => track.videoCodec);
+    expect(videoCodecList).toEqual(['av01.0.00M.08']);
+  });
 }
 
 function autoDetectionTests(manifestUrl) {

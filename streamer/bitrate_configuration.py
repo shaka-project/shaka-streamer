@@ -58,6 +58,8 @@ class AudioCodec(enum.Enum):
 
   def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
+    # TODO: consider Opus in mp4 by default
+    # TODO(#31): add support for configurable output format per-codec
     if self == AudioCodec.OPUS:
       return 'webm'
     elif self == AudioCodec.AAC:
@@ -82,6 +84,9 @@ class VideoCodec(enum.Enum):
   HARDWARE_VP9 = 'hw:vp9'
   """VP9 with hardware encoding."""
 
+  AV1 = 'av1'
+  """AV1."""
+
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
     return self.value.startswith('hw:')
@@ -104,9 +109,13 @@ class VideoCodec(enum.Enum):
 
   def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
+    # TODO: consider VP9 in mp4 by default
+    # TODO(#31): add support for configurable output format per-codec
     if self.get_base_codec() == VideoCodec.VP9:
       return 'webm'
     elif self.get_base_codec() == VideoCodec.H264:
+      return 'mp4'
+    elif self.get_base_codec() == VideoCodec.AV1:
       return 'mp4'
     else:
       assert False, 'No mapping for output format for codec {}'.format(
@@ -209,6 +218,10 @@ class VideoResolution(configuration.Base):
     return self._sortable_properties() < other._sortable_properties()
 
 
+# Default bitrates and resolutions are tracked internally at
+# go/shaka-streamer-bitrates
+# These are common resolutions, and the bitrates per codec are derived from
+# internal encoding guidelines.
 DEFAULT_VIDEO_RESOLUTIONS = {
   '144p': VideoResolution({
     'max_width': 256,
@@ -216,6 +229,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '108k',
       'vp9': '96k',
+      'av1': '72k',
     },
   }),
   '240p': VideoResolution({
@@ -224,6 +238,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '242k',
       'vp9': '151k',
+      'av1': '114k',
     },
   }),
   '360p': VideoResolution({
@@ -232,22 +247,25 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '400k',
       'vp9': '277k',
+      'av1': '210k',
     },
   }),
-  '480p': VideoResolution({
+  '480p': VideoResolution({  # NTSC analog broadcast TV resolution
     'max_width': 854,
     'max_height': 480,
     'bitrates': {
       'h264': '1M',
       'vp9': '512k',
+      'av1': '389k',
     },
   }),
-  '576p': VideoResolution({
+  '576p': VideoResolution({  # PAL analog broadcast TV resolution
     'max_width': 1024,
     'max_height': 576,
     'bitrates': {
       'h264': '1.5M',
       'vp9': '768k',
+      'av1': '450k',
     },
   }),
   '720p': VideoResolution({
@@ -257,6 +275,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '2M',
       'vp9': '1M',
+      'av1': '512k',
     },
   }),
   '720p-hfr': VideoResolution({
@@ -265,6 +284,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '3M',
       'vp9': '2M',
+      'av1': '778k',
     },
   }),
   '1080p': VideoResolution({
@@ -274,6 +294,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '4M',
       'vp9': '2M',
+      'av1': '850k',
     },
   }),
   '1080p-hfr': VideoResolution({
@@ -282,6 +303,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '5M',
       'vp9': '3M',
+      'av1': '1M',
     },
   }),
   '1440p': VideoResolution({
@@ -291,6 +313,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '9M',
       'vp9': '6M',
+      'av1': '3.5M',
     },
   }),
   '1440p-hfr': VideoResolution({
@@ -299,6 +322,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '14M',
       'vp9': '9M',
+      'av1': '5M',
     },
   }),
   '4k': VideoResolution({
@@ -308,6 +332,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '17M',
       'vp9': '12M',
+      'av1': '6M',
     },
   }),
   '4k-hfr': VideoResolution({
@@ -316,6 +341,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '25M',
       'vp9': '18M',
+      'av1': '9M',
     },
   }),
   '8k': VideoResolution({
@@ -325,6 +351,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '40M',
       'vp9': '24M',
+      'av1': '12M',
     },
   }),
   '8k-hfr': VideoResolution({
@@ -333,6 +360,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '60M',
       'vp9': '36M',
+      'av1': '18M',
     },
   }),
 }

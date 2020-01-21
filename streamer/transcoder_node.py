@@ -169,9 +169,10 @@ class TranscoderNode(PolitelyWaitOnFinish):
         # Set codec and bitrate.
         '-c:a', stream.get_ffmpeg_codec_string(hwaccel_api), #type: ignore
         '-b:a', stream.get_bitrate(),
-        # Output fragmented MP4 in the pipe, for all codecs.
+        # Output MP4 in the pipe, for all codecs.
         '-f', 'mp4',
-        '-movflags', '+faststart+frag_keyframe+empty_moov',
+        # These flags make it fragmented MP4, which is necessary for a pipe.
+        '-movflags', '+faststart+frag_keyframe',
         # Opus in MP4 is considered "experimental".
         '-strict', 'experimental',
       ]
@@ -258,6 +259,25 @@ class TranscoderNode(PolitelyWaitOnFinish):
           # setting as of libvpx v1.7.
           '-row-mt', '1',
       ]
+    elif stream.codec == VideoCodec.AV1:
+      args += [
+          # According to graphs at https://bit.ly/2BmIVt6, this AV1 setting
+          # results in almost no reduction in quality (0.8%), but a significant
+          # boost in speed (20x).
+          '-cpu-used', '8',
+          # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/AV1),
+          # this allows threaded encoding in AV1, which makes better use of CPU
+          # resources and speeds up encoding.  This will be ignored by libaom
+          # before version 1.0.0-759-g90a15f4f2, and so there may be no benefit
+          # unless libaom and ffmpeg are built from source (as of Oct 2019).
+          '-row-mt', '1',
+          # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/AV1),
+          # this allows for threaded _decoding_ in AV1, which will provide a
+          # smoother playback experience for the end user.
+          '-tiles', '2x2',
+          # AV1 is considered "experimental".
+          '-strict', 'experimental',
+      ]
 
     keyframe_interval = int(self._pipeline_config.segment_size * #type: ignore
                             input.frame_rate)
@@ -268,9 +288,10 @@ class TranscoderNode(PolitelyWaitOnFinish):
         # Set codec and bitrate.
         '-c:v', stream.get_ffmpeg_codec_string(hwaccel_api), #type: ignore
         '-b:v', stream.get_bitrate(),
-        # Output fragmented MP4 in the pipe, for all codecs.
+        # Output MP4 in the pipe, for all codecs.
         '-f', 'mp4',
-        '-movflags', '+faststart+frag_keyframe+empty_moov',
+        # These flags make it fragmented MP4, which is necessary for a pipe.
+        '-movflags', '+faststart+frag_keyframe',
         # Set minimum and maximum GOP length.
         '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),
         # Set video filters.
