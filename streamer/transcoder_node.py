@@ -169,21 +169,11 @@ class TranscoderNode(PolitelyWaitOnFinish):
         # Set codec and bitrate.
         '-c:a', stream.get_ffmpeg_codec_string(hwaccel_api), #type: ignore
         '-b:a', stream.get_bitrate(),
-    ]
-
-    # TODO: Use the same intermediate format as output format?
-    if stream.codec == AudioCodec.AAC:
-      args += [
-          # MPEG-TS format works well in a pipe.
-          '-f', 'mpegts',
-      ]
-    elif stream.codec == AudioCodec.OPUS:
-      args += [
-          # Format using WebM.
-          '-f', 'webm',
-          # DASH-compatible output format.
-          # TODO: Is this argument necessary?
-          '-dash', '1',
+        # Output fragmented MP4 in the pipe, for all codecs.
+        '-f', 'mp4',
+        '-movflags', '+faststart+frag_keyframe+empty_moov',
+        # Opus in MP4 is considered "experimental".
+        '-strict', 'experimental',
       ]
 
     if len(filters):
@@ -224,8 +214,6 @@ class TranscoderNode(PolitelyWaitOnFinish):
     # https://github.com/google/shaka-streamer/issues/36
     filters.append('setsar=1:1')
 
-    # TODO: Use the same intermediate format as output format?
-
     if stream.codec == VideoCodec.H264:
       # These presets are specifically recognized by the software encoder.
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
@@ -250,8 +238,6 @@ class TranscoderNode(PolitelyWaitOnFinish):
         profile = 'main'
 
       args += [
-          # MPEG-TS format works well in a pipe.
-          '-f', 'mpegts',
           # The only format supported by QT/Apple.
           '-pix_fmt', 'yuv420p',
           # Require a closed GOP.  Some decoders don't support open GOPs.
@@ -266,11 +252,6 @@ class TranscoderNode(PolitelyWaitOnFinish):
     elif stream.codec.get_base_codec() == VideoCodec.VP9:
       # TODO: Does -preset apply here?
       args += [
-          # Format using WebM.
-          '-f', 'webm',
-          # DASH-compatible output format.
-          # TODO: Is this argument necessary?
-          '-dash', '1',
           # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/VP9),
           # this allows threaded encoding in VP9, which makes better use of CPU
           # resources and speeds up encoding.  This is still not the default
@@ -287,6 +268,9 @@ class TranscoderNode(PolitelyWaitOnFinish):
         # Set codec and bitrate.
         '-c:v', stream.get_ffmpeg_codec_string(hwaccel_api), #type: ignore
         '-b:v', stream.get_bitrate(),
+        # Output fragmented MP4 in the pipe, for all codecs.
+        '-f', 'mp4',
+        '-movflags', '+faststart+frag_keyframe+empty_moov',
         # Set minimum and maximum GOP length.
         '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),
         # Set video filters.
