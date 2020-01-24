@@ -25,7 +25,6 @@ from typing import Optional, List
 # These cannot be probed by ffprobe.
 TYPES_WE_CANT_PROBE = [
   InputType.EXTERNAL_COMMAND,
-  InputType.RAW_IMAGES,
 ]
 
 

@@ -6,6 +6,10 @@
  - Increase preserved segments outside of the availability window, improving HLS
    playback in Shaka Player
  - Require Shaka Packager v2.4+
+ - Add AV1 support
+   (https://github.com/google/shaka-streamer/issues/10)
+ - Drop `raw_images` input type
+   (https://github.com/google/shaka-streamer/issues/25)
 
 
 ## 0.3.0 (2019-10-18)

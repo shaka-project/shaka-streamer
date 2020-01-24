@@ -41,15 +41,6 @@ class InputType(enum.Enum):
   Does not support media_type of 'text'.
   """
 
-  RAW_IMAGES = 'raw_images'
-  """A file or pipe with a sequence of raw images.
-
-  Requires the specification of frame_rate.  May require the use of
-  extra_input_args if FFmpeg can't guess the format.
-
-  Does not support media_type of 'text' or 'audio'.
-  """
-
   EXTERNAL_COMMAND = 'external_command'
   """An external command that generates a stream of audio or video.
 
@@ -87,9 +78,6 @@ class Input(configuration.Base):
   With input_type set to 'webcam', this is which webcam.  On Linux, this is a
   path to the device node for the webcam, such as '/dev/video0'.  On macOS, this
   is a device name, such as 'default'.
-
-  With input_type set to 'raw_images', this is a path to a file or pipe
-  containing a sequence of raw images.
 
   With input_type set to 'external_command', this is an external command that
   generates a stream of audio or video.  The command will be parsed using shell
@@ -236,11 +224,6 @@ class Input(configuration.Base):
       disallow_field('end_time', reason)
       disallow_field('filters', reason)
 
-    if self.input_type == InputType.RAW_IMAGES:
-      if self.media_type != MediaType.VIDEO:
-        reason = 'input_type "raw_images" only supports media_type "video"'
-        disallow_field('media_type', reason)
-
     if self.input_type != InputType.FILE:
       # These fields are only valid for file inputs.
       reason = 'only valid when input_type is "file"'
@@ -301,16 +284,7 @@ class Input(configuration.Base):
     Note that for types which support autodetect, these arguments must be
     understood by ffprobe as well as ffmpeg.
     """
-    if self.input_type == InputType.RAW_IMAGES:
-      return [
-          # Parse the input as a stream of images fed into a pipe.
-          '-f', 'image2pipe',
-          # Set the frame rate to the one specified in the input config.
-          # Note that this is the input framerate for the image2 dexuxer, which
-          # is not what the similar '-r' option is meant for.
-          '-framerate', str(self.frame_rate),
-      ]
-    elif self.input_type == InputType.WEBCAM:
+    if self.input_type == InputType.WEBCAM:
       if platform.system() == 'Linux':
         return [
             # Treat the input as a video4linux device, which is how webcams show

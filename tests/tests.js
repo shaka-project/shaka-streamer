@@ -240,7 +240,7 @@ function errorTests() {
 
   it('fails when start_time/end_time used with non-file inputs', async () => {
     const inputConfig = getBasicInputConfig();
-    inputConfig.inputs[0].input_type = 'raw_images'
+    inputConfig.inputs[0].input_type = 'external_command';
     inputConfig.inputs[0].frame_rate = 24;
     inputConfig.inputs[0].resolution = '1080p';
     inputConfig.inputs[0].start_time = '0:30'
