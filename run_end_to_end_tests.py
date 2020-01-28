@@ -29,6 +29,7 @@ import threading
 import traceback
 import urllib
 
+from mypy import api
 from streamer import node_base
 from streamer.controller_node import ControllerNode
 from streamer.configuration import ConfigError
@@ -251,6 +252,15 @@ def main():
   parser.add_argument('--reporters', nargs='+',
                       help='Enables specified reporters in karma')
   args = parser.parse_args()
+
+  type_check_result = api.run(['streamer/'])
+  if type_check_result[2] != 0:
+    print('The type checker found the following errors: ')
+    print(type_check_result[0])
+
+    return 1
+  else:
+    print('Type checking: ' + type_check_result[0])
 
   # Install test dependencies.
   subprocess.check_call(['npm', 'install'])
