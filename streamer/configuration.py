@@ -17,6 +17,8 @@ import enum
 import re
 
 from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Generic, TypeVar
+
 
 class ConfigError(Exception):
   """A base class for config errors.
@@ -167,19 +169,22 @@ class RuntimeMapType(object):
   def sorted_values(cls) -> List['Base']:
     return sorted(cls._map.values())
 
-class Field(object):
+
+# Type parameters used by the Generic Field below.
+# For example, for a Field with type=str, FieldType would be a string type and
+# FieldTypeConstructor would be the function "str".
+FieldType = TypeVar('FieldType')
+FieldTypeConstructor = Type[FieldType]
+
+class Field(Generic[FieldType]):
   # TODO: This class is populated with actual configuration
   # info at runtime. The correctness of the type/value pairs
   # is checked by Base._check_and_convert_type().
-  # mypy is not able to understand this kind of metaprogramming,
-  # and we silence all Fieled class-related errors.
-  # We should explore better ways of reconciling the type
-  # checker with our Fields.
 
   """A container for metadata about individual config fields."""
 
   def __init__(self,
-               type: Optional[Type],
+               type: Optional[FieldTypeConstructor],
                required: bool = False,
                keytype: Any = str,
                subtype: Optional[Type] = None,
@@ -192,7 +197,7 @@ class Field(object):
         subtype (class): The required type of values inside lists or dicts.
         default: The default value if the field is not specified.
     """
-    self.type: Optional[Type] = type
+    self.type: Optional[FieldTypeConstructor] = type
     self.required: bool = required
     self.keytype: Optional[Type] = keytype
     self.subtype: Optional[Type] = subtype
