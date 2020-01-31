@@ -18,9 +18,9 @@ import math
 import re
 
 from . import configuration
+from typing import Any, Tuple, Union
 
 
-from typing import Tuple, Union
 class BitrateString(configuration.ValidatingType):
   """A wrapper that can be used in Field() to require a bitrate string."""
 
@@ -145,15 +145,11 @@ class AudioChannelLayout(configuration.Base):
   For example, this could be '500k' or '7.5M'.
   """
 
-  # The __eq__ method, defined on the object level is supposed to
-  # take in any object as an argument, not just AudioChannelLayout.
-  # The typechecker freaks out at the signature. The 'type: ignore'
-  # comment on the next line silences the error.
-  def __eq__(self, other: 'AudioChannelLayout') -> bool: # type: ignore
+  def __eq__(self, other: Any) -> bool:
     return self.max_channels == other.max_channels
 
-  def __lt__(self, other: 'AudioChannelLayout') -> bool:
-    return self.max_channels < other.max_channels # type: ignore
+  def __lt__(self, other: Any) -> bool:
+    return self.max_channels < other.max_channels
 
 
 DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
@@ -207,14 +203,10 @@ class VideoResolution(configuration.Base):
     """Return a tuple of properties we can sort on."""
     return (self.max_width, self.max_height, self.max_frame_rate)
 
-  # The __eq__ method, defined on the object level is supposed to
-  # take in any object as an argument, not just AudioChannelLayout.
-  # The typechecker freaks out at the signature. The 'type: ignore'
-  # comment on the next line silences the error.
-  def __eq__(self, other: 'VideoResolution') -> bool: # type: ignore
+  def __eq__(self, other: Any) -> bool:
     return self._sortable_properties() == other._sortable_properties()
 
-  def __lt__(self, other: 'VideoResolution') -> bool:
+  def __lt__(self, other: Any) -> bool:
     return self._sortable_properties() < other._sortable_properties()
 
 

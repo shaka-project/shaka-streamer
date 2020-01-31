@@ -45,7 +45,7 @@ def _probe(input: Input, field: str) -> Optional[str]:
 
   args: List[str] = [
       # Probe this input file
-      'ffprobe', input.name, #type: ignore
+      'ffprobe', input.name,
   ]
 
   # Add any required input arguments for this input type
@@ -137,12 +137,12 @@ def get_resolution(input: Input) -> Optional[VideoResolution]:
   input_resolution = (width, height)
 
   for bucket in Resolution.sorted_values():
-    resolution = (bucket.max_width, bucket.max_height) #type: ignore
-    frame_rate = bucket.max_frame_rate #type: ignore
+    resolution = (bucket.max_width, bucket.max_height)
+    frame_rate = bucket.max_frame_rate
 
     # The first bucket this fits into is the one.
     if input_resolution <= resolution and input.frame_rate <= frame_rate:
-      return bucket #type: ignore
+      return bucket
 
   return None
 

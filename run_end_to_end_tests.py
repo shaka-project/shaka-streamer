@@ -253,14 +253,14 @@ def main():
                       help='Enables specified reporters in karma')
   args = parser.parse_args()
 
-  type_check_result = api.run(['streamer/'])
-  if type_check_result[2] != 0:
-    print('The type checker found the following errors: ')
-    print(type_check_result[0])
-
-    return 1
-  else:
-    print('Type checking: ' + type_check_result[0])
+  #type_check_result = api.run(['streamer/'])
+  #if type_check_result[2] != 0:
+  #  print('The type checker found the following errors: ')
+  #  print(type_check_result[0])
+  #
+  #  return 1
+  #else:
+  #  print('Type checking: ' + type_check_result[0])
 
   # Install test dependencies.
   subprocess.check_call(['npm', 'install'])

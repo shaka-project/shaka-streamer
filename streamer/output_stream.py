@@ -81,7 +81,7 @@ class AudioOutputStream(OutputStream):
     # specific channel layout.  Use the first one the output channels fit into.
     self.layout = None
     for layout in ChannelLayout.sorted_values():
-      if self.channels <= layout.max_channels: #type: ignore
+      if self.channels <= layout.max_channels:
         self.layout = layout
         break
 
@@ -99,7 +99,7 @@ class AudioOutputStream(OutputStream):
   def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
     assert self.layout is not None
-    return self.layout.bitrates[self.codec] #type: ignore
+    return self.layout.bitrates[self.codec]
 
 
 class VideoOutputStream(OutputStream):
@@ -116,14 +116,14 @@ class VideoOutputStream(OutputStream):
 
     # The features that will be used to generate the output filename.
     self._features = {
-      'resolution_name': self.resolution.get_key(), #type: ignore
+      'resolution_name': self.resolution.get_key(),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
     }
 
   def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
-    return self.resolution.bitrates[self.codec.get_base_codec()] #type: ignore
+    return self.resolution.bitrates[self.codec.get_base_codec()]
 
 
 class TextOutputStream(OutputStream):

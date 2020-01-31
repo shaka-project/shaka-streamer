@@ -138,15 +138,15 @@ class ControllerNode(object):
     # Now that the definitions have been parsed, register the maps of valid
     # resolutions and channel layouts so that InputConfig and PipelineConfig
     # can be validated accordingly.
-    Resolution.set_map(bitrate_config.video_resolutions) #type: ignore
-    ChannelLayout.set_map(bitrate_config.audio_channel_layouts) #type: ignore
+    Resolution.set_map(bitrate_config.video_resolutions)
+    ChannelLayout.set_map(bitrate_config.audio_channel_layouts)
 
     input_config = InputConfig(input_config_dict)
     pipeline_config = PipelineConfig(pipeline_config_dict)
     self._pipeline_config = pipeline_config
 
     outputs: List[OutputStream] = []
-    for input in input_config.inputs: #type: ignore
+    for input in input_config.inputs:
       # External command inputs need to be processed by an additional node
       # before being transcoded.  In this case, the input doesn't have a
       # filename that FFmpeg can read, so we generate an intermediate pipe for
@@ -159,15 +159,15 @@ class ControllerNode(object):
         input.set_pipe(command_output)
 
       if input.media_type == MediaType.AUDIO:
-        for codec in pipeline_config.audio_codecs: #type: ignore
+        for codec in pipeline_config.audio_codecs:
           outputs.append(AudioOutputStream(self._create_pipe(),
                                            input,
                                            codec,
-                                           pipeline_config.channels)) #type: ignore
+                                           pipeline_config.channels))
 
       elif input.media_type == MediaType.VIDEO:
-        for codec in pipeline_config.video_codecs: #type: ignore
-          for output_resolution in pipeline_config.resolutions: #type: ignore
+        for codec in pipeline_config.video_codecs:
+          for output_resolution in pipeline_config.resolutions:
             # Only going to output lower or equal resolution videos.
             # Upscaling is costly and does not do anything.
             if input.resolution < output_resolution:
