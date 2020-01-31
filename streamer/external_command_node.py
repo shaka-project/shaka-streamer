@@ -18,7 +18,7 @@ from . import node_base
 
 class ExternalCommandNode(node_base.NodeBase):
 
-  def __init__(self, command, output_path):
+  def __init__(self, command: str, output_path: str):
     super().__init__()
     self._command = command
     self._output_path = output_path

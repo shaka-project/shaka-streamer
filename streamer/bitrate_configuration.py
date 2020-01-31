@@ -199,7 +199,7 @@ class VideoResolution(configuration.Base):
   For example, this could be '500k' or '7.5M'.
   """
 
-  def _sortable_properties(self) -> Tuple:
+  def _sortable_properties(self) -> Tuple[int, int, float]:
     """Return a tuple of properties we can sort on."""
     return (self.max_width, self.max_height, self.max_frame_rate)
 
