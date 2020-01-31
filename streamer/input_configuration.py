@@ -14,13 +14,12 @@
 
 import enum
 import platform
-import shlex
 
 from . import bitrate_configuration
 from . import configuration
 
+from typing import List, Optional
 
-from typing import Any, List, Optional
 
 class InputType(enum.Enum):
   FILE = 'file'
@@ -230,10 +229,6 @@ class Input(configuration.Base):
       disallow_field('start_time', reason)
       disallow_field('end_time', reason)
 
-    # This needs to be parsed into an argument array.  Note that shlex.split on
-    # an empty string will produce an empty array.
-    self.extra_input_args = shlex.split(self.extra_input_args)
-
     # A path to a pipe into which this input's contents are fed.
     # None for most input types.
     self._pipe: Optional[str] = None
@@ -274,7 +269,7 @@ class Input(configuration.Base):
 
     assert False, 'Unrecognized media_type!  This should not happen.'
 
-  def get_input_args(self) -> List[Any]:
+  def get_input_args(self) -> List[str]:
     """Get any required input arguments for this input.
 
     These are like hard-coded extra_input_args for certain input types.

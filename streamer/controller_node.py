@@ -159,14 +159,14 @@ class ControllerNode(object):
         input.set_pipe(command_output)
 
       if input.media_type == MediaType.AUDIO:
-        for codec in pipeline_config.audio_codecs:
+        for audio_codec in pipeline_config.audio_codecs:
           outputs.append(AudioOutputStream(self._create_pipe(),
                                            input,
-                                           codec,
+                                           audio_codec,
                                            pipeline_config.channels))
 
       elif input.media_type == MediaType.VIDEO:
-        for codec in pipeline_config.video_codecs:
+        for video_codec in pipeline_config.video_codecs:
           for output_resolution in pipeline_config.resolutions:
             # Only going to output lower or equal resolution videos.
             # Upscaling is costly and does not do anything.
@@ -175,7 +175,7 @@ class ControllerNode(object):
 
             outputs.append(VideoOutputStream(self._create_pipe(),
                                              input,
-                                             codec,
+                                             video_codec,
                                              output_resolution))
 
       elif input.media_type == MediaType.TEXT:

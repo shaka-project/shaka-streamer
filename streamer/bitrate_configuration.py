@@ -21,7 +21,7 @@ from . import configuration
 from typing import Any, Tuple, Union
 
 
-class BitrateString(configuration.ValidatingType):
+class BitrateString(configuration.ValidatingType, str):
   """A wrapper that can be used in Field() to require a bitrate string."""
 
   @staticmethod

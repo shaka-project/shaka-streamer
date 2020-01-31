@@ -14,6 +14,8 @@
 
 """A module that pushes input to ffmpeg to transcode into various formats."""
 
+import shlex
+
 from streamer.bitrate_configuration import AudioCodec, VideoCodec
 from streamer.input_configuration import Input, InputConfig, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
@@ -66,8 +68,10 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
       # The config file may specify additional args needed for this input.
       # This allows, for example, an external-command-type input to generate
-      # almost anything ffmpeg could ingest.
-      args += input.extra_input_args
+      # almost anything ffmpeg could ingest.  The extra args need to be parsed
+      # from a string into an argument array.  Note that shlex.split on an empty
+      # string will produce an empty array.
+      args += shlex.split(input.extra_input_args)
 
       if input.input_type == InputType.LOOPED_FILE:
         # These are handled here instead of in get_input_args() because these

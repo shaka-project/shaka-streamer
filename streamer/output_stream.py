@@ -19,7 +19,7 @@ from . import input_configuration
 
 from streamer.bitrate_configuration import AudioCodec, VideoCodec, VideoResolution
 from streamer.input_configuration import Input, MediaType
-from typing import Any, Dict, Union
+from typing import Dict, Union
 
 # Alias a few classes to avoid repeating namespaces later.
 ChannelLayout = bitrate_configuration.ChannelLayout
@@ -37,7 +37,7 @@ class OutputStream(object):
     self.pipe: str = pipe
     self.input: Input = input
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
-    self._features: Dict[str, Any] = {}
+    self._features: Dict[str, str] = {}
 
   def fill_template(self, template: str, **kwargs) -> str:
     """Fill in a template string using **kwargs and features of the output."""
@@ -91,7 +91,7 @@ class AudioOutputStream(OutputStream):
     # The features that will be used to generate the output filename.
     self._features = {
       'language': input.language,
-      'channels': self.channels,
+      'channels': str(self.channels),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
     }

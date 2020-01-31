@@ -99,7 +99,7 @@ class ValidatingType(metaclass=abc.ABCMeta):
     pass
 
 
-class HexString(ValidatingType):
+class HexString(ValidatingType, str):
   """A wrapper that can be used in Field() to require a hex string."""
 
   @staticmethod
