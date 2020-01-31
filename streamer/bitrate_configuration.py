@@ -127,14 +127,14 @@ class VideoCodec(enum.Enum):
 @functools.total_ordering
 class AudioChannelLayout(configuration.Base):
 
-  max_channels = configuration.Field(type=int, required=True)
+  max_channels = configuration.Field(type=int, required=True).cast()
   """The maximum number of channels in this layout.
 
   For example, the maximum number of channels for stereo is 2.
   """
 
   bitrates = configuration.Field(
-      dict, keytype=AudioCodec, subtype=BitrateString, required=True)
+      dict, keytype=AudioCodec, subtype=BitrateString, required=True).cast()
   """A map of audio codecs to the target bitrate for this channel layout.
 
   For example, in stereo, AAC can have a different bitrate from Opus.
@@ -175,20 +175,20 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
 @functools.total_ordering
 class VideoResolution(configuration.Base):
 
-  max_width = configuration.Field(type=int, required=True)
+  max_width = configuration.Field(type=int, required=True).cast()
   """The maximum width in pixels for this named resolution."""
 
-  max_height = configuration.Field(type=int, required=True)
+  max_height = configuration.Field(type=int, required=True).cast()
   """The maximum height in pixels for this named resolution."""
 
-  max_frame_rate = configuration.Field(type=float, default=math.inf)
+  max_frame_rate = configuration.Field(type=float, default=math.inf).cast()
   """The maximum frame rate in frames per second for this named resolution.
 
   By default, the max frame rate is unlimited.
   """
 
   bitrates = configuration.Field(
-      dict, keytype=VideoCodec, subtype=BitrateString, required=True)
+      dict, keytype=VideoCodec, subtype=BitrateString, required=True).cast()
   """A map of video codecs to the target bitrate for this resolution.
 
   For example, in 1080p, H264 can have a different bitrate from VP9.
@@ -361,7 +361,8 @@ DEFAULT_VIDEO_RESOLUTIONS = {
 class BitrateConfig(configuration.Base):
 
   audio_channel_layouts = configuration.Field(
-      dict, subtype=AudioChannelLayout, default=DEFAULT_AUDIO_CHANNEL_LAYOUTS)
+      dict, subtype=AudioChannelLayout,
+      default=DEFAULT_AUDIO_CHANNEL_LAYOUTS).cast()
   """A map of named channel layouts.
 
   For example, the key would be a name like "stereo", and the value would be an
@@ -370,7 +371,7 @@ class BitrateConfig(configuration.Base):
   """
 
   video_resolutions = configuration.Field(
-      dict, subtype=VideoResolution, default=DEFAULT_VIDEO_RESOLUTIONS)
+      dict, subtype=VideoResolution, default=DEFAULT_VIDEO_RESOLUTIONS).cast()
   """A map of named resolutions.
 
   For example, the key would be a name like "1080p", and the value would be an

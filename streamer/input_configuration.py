@@ -64,10 +64,10 @@ class MediaType(enum.Enum):
 class Input(configuration.Base):
   """An object representing a single input stream to Shaka Streamer."""
 
-  input_type = configuration.Field(InputType, default=InputType.FILE)
+  input_type = configuration.Field(InputType, default=InputType.FILE).cast()
   """The type of the input."""
 
-  name = configuration.Field(str, required=True)
+  name = configuration.Field(str, required=True).cast()
   """Name of the input.
 
   With input_type set to 'file', this is a path to a file name.
@@ -86,7 +86,7 @@ class Input(configuration.Base):
   Streamer set to the path to the output pipe.
   """
 
-  extra_input_args = configuration.Field(str, default='')
+  extra_input_args = configuration.Field(str, default='').cast()
   """Extra input arguments needed by FFmpeg to understand the input.
 
   This allows you to take inputs that cannot be understand or detected
@@ -95,10 +95,10 @@ class Input(configuration.Base):
   This string will be parsed using shell quoting rules.
   """
 
-  media_type = configuration.Field(MediaType, required=True)
+  media_type = configuration.Field(MediaType, required=True).cast()
   """The media type of the input stream."""
 
-  frame_rate = configuration.Field(float)
+  frame_rate = configuration.Field(float).cast()
   """The frame rate of the input stream, in frames per second.
 
   Only valid for media_type of 'video'.
@@ -107,7 +107,7 @@ class Input(configuration.Base):
   For example, required for input_type of 'external_command'.
   """
 
-  resolution = configuration.Field(bitrate_configuration.Resolution)
+  resolution = configuration.Field(bitrate_configuration.Resolution).cast()
   """The name of the input resolution (1080p, etc).
 
   Only valid for media_type of 'video'.
@@ -116,7 +116,7 @@ class Input(configuration.Base):
   For example, required for input_type of 'external_command'.
   """
 
-  track_num = configuration.Field(int, default=0)
+  track_num = configuration.Field(int, default=0).cast()
   """The track number of the input.
 
   The track number is specific to the media_type.  For example, if there is one
@@ -127,7 +127,7 @@ class Input(configuration.Base):
   the media_type field will be used.
   """
 
-  is_interlaced = configuration.Field(bool)
+  is_interlaced = configuration.Field(bool).cast()
   """True if the input video is interlaced.
 
   Only valid for media_type of 'video'.
@@ -139,14 +139,14 @@ class Input(configuration.Base):
   False.
   """
 
-  language = configuration.Field(str)
+  language = configuration.Field(str).cast()
   """The language of an audio or text stream.
 
   With input_type set to 'file' or 'looped_file', this will be auto-detected.
   Otherwise, it will default to 'und' (undetermined).
   """
 
-  start_time = configuration.Field(str)
+  start_time = configuration.Field(str).cast()
   """The start time of the slice of the input to use.
 
   Only valid for VOD and with input_type set to 'file'.
@@ -154,7 +154,7 @@ class Input(configuration.Base):
   Not supported with media_type of 'text'.
   """
 
-  end_time = configuration.Field(str)
+  end_time = configuration.Field(str).cast()
   """The end time of the slice of the input to use.
 
   Only valid for VOD and with input_type set to 'file'.
@@ -162,7 +162,7 @@ class Input(configuration.Base):
   Not supported with media_type of 'text'.
   """
 
-  filters = configuration.Field(list, subtype=str, default=[])
+  filters = configuration.Field(list, subtype=str, default=[]).cast()
   """A list of FFmpeg filter strings to add to the transcoding of this input.
 
   Each filter is a single string.  For example, 'pad=1280:720:20:20'.
@@ -307,6 +307,6 @@ class Input(configuration.Base):
 class InputConfig(configuration.Base):
   """An object representing the entire input config to Shaka Streamer."""
 
-  inputs = configuration.Field(list, subtype=Input, required=True)
+  inputs = configuration.Field(list, subtype=Input, required=True).cast()
   """A list of Input objects, one per input stream."""
 

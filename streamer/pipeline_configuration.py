@@ -64,67 +64,67 @@ class ProtectionScheme(enum.Enum):
 class EncryptionConfig(configuration.Base):
   """An object representing the encryption config for Shaka Streamer."""
 
-  enable = configuration.Field(bool, default=False)
+  enable = configuration.Field(bool, default=False).cast()
   """If true, encryption is enabled.
 
   Otherwise, all other encryption settings are ignored.
   """
 
   content_id = configuration.Field(
-      configuration.HexString, default=RANDOM_CONTENT_ID)
+      configuration.HexString, default=RANDOM_CONTENT_ID).cast()
   """The content ID, in hex.
 
   If omitted, a random content ID will be chosen for you.
   """
 
-  key_server_url = configuration.Field(str, default=UAT_SERVER)
+  key_server_url = configuration.Field(str, default=UAT_SERVER).cast()
   """The URL of your key server.
 
   This is used to generate an encryption key.  By default, it is Widevine's UAT
   server.
   """
 
-  signer = configuration.Field(str, default=WIDEVINE_TEST_ACCOUNT)
+  signer = configuration.Field(str, default=WIDEVINE_TEST_ACCOUNT).cast()
   """The name of the signer when authenticating to the key server.
 
   Defaults to the Widevine test account.
   """
 
   signing_key = configuration.Field(
-      configuration.HexString, default=WIDEVINE_TEST_SIGNING_KEY)
+      configuration.HexString, default=WIDEVINE_TEST_SIGNING_KEY).cast()
   """The signing key, in hex, when authenticating to the key server.
 
   Defaults to the Widevine test account's key.
   """
 
   signing_iv = configuration.Field(
-      configuration.HexString, default=WIDEVINE_TEST_SIGNING_IV)
+      configuration.HexString, default=WIDEVINE_TEST_SIGNING_IV).cast()
   """The signing IV, in hex, when authenticating to the key server.
 
   Defaults to the Widevine test account's IV.
   """
 
   protection_scheme = configuration.Field(ProtectionScheme,
-                                          default=ProtectionScheme.CENC)
+                                          default=ProtectionScheme.CENC).cast()
   """The protection scheme (cenc or cbcs) to use when encrypting."""
 
-  clear_lead = configuration.Field(int, default=10)
+  clear_lead = configuration.Field(int, default=10).cast()
   """The seconds of unencrypted media at the beginning of the stream."""
 
 
 class PipelineConfig(configuration.Base):
   """An object representing the entire pipeline config for Shaka Streamer."""
 
-  streaming_mode = configuration.Field(StreamingMode, required=True)
+  streaming_mode = configuration.Field(StreamingMode, required=True).cast()
   """The streaming mode, which can be either 'vod' or 'live'."""
 
-  quiet = configuration.Field(bool, default=False)
+  quiet = configuration.Field(bool, default=False).cast()
   """If true, reduce the level of output.
 
   Only errors will be shown in quiet mode.
   """
 
-  debug_logs = configuration.Field(bool, default=False)
+  debug_logs = configuration.Field(bool, default=False).cast()
   """If true, output simple log files from each node.
 
   No control is given over log filenames.  Logs are written to the current
@@ -132,7 +132,7 @@ class PipelineConfig(configuration.Base):
   for debugging.
   """
 
-  hwaccel_api = configuration.Field(str, default=DEFAULT_HWACCEL_API)
+  hwaccel_api = configuration.Field(str, default=DEFAULT_HWACCEL_API).cast()
   """The FFmpeg hardware acceleration API to use with hardware codecs.
 
   A per-platform default will be chosen if this field is omitted.
@@ -142,7 +142,7 @@ class PipelineConfig(configuration.Base):
 
   resolutions = configuration.Field(list,
                                     subtype=bitrate_configuration.Resolution,
-                                    required=True)
+                                    required=True).cast()
   """A list of resolution names to encode.
 
   Any resolution greater than the input resolution will be ignored, to avoid
@@ -151,17 +151,17 @@ class PipelineConfig(configuration.Base):
   """
 
   # TODO(joeyparrish): Default to whatever is in the input.
-  channels = configuration.Field(int, default=2)
+  channels = configuration.Field(int, default=2).cast()
   """The number of audio channels to encode."""
 
   audio_codecs = configuration.Field(
       list, subtype=bitrate_configuration.AudioCodec,
-      default=[bitrate_configuration.AudioCodec.AAC])
+      default=[bitrate_configuration.AudioCodec.AAC]).cast()
   """The audio codecs to encode with."""
 
   video_codecs = configuration.Field(
       list, subtype=bitrate_configuration.VideoCodec,
-      default=[bitrate_configuration.VideoCodec.H264])
+      default=[bitrate_configuration.VideoCodec.H264]).cast()
   """The video codecs to encode with.
 
   Note that the prefix "hw:" indicates that a hardware encoder should be
@@ -172,41 +172,41 @@ class PipelineConfig(configuration.Base):
                                         default=[
                                             ManifestFormat.DASH,
                                             ManifestFormat.HLS,
-                                        ])
+                                        ]).cast()
   """A list of manifest formats (dash or hls) to create.
 
   By default, this will create both.
   """
 
-  dash_output = configuration.Field(str, default='dash.mpd')
+  dash_output = configuration.Field(str, default='dash.mpd').cast()
   """Output filename for the DASH manifest, if created."""
 
-  hls_output = configuration.Field(str, default='hls.m3u8')
+  hls_output = configuration.Field(str, default='hls.m3u8').cast()
   """Output filename for the HLS master playlist, if created."""
 
-  segment_folder = configuration.Field(str, default='')
+  segment_folder = configuration.Field(str, default='').cast()
   """Sub-folder for segment output (or blank for none)."""
 
-  segment_size = configuration.Field(float, default=4)
+  segment_size = configuration.Field(float, default=4).cast()
   """The length of each segment in seconds."""
 
-  segment_per_file = configuration.Field(bool, default=True)
+  segment_per_file = configuration.Field(bool, default=True).cast()
   """If true, force each segment to be in a separate file.
 
   Must be true for live content.
   """
 
-  availability_window = configuration.Field(int, default=300)
+  availability_window = configuration.Field(int, default=300).cast()
   """The number of seconds a segment remains available."""
 
-  presentation_delay = configuration.Field(int, default=30)
+  presentation_delay = configuration.Field(int, default=30).cast()
   """How far back from the live edge the player should be, in seconds."""
 
-  update_period = configuration.Field(int, default=8)
+  update_period = configuration.Field(int, default=8).cast()
   """How often the player should fetch a new manifest, in seconds."""
 
   encryption = configuration.Field(EncryptionConfig,
-                                   default=EncryptionConfig({}))
+                                   default=EncryptionConfig({})).cast()
   """Encryption settings."""
 
 

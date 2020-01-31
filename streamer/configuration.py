@@ -17,7 +17,7 @@ import enum
 import re
 
 from typing import Any, Callable, Dict, List, Optional, Type, Union
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, cast
 
 
 class ConfigError(Exception):
@@ -172,9 +172,8 @@ class RuntimeMapType(object):
 
 # Type parameters used by the Generic Field below.
 # For example, for a Field with type=str, FieldType would be a string type and
-# FieldTypeConstructor would be the function "str".
+# Type[FieldType] would be the function "str".
 FieldType = TypeVar('FieldType')
-FieldTypeConstructor = Type[FieldType]
 
 class Field(Generic[FieldType]):
   # TODO: This class is populated with actual configuration
@@ -184,7 +183,7 @@ class Field(Generic[FieldType]):
   """A container for metadata about individual config fields."""
 
   def __init__(self,
-               type: Optional[FieldTypeConstructor],
+               type: Optional[Type[FieldType]],
                required: bool = False,
                keytype: Any = str,
                subtype: Optional[Type] = None,
@@ -197,7 +196,7 @@ class Field(Generic[FieldType]):
         subtype (class): The required type of values inside lists or dicts.
         default: The default value if the field is not specified.
     """
-    self.type: Optional[FieldTypeConstructor] = type
+    self.type: Optional[Type[FieldType]] = type
     self.required: bool = required
     self.keytype: Optional[Type] = keytype
     self.subtype: Optional[Type] = subtype
@@ -206,6 +205,36 @@ class Field(Generic[FieldType]):
   def get_type_name(self) -> str:
     """Get a human-readable string for the name of self.type."""
     return Field.get_type_name_static(self.type, self.keytype, self.subtype)
+
+  def cast(self) -> FieldType:
+    """Called on every Field instance where it is assigned to a configuration
+    class property.  For example:
+
+    class FooConfig(configuration.Base):
+      name = configuration.Field(type=str, default="Susan").cast()
+
+    At the class level, configuration fields are all Field instances.  At the
+    instance level, the configuration Base class constructor sets all the fields
+    to the appropriate config value, whose type is the type parameter FieldType.
+    In our example above, the "name" Field from the class-level is replaced by a
+    string at the instance level.
+
+    Without this cast() method, mypy would be confused, because it would not see
+    the metaprogramming that goes on the Base class constructor.  It would think
+    that all configuration instances have properties of type "Field".
+
+    To help mypy understand the type of the instance properties without changing
+    the class-level property, this cast() method returns "self", but with the
+    type info changed to FieldType for mypy's sake.
+
+    In the example above, mypy knows that "name" is not just a Field, but a
+    Field[str], based on the "type=str" parameter in the Field constructor.  It
+    uses the type parameter FieldType ("str" in this example) to see that cast()
+    returns the type "str".
+
+    This allows the metaprogramming approach we take to configuration to remain
+    compatible with mypy's static analysis."""
+    return cast(FieldType, self)
 
   @staticmethod
   def get_type_name_static(type: Optional[Type],
