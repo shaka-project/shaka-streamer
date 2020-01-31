@@ -16,7 +16,8 @@ import abc
 import enum
 import re
 
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+import typing
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 from typing import Generic, TypeVar, cast
 
 
@@ -185,22 +186,21 @@ class Field(Generic[FieldType]):
   def __init__(self,
                type: Optional[Type[FieldType]],
                required: bool = False,
-               keytype: Any = str,
-               subtype: Optional[Type] = None,
-               default: Optional[Any] = None) -> None:
+               default: Optional[FieldType] = None) -> None:
     """
     Args:
-        type (class): The required type for values of this field.
+        type (class or typing module hint): The required type for values of this
+            field.
         required (bool): True if this field is required on input.
-        keytype (class): The required type of keys inside dicts.
-        subtype (class): The required type of values inside lists or dicts.
         default: The default value if the field is not specified.
     """
-    self.type: Optional[Type[FieldType]] = type
+    subtypes = Field.get_subtypes(type)  # keytype, subtype
+
+    self.type: Optional[Type] = Field.get_underlying_type(type)
+    self.keytype: Optional[Type] = subtypes[0]
+    self.subtype: Optional[Type] = subtypes[1]
     self.required: bool = required
-    self.keytype: Optional[Type] = keytype
-    self.subtype: Optional[Type] = subtype
-    self.default: Optional[Type] = default
+    self.default: Optional[FieldType] = default
 
   def get_type_name(self) -> str:
     """Get a human-readable string for the name of self.type."""
@@ -235,6 +235,53 @@ class Field(Generic[FieldType]):
     This allows the metaprogramming approach we take to configuration to remain
     compatible with mypy's static analysis."""
     return cast(FieldType, self)
+
+  @staticmethod
+  def get_underlying_type(type: Optional[Type]) -> Optional[Type]:
+    """Get the underlying type from a typing module type hint."""
+
+    # In Python 3.8+, you can use typing.get_origin.  It returns None if "type"
+    # is something like "str" or "int" instead of "typing.List" or
+    # "typing.Dict", so fall back to type itself.
+    if hasattr(typing, 'get_origin'):
+      return typing.get_origin(type) or type  # type: ignore
+
+    # Before Python 3.8, you can use this undocumented attribute to get the
+    # original type.  If this doesn't exist, you are probably dealing with a
+    # basic type like "str" or "int".
+    if hasattr(type, '__origin__'):
+      return type.__origin__  # type: ignore
+
+    return type
+
+  @staticmethod
+  def get_subtypes(
+      type: Optional[Type]) -> Tuple[Optional[Type], Optional[Type]]:
+    """For Dict hints, returns (keytype, valuetype).
+
+    For List hints, returns (None, valuetype).
+
+    For everything else, returns (None, None)."""
+
+    # In Python 3.8+, you can use typing.get_args.  It returns () if "type"
+    # is something like "str" or "int" instead of "typing.List" or
+    # "typing.Dict".
+    if hasattr(typing, 'get_args'):
+      args = typing.get_args(type)  # type: ignore
+    elif hasattr(type, '__args__'):
+      # Before Python 3.8, you can use this undocumented attribute to get the
+      # type parameters.  If this doesn't exist, you are probably dealing with a
+      # basic type like "str" or "int".
+      args = type.__args__  # type: ignore
+    else:
+      args = ()
+
+    underlying = Field.get_underlying_type(type)
+    if underlying is dict:
+      return args
+    if underlying is list:
+      return (None, args[0])
+    return (None, None)
 
   @staticmethod
   def get_type_name_static(type: Optional[Type],

@@ -21,6 +21,8 @@ import shlex
 from . import bitrate_configuration
 from . import configuration
 
+from typing import List
+
 
 # A randomly-chosen content ID in hex.
 RANDOM_CONTENT_ID = base64.b16encode(os.urandom(16)).decode('UTF-8')
@@ -140,8 +142,7 @@ class PipelineConfig(configuration.Base):
   See documentation here: https://trac.ffmpeg.org/wiki/HWAccelIntro
   """
 
-  resolutions = configuration.Field(list,
-                                    subtype=bitrate_configuration.Resolution,
+  resolutions = configuration.Field(List[bitrate_configuration.Resolution],
                                     required=True).cast()
   """A list of resolution names to encode.
 
@@ -155,12 +156,12 @@ class PipelineConfig(configuration.Base):
   """The number of audio channels to encode."""
 
   audio_codecs = configuration.Field(
-      list, subtype=bitrate_configuration.AudioCodec,
+      List[bitrate_configuration.AudioCodec],
       default=[bitrate_configuration.AudioCodec.AAC]).cast()
   """The audio codecs to encode with."""
 
   video_codecs = configuration.Field(
-      list, subtype=bitrate_configuration.VideoCodec,
+      List[bitrate_configuration.VideoCodec],
       default=[bitrate_configuration.VideoCodec.H264]).cast()
   """The video codecs to encode with.
 
@@ -168,7 +169,7 @@ class PipelineConfig(configuration.Base):
   used.
   """
 
-  manifest_format = configuration.Field(list, subtype=ManifestFormat,
+  manifest_format = configuration.Field(List[ManifestFormat],
                                         default=[
                                             ManifestFormat.DASH,
                                             ManifestFormat.HLS,

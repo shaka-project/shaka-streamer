@@ -18,7 +18,7 @@ import math
 import re
 
 from . import configuration
-from typing import Any, Tuple, Union
+from typing import Any, Dict, Tuple
 
 
 class BitrateString(configuration.ValidatingType, str):
@@ -134,7 +134,7 @@ class AudioChannelLayout(configuration.Base):
   """
 
   bitrates = configuration.Field(
-      dict, keytype=AudioCodec, subtype=BitrateString, required=True).cast()
+      Dict[AudioCodec, BitrateString], required=True).cast()
   """A map of audio codecs to the target bitrate for this channel layout.
 
   For example, in stereo, AAC can have a different bitrate from Opus.
@@ -188,7 +188,7 @@ class VideoResolution(configuration.Base):
   """
 
   bitrates = configuration.Field(
-      dict, keytype=VideoCodec, subtype=BitrateString, required=True).cast()
+      Dict[VideoCodec, BitrateString], required=True).cast()
   """A map of video codecs to the target bitrate for this resolution.
 
   For example, in 1080p, H264 can have a different bitrate from VP9.
@@ -361,7 +361,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
 class BitrateConfig(configuration.Base):
 
   audio_channel_layouts = configuration.Field(
-      dict, subtype=AudioChannelLayout,
+      Dict[str, AudioChannelLayout],
       default=DEFAULT_AUDIO_CHANNEL_LAYOUTS).cast()
   """A map of named channel layouts.
 
@@ -371,7 +371,7 @@ class BitrateConfig(configuration.Base):
   """
 
   video_resolutions = configuration.Field(
-      dict, subtype=VideoResolution, default=DEFAULT_VIDEO_RESOLUTIONS).cast()
+      Dict[str, VideoResolution], default=DEFAULT_VIDEO_RESOLUTIONS).cast()
   """A map of named resolutions.
 
   For example, the key would be a name like "1080p", and the value would be an

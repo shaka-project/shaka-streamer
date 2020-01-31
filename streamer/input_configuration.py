@@ -161,7 +161,10 @@ class Input(configuration.Base):
   Not supported with media_type of 'text'.
   """
 
-  filters = configuration.Field(list, subtype=str, default=[]).cast()
+  # TODO: Figure out why mypy 0.720 and Python 3.7.5 don't correctly deduce the
+  # type parameter here if we don't specify it explicitly with brackets after
+  # "Field".
+  filters = configuration.Field[List[str]](List[str], default=[]).cast()
   """A list of FFmpeg filter strings to add to the transcoding of this input.
 
   Each filter is a single string.  For example, 'pad=1280:720:20:20'.
@@ -302,6 +305,6 @@ class Input(configuration.Base):
 class InputConfig(configuration.Base):
   """An object representing the entire input config to Shaka Streamer."""
 
-  inputs = configuration.Field(list, subtype=Input, required=True).cast()
+  inputs = configuration.Field(List[Input], required=True).cast()
   """A list of Input objects, one per input stream."""
 
