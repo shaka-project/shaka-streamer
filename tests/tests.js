@@ -222,7 +222,7 @@ function errorTests() {
 
     await expectAsync(startStreamer(inputConfig, minimalPipelineConfig))
         .toBeRejectedWith(jasmine.objectContaining({
-          error_type: 'WrongType',
+          error_type: 'MalformedField',
           field_name: 'resolution',
         }));
   });
@@ -957,7 +957,7 @@ function customBitrateTests() {
     const start = startStreamer(
         minimalInputConfig, pipelineConfig, bitrateConfig);
     await expectAsync(start).toBeRejectedWith(jasmine.objectContaining({
-      error_type: 'WrongType',
+      error_type: 'MalformedField',
       field_name: 'resolutions',
     }));
   });

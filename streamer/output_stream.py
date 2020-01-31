@@ -14,15 +14,9 @@
 
 """Contains information about each output stream."""
 
-from . import bitrate_configuration
-from . import input_configuration
-
-from streamer.bitrate_configuration import AudioCodec, VideoCodec, VideoResolution
+from streamer.bitrate_configuration import AudioCodec, AudioChannelLayout, VideoCodec, VideoResolution
 from streamer.input_configuration import Input, MediaType
 from typing import Dict, Union
-
-# Alias a few classes to avoid repeating namespaces later.
-ChannelLayout = bitrate_configuration.ChannelLayout
 
 
 class OutputStream(object):
@@ -80,7 +74,7 @@ class AudioOutputStream(OutputStream):
     # Until we make channels an input feature, match this output feature to a
     # specific channel layout.  Use the first one the output channels fit into.
     self.layout = None
-    for layout in ChannelLayout.sorted_values():
+    for layout in AudioChannelLayout.sorted_values():
       if self.channels <= layout.max_channels:
         self.layout = layout
         break

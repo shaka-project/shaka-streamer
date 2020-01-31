@@ -80,4 +80,5 @@ defining these.  If this config is given, it replaces the default definitions.
   first, then the others.
 .. autoclass:: streamer.bitrate_configuration.BitrateConfig
 .. automodule:: streamer.bitrate_configuration
-  :exclude-members: BitrateConfig, BitrateString, ChannelLayout, Resolution
+  :exclude-members: BitrateConfig, BitrateString, VideoResolutionName,
+                    get_value, keys, set_map, sorted_values

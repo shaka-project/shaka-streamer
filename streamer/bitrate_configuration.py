@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import enum
-import functools
 import math
 import re
 
@@ -122,10 +121,7 @@ class VideoCodec(enum.Enum):
           self.value)
 
 
-# This decorator makes it so that we only have to implement __eq__ and __lt__
-# to make the resolutions sortable.
-@functools.total_ordering
-class AudioChannelLayout(configuration.Base):
+class AudioChannelLayout(configuration.RuntimeMap):
 
   max_channels = configuration.Field(type=int, required=True).cast()
   """The maximum number of channels in this layout.
@@ -145,11 +141,9 @@ class AudioChannelLayout(configuration.Base):
   For example, this could be '500k' or '7.5M'.
   """
 
-  def __eq__(self, other: Any) -> bool:
-    return self.max_channels == other.max_channels
-
-  def __lt__(self, other: Any) -> bool:
-    return self.max_channels < other.max_channels
+  def _sortable_properties(self) -> Tuple[float]:
+    """Return a tuple of properties we can sort on."""
+    return (self.max_channels,)
 
 
 DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
@@ -170,10 +164,7 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
 }
 
 
-# This decorator makes it so that we only have to implement __eq__ and __lt__
-# to make the resolutions sortable.
-@functools.total_ordering
-class VideoResolution(configuration.Base):
+class VideoResolution(configuration.RuntimeMap):
 
   max_width = configuration.Field(type=int, required=True).cast()
   """The maximum width in pixels for this named resolution."""
@@ -203,11 +194,11 @@ class VideoResolution(configuration.Base):
     """Return a tuple of properties we can sort on."""
     return (self.max_width, self.max_height, self.max_frame_rate)
 
-  def __eq__(self, other: Any) -> bool:
-    return self._sortable_properties() == other._sortable_properties()
 
-  def __lt__(self, other: Any) -> bool:
-    return self._sortable_properties() < other._sortable_properties()
+class VideoResolutionName(configuration.RuntimeMapKeyValidator):
+  """A type which will only allow valid VideoResolution names at runtime."""
+
+  map_class = VideoResolution
 
 
 # Default bitrates and resolutions are tracked internally at
@@ -378,15 +369,3 @@ class BitrateConfig(configuration.Base):
   object with all the parameters of how 1080p video would be encoded (max size,
   bitrates, etc.)
   """
-
-
-class Resolution(configuration.RuntimeMapType):
-  """A runtime map of resolution names to VideoResolution objects."""
-
-  pass
-
-class ChannelLayout(configuration.RuntimeMapType):
-  """A runtime map of channel layout names to AudioChannelLayout objects."""
-
-  pass
-

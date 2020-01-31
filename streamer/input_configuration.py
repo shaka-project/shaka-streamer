@@ -106,7 +106,8 @@ class Input(configuration.Base):
   For example, required for input_type of 'external_command'.
   """
 
-  resolution = configuration.Field(bitrate_configuration.Resolution).cast()
+  resolution = configuration.Field(
+      bitrate_configuration.VideoResolutionName).cast()
   """The name of the input resolution (1080p, etc).
 
   Only valid for media_type of 'video'.
@@ -300,6 +301,9 @@ class Input(configuration.Base):
         assert False, 'Webcams not supported on this platform!'
 
     return []
+
+  def get_resolution(self) -> bitrate_configuration.VideoResolution:
+    return bitrate_configuration.VideoResolution.get_value(self.resolution)
 
 
 class InputConfig(configuration.Base):

@@ -18,7 +18,7 @@ import shlex
 import subprocess
 import time
 
-from streamer.bitrate_configuration import VideoResolution, Resolution
+from streamer.bitrate_configuration import VideoResolution, VideoResolutionName
 from streamer.input_configuration import Input, InputType
 from typing import Optional, List
 
@@ -122,7 +122,7 @@ def get_frame_rate(input: Input) -> Optional[float]:
 
   return frame_rate
 
-def get_resolution(input: Input) -> Optional[VideoResolution]:
+def get_resolution(input: Input) -> Optional[VideoResolutionName]:
   """Returns the autodetected resolution of the input."""
 
   resolution_string = _probe(input, 'stream=width,height')
@@ -136,13 +136,13 @@ def get_resolution(input: Input) -> Optional[VideoResolution]:
   width, height = int(width_string), int(height_string)
   input_resolution = (width, height)
 
-  for bucket in Resolution.sorted_values():
+  for bucket in VideoResolution.sorted_values():
     resolution = (bucket.max_width, bucket.max_height)
     frame_rate = bucket.max_frame_rate
 
     # The first bucket this fits into is the one.
     if input_resolution <= resolution and input.frame_rate <= frame_rate:
-      return bucket
+      return bucket.get_key()
 
   return None
 

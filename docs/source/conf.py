@@ -222,8 +222,8 @@ autodoc_member_order = 'bysource'
 # Initialize the default resolutions and channel layouts so that their names can
 # be shown in the generated docs.
 bitrate_config = bitrate_configuration.BitrateConfig({})
-bitrate_configuration.Resolution.set_map(bitrate_config.video_resolutions)
-bitrate_configuration.ChannelLayout.set_map(
+bitrate_configuration.VideoResolution.set_map(bitrate_config.video_resolutions)
+bitrate_configuration.AudioChannelLayout.set_map(
     bitrate_config.audio_channel_layouts)
 
 # A map from fully-qualified field names to the Field object that represents

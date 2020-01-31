@@ -14,6 +14,7 @@
 
 import abc
 import enum
+import functools
 import re
 
 import typing
@@ -114,64 +115,8 @@ class HexString(ValidatingType, str):
     if not re.match(r'^[a-fA-F0-9]+$', value):
       raise ValueError('not a hexadecimal string')
 
-class RuntimeMapType(object):
-  """A base wrapper type that allows valid values to be chosen at runtime.
 
-  This means a Field can have its type defined before the valid values of that
-  type are known.  For example, this is used for resolutions, which are defined
-  by a config file.
-
-  After calling set_map on the subclass, the subclass constructor can be used
-  to type cast valid keys to their values.  For example, after setting the map
-  to {'foo': 'bar'}, 'foo' becomes the only valid key.  Passing the key 'foo'
-  to the subclass constructor then results in the value 'bar' being returned.
-  This is different from an Enum in that Enum constructors take a value and
-  return an Enum instance.
-  """
-
-  _map: Dict[str, Any] = {}
-
-  @classmethod
-  def set_map(cls,
-              map: Dict[str, 'Base']) -> None:
-    """Set the map of valid values for this class."""
-
-    assert cls != RuntimeMapType, 'Do not use the base class directly!'
-    cls._map = map
-
-    # Synthesize a method on each value to allow the key to be recovered.
-    # Use a default parameter in the lambda to effectively bind the parameter,
-    # as described here: https://stackoverflow.com/a/19837683
-    # Not doing this causes the lambda to always return the key from the final
-    # iteration of the loop (a problem familiar to many JavaScript developers).
-    for key, value in map.items():
-      setattr(value, 'get_key', lambda bound_key=key: bound_key)
-
-  # __new__ is special and doesn't use @classmethod
-  def __new__(cls, key: str):
-    """A magic method to change the constructor behavior for the class.
-
-    This will map valid values into the map set by set_map.
-    """
-
-    assert cls != RuntimeMapType, 'Do not use the base class directly!'
-    try:
-      return cls._map[key]
-    except KeyError:
-      raise ValueError(
-          '{} is not a valid {}'.format(key, cls.__name__)) from None
-
-  @classmethod
-  def keys(cls):
-    """This allows the config system to print the list of allowed strings."""
-    return cls._map.keys()
-
-  @classmethod
-  def sorted_values(cls) -> List['Base']:
-    return sorted(cls._map.values())
-
-
-# Type parameters used by the Generic Field below.
+# A type parameter used by the Generic Field below.
 # For example, for a Field with type=str, FieldType would be a string type and
 # Type[FieldType] would be the function "str".
 FieldType = TypeVar('FieldType')
@@ -309,10 +254,6 @@ class Field(Generic[FieldType]):
       # Get the list of valid options as quoted strings.
       options = [repr(str(member.value)) for member in type]
       return '{} (one of {})'.format(type.__name__, ', '.join(options))
-    elif issubclass(type, RuntimeMapType):
-      # Get the list of valid options as quoted strings.
-      options = [repr(str(key)) for key in type.keys()]
-      return '{} (one of {})'.format(type.__name__, ', '.join(options))
     elif issubclass(type, ValidatingType):
       return type.name()
 
@@ -436,9 +377,9 @@ class Base(object):
         else:
           raise
 
-    # For enums or RuntimeMapTypes, try to cast the value to the enum type, and
-    # raise a WrongType error if this fails.
-    if issubclass(field.type, (enum.Enum, RuntimeMapType)):
+    # For enums, try to case the value to the enum type, and raise a WrontType
+    # error if this fails.
+    if issubclass(field.type, enum.Enum):
       try:
         return field.type(value)
       except ValueError:
@@ -475,4 +416,112 @@ class Base(object):
     if not isinstance(value, field.type):
       raise WrongType(self.__class__, key, field)
     return value
+
+
+# A type parameter used by the Generic RuntimeMap below.  Concrete types used
+# here must inherit from the RuntimeMap base class.
+RuntimeMapSubclass = TypeVar('RuntimeMapSubclass', bound='RuntimeMap')
+
+# This decorator makes it so that we only have to implement __eq__ and __lt__
+# to make the instances sortable.  These magic methods in turn depend on
+# _sortable_properties, which subclasses must implement.
+@functools.total_ordering
+class RuntimeMap(Generic[RuntimeMapSubclass], Base):
+  """Maintains a map of keys to specific instances from the config file.
+
+  This means a Field can have its type defined before the valid keys/values of
+  that type are known.  For example, this is used for resolutions, which are
+  defined by a config file.
+
+  After calling set_map on the subclass, the get_value method can be used to
+  look up a value from its key.  For example, after setting the map to
+  {'foo': 'bar'}, 'foo' becomes the only valid key.  Passing the key 'foo' to
+  the get_value then results in the value 'bar' being returned.
+  """
+
+  _map: Dict[str, RuntimeMapSubclass] = {}
+
+
+  def get_key(self) -> str:
+    """This defines the synthetic 'get_key' property which will be attached to
+    instances later inside set_map.  This definition is only for the sake of
+    mypy's type analysis, and will never be called."""
+
+    raise RuntimeError('Synthetic get_key is missing on RuntimeMapSubclass!')
+
+  @abc.abstractmethod
+  def _sortable_properties(self) -> Tuple:
+    """Return a tuple of sortable properties.  Implemented by subclasses."""
+    raise RuntimeError('_sortable_properties missing on RuntimeMapSubclass!')
+
+  def __eq__(self, other: Any) -> bool:
+    return self._sortable_properties() == other._sortable_properties()
+
+  def __lt__(self, other: Any) -> bool:
+    return self._sortable_properties() < other._sortable_properties()
+
+
+  @classmethod
+  def set_map(cls,
+              map: Dict[str, RuntimeMapSubclass]) -> None:
+    """Set the map of valid values for this class."""
+
+    assert cls != RuntimeMap, 'Do not use the base class directly!'
+    cls._map = map
+
+    # Synthesize a method on each value to allow the key to be recovered.
+    # Use a default parameter in the lambda to effectively bind the parameter,
+    # as described here: https://stackoverflow.com/a/19837683
+    # Not doing this causes the lambda to always return the key from the final
+    # iteration of the loop (a problem familiar to many JavaScript developers).
+    for key, value in map.items():
+      setattr(value, 'get_key', lambda bound_key=key: bound_key)
+
+  @classmethod
+  def get_value(cls, key: str) -> RuntimeMapSubclass:
+    """Get a valid value by its key."""
+
+    assert cls != RuntimeMap, 'Do not use the base class directly!'
+    try:
+      return cls._map[key]
+    except KeyError:
+      raise ValueError(
+          '{} is not a valid {}'.format(key, cls.__name__)) from None
+
+  @classmethod
+  def keys(cls):
+    """This allows the config system to print the list of allowed strings."""
+    return cls._map.keys()
+
+  @classmethod
+  def sorted_values(cls) -> List[RuntimeMapSubclass]:
+    return sorted(cls._map.values())
+
+
+class RuntimeMapKeyValidator(ValidatingType, str):
+  """A validator that only allows the valid keys for a certain RuntimeMap
+  subclass.
+
+  A RuntimeMap subclass should be paired with a RuntimeMapKeyValidator subclass.
+  The RuntimeMapKeyValidator subclass should have a "map_class" variable which
+  points to the RuntimeMap subclass."""
+
+  """Must be provided by subclasses and point to the matching RuntimeMap
+  subclass."""
+  map_class: Type[RuntimeMap] = None  # type: ignore
+
+  @classmethod
+  def name(cls) -> str:
+    options = [repr(str(key)) for key in cls.map_class.keys()]
+    return '{} name (one of {})'.format(
+        cls.map_class.__name__, ', '.join(options))
+
+  @classmethod
+  def validate(cls, key):
+    if type(key) is not str:
+      raise TypeError()
+
+    if key not in cls.map_class.keys():
+      raise ValueError(
+          '{} is not a valid {}'.format(key, cls.map_class.__name__))
 

@@ -32,7 +32,7 @@ import uuid
 
 from typing import Any, Dict, List, Tuple, Union
 from streamer.cloud_node import CloudNode
-from streamer.bitrate_configuration import BitrateConfig, ChannelLayout, Resolution
+from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
 from streamer.input_configuration import InputConfig, InputType, MediaType
 from streamer.node_base import NodeBase, ProcessStatus
@@ -138,8 +138,8 @@ class ControllerNode(object):
     # Now that the definitions have been parsed, register the maps of valid
     # resolutions and channel layouts so that InputConfig and PipelineConfig
     # can be validated accordingly.
-    Resolution.set_map(bitrate_config.video_resolutions)
-    ChannelLayout.set_map(bitrate_config.audio_channel_layouts)
+    VideoResolution.set_map(bitrate_config.video_resolutions)
+    AudioChannelLayout.set_map(bitrate_config.audio_channel_layouts)
 
     input_config = InputConfig(input_config_dict)
     pipeline_config = PipelineConfig(pipeline_config_dict)
@@ -167,10 +167,10 @@ class ControllerNode(object):
 
       elif input.media_type == MediaType.VIDEO:
         for video_codec in pipeline_config.video_codecs:
-          for output_resolution in pipeline_config.resolutions:
+          for output_resolution in pipeline_config.get_resolutions():
             # Only going to output lower or equal resolution videos.
             # Upscaling is costly and does not do anything.
-            if input.resolution < output_resolution:
+            if input.get_resolution() < output_resolution:
               continue
 
             outputs.append(VideoOutputStream(self._create_pipe(),

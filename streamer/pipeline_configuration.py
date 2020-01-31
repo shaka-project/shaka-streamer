@@ -142,8 +142,9 @@ class PipelineConfig(configuration.Base):
   See documentation here: https://trac.ffmpeg.org/wiki/HWAccelIntro
   """
 
-  resolutions = configuration.Field(List[bitrate_configuration.Resolution],
-                                    required=True).cast()
+  resolutions = configuration.Field(
+      List[bitrate_configuration.VideoResolutionName],
+      required=True).cast()
   """A list of resolution names to encode.
 
   Any resolution greater than the input resolution will be ignored, to avoid
@@ -220,3 +221,6 @@ class PipelineConfig(configuration.Base):
       raise configuration.MalformedField(
           self.__class__, 'segment_per_file', field, reason)
 
+  def get_resolutions(self) -> List[bitrate_configuration.VideoResolution]:
+    VideoResolution = bitrate_configuration.VideoResolution  # alias
+    return [VideoResolution.get_value(name) for name in self.resolutions]
