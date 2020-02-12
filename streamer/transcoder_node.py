@@ -124,8 +124,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
       ]
 
       for output_stream in self._outputs:
-        if output_stream.type != input.media_type:
-          # Skip outputs that don't match this input.
+        if output_stream.input != input:
+          # Skip outputs that don't match this exact input object.
           continue
 
         # Map arguments must be repeated for each output file.

@@ -10,6 +10,7 @@
    (https://github.com/google/shaka-streamer/issues/10)
  - Drop `raw_images` input type
    (https://github.com/google/shaka-streamer/issues/25)
+ - Fix duplicate transcoder outputs with multiple audio languages
 
 
 ## 0.3.0 (2019-10-18)
