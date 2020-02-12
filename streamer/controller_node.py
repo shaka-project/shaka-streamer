@@ -182,12 +182,12 @@ class ControllerNode(object):
         outputs.append(TextOutputStream(input))
 
     self._nodes.append(TranscoderNode(input_config,
-                                                      pipeline_config,
-                                                      outputs))
+                                      pipeline_config,
+                                      outputs))
 
     self._nodes.append(PackagerNode(pipeline_config,
-                                                  output_dir,
-                                                  outputs))
+                                    output_dir,
+                                    outputs))
 
     if bucket_url:
       cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
