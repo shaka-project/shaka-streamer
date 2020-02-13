@@ -33,20 +33,20 @@ StreamingMode = pipeline_configuration.StreamingMode
 
 
 INIT_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_init.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_init.{format}',
+  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
+  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_init.{format}',
   MediaType.TEXT: '{dir}/text_{language}_init.{format}',
 }
 
 MEDIA_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_$Number$.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_$Number$.{format}',
+  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
+  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
   MediaType.TEXT: '{dir}/text_{language}_$Number$.{format}',
 }
 
 SINGLE_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}.{format}',
+  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
+  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}.{format}',
   MediaType.TEXT: '{dir}/text_{language}.{format}',
 }
 

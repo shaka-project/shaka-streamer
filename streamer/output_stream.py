@@ -88,6 +88,7 @@ class AudioOutputStream(OutputStream):
       'channels': str(self.channels),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
+      'codec': self.codec.value,
     }
 
   def get_bitrate(self) -> str:
@@ -113,6 +114,7 @@ class VideoOutputStream(OutputStream):
       'resolution_name': self.resolution.get_key(),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
+      'codec': self.codec.get_base_codec().value,
     }
 
   def get_bitrate(self) -> str:
