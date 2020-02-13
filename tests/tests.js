@@ -558,6 +558,71 @@ function autoDetectionTests(manifestUrl) {
     const trackList = player.getVariantTracks();
     expect(trackList.length).toBe(1);
   });
+
+  // This is a regression test for content which has a smaller aspect ratio than
+  // the defined resolutions.  We had a bug in which a fit by width would be
+  // used even if the input height was over the resolution's maximum.  This test
+  // defines custom resolutions with wider aspect ratio than the input.
+  it('correctly buckets the input resolution of the video', async () => {
+    // The resolution of this content is 1280x544.
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+
+    const bitrateConfigDict = {
+      video_resolutions: {
+        too_small: {
+          max_width: 1300,  // Big enough
+          max_height: 480,  // Not big enough
+          bitrates: {
+            h264: '1M',
+          },
+        },
+        big_enough: {
+          max_width: 1500,  // Big enough
+          max_height: 544,  // Just right
+          bitrates: {
+            h264: '1M',
+          },
+        },
+        much_bigger: {
+          max_width: 2000, // Bigger than input
+          max_height: 700, // Bigger than input
+          bitrates: {
+            h264: '1M',
+          },
+        },
+      }
+    };
+
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': [
+        'too_small',
+        'big_enough',
+        'much_bigger',
+      ],
+    };
+
+    await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
+
+    await player.load(manifestUrl);
+    const trackList = player.getVariantTracks();
+
+    // If the input is correctly detected as the higher resolution, this will
+    // encode two tracks for 'too_small' and 'big_enough', but not 'much_bigger'
+    // (which would be upscaled).  Before the detection bug was fixed, this
+    // would be only one track ('too_small'), since 'big_enough' would have been
+    // seen (incorrectly) as upscaling.
+    expect(trackList.length).toBe(2);
+  });
 }
 
 function languageTests(manifestUrl, format) {
