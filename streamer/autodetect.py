@@ -134,14 +134,11 @@ def get_resolution(input: Input) -> Optional[VideoResolutionName]:
   # to a named resolution.
   width_string, height_string = resolution_string.split('|')
   width, height = int(width_string), int(height_string)
-  input_resolution = (width, height)
 
   for bucket in VideoResolution.sorted_values():
-    resolution = (bucket.max_width, bucket.max_height)
-    frame_rate = bucket.max_frame_rate
-
     # The first bucket this fits into is the one.
-    if input_resolution <= resolution and input.frame_rate <= frame_rate:
+    if (width <= bucket.max_width and height <= bucket.max_height and
+        input.frame_rate <= bucket.max_frame_rate):
       return bucket.get_key()
 
   return None

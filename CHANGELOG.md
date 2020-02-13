@@ -1,4 +1,5 @@
 ## 0.4.0 (???)
+
  - Fix shutdown of cloud upload
  - Improve the formatting of minimum version errors
  - Fix several issues with Ubuntu 16.04 and Python 3.5
@@ -10,6 +11,8 @@
    (https://github.com/google/shaka-streamer/issues/10)
  - Drop `raw_images` input type
    (https://github.com/google/shaka-streamer/issues/25)
+ - Fix duplicate transcoder outputs with multiple audio languages
+ - Fix resolution autodetection boundary cases
 
 
 ## 0.3.0 (2019-10-18)
