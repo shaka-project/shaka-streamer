@@ -155,7 +155,8 @@ def start():
     controller.start(OUTPUT_DIR,
                      configs['input_config'],
                      configs['pipeline_config'],
-                     configs['bitrate_config'])
+                     configs['bitrate_config'],
+                     check_deps=False)
   except Exception as e:
     # If the controller throws an exception during startup, we want to call
     # stop() to shut down any external processes that have already been started.
