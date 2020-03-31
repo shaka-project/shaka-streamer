@@ -66,9 +66,13 @@ class ControllerNode(object):
   def __exit__(self, *unused_args) -> None:
     self.stop()
 
-  def _create_pipe(self) -> str:
+  def _create_pipe(self, suffix = '') -> str:
     """Create a uniquely-named named pipe in the node's temp directory.
 
+    Args:
+      suffix (str): An optional suffix added to the pipe's name.  Used to
+                    indicate to the packager when it's getting a certain text
+                    format in a pipe.
     Raises:
       RuntimeError: If the platform doesn't have mkfifo.
     Returns:
@@ -83,7 +87,7 @@ class ControllerNode(object):
 
     # Since the tempfile module creates actual files, use uuid to generate a
     # filename, then call mkfifo to create the named pipe.
-    unique_name = str(uuid.uuid4())
+    unique_name = str(uuid.uuid4()) + suffix
     path = os.path.join(self._temp_dir, unique_name)
 
     readable_by_owner_only = 0o600  # Unix permission bits
@@ -115,8 +119,8 @@ class ControllerNode(object):
       # above.
       _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
 
-      # Check that Shaka Packager version is 2.4 or above.
-      _check_version('Shaka Packager', ['packager', '-version'], (2, 4))
+      # Check that Shaka Packager version is 2.4.2 or above.
+      _check_version('Shaka Packager', ['packager', '-version'], (2, 4, 2))
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
@@ -179,7 +183,18 @@ class ControllerNode(object):
                                              output_resolution))
 
       elif input.media_type == MediaType.TEXT:
-        outputs.append(TextOutputStream(input))
+        if input.name.endswith('.vtt') or input.name.endswith('.ttml'):
+          # If the input is a VTT or TTML file, pass it directly to the packager
+          # without any intermediate processing or any named pipe.
+          # TODO: Test TTML inputs
+          text_pipe = None  # Bypass transcoder
+        else:
+          # Otherwise, the input is something like an mkv file with text tracks
+          # in it.  These will be extracted by the transcoder and passed in a
+          # pipe to the packager.
+          text_pipe = self._create_pipe('.vtt')
+
+        outputs.append(TextOutputStream(text_pipe, input))
 
     self._nodes.append(TranscoderNode(input_config,
                                       pipeline_config,
@@ -194,9 +209,9 @@ class ControllerNode(object):
       os.mkdir(cloud_temp_dir)
 
       self._nodes.append(CloudNode(output_dir,
-                                              bucket_url,
-                                              cloud_temp_dir,
-                                              self.is_vod()))
+                                   bucket_url,
+                                   cloud_temp_dir,
+                                   self.is_vod()))
 
     for node in self._nodes:
       node.start()

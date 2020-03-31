@@ -137,6 +137,10 @@ describe('Shaka Streamer', () => {
   // for this.
 
   customBitrateTests();
+
+  // TODO: Test is commented out until Packager outputs codecs for vtt in mp4.
+  // muxedTextTests(hlsManifestUrl, '(hls)');
+  muxedTextTests(dashManifestUrl, '(dash)');
 });
 
 function errorTests() {
@@ -1025,5 +1029,45 @@ function customBitrateTests() {
       error_type: 'MalformedField',
       field_name: 'resolutions',
     }));
+  });
+}
+
+function muxedTextTests(manifestUrl, format) {
+  it('can extract text streams from muxed inputs ' + format, async () => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.with.subs.mkv',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+        {
+          'name': TEST_DIR + 'Sintel.with.subs.mkv',
+          'media_type': 'audio',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+        {
+          'name': TEST_DIR + 'Sintel.with.subs.mkv',
+          'media_type': 'text',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': ['144p'],
+      'audio_codecs': ['opus'],
+      'video_codecs': ['h264'],
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+
+    const trackList = player.getTextTracks();
+    expect(trackList).toEqual([
+      jasmine.objectContaining({
+        'language': 'eo',  // Autodetected from the mkv input
+      }),
+    ]);
   });
 }

@@ -114,13 +114,16 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       # the screen.
       stdout = open('PackagerNode.log', 'w')
 
-    self._process: subprocess.Popen = self._create_process(args,
-                                         stderr=subprocess.STDOUT,
-                                         stdout=stdout)
+    self._process: subprocess.Popen = self._create_process(
+        args,
+        stderr=subprocess.STDOUT,
+        stdout=stdout)
 
   def _setup_stream(self, stream: OutputStream) -> str:
     dict = {
-        'in': stream.pipe,
+        # If pipe is None, this wasn't transcoded, so we take the input path
+        # directly.
+        'in': stream.pipe or stream.input.name,
         'stream': stream.type.value,
     }
 

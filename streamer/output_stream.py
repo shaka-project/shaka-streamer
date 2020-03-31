@@ -16,7 +16,7 @@
 
 from streamer.bitrate_configuration import AudioCodec, AudioChannelLayout, VideoCodec, VideoResolution
 from streamer.input_configuration import Input, MediaType
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 
 class OutputStream(object):
@@ -24,11 +24,12 @@ class OutputStream(object):
 
   def __init__(self,
                type: MediaType,
-               pipe: str,
+               pipe: Optional[str],
                input: Input,
                codec: Union[AudioCodec, VideoCodec, None]) -> None:
     self.type: MediaType = type
-    self.pipe: str = pipe
+    # If "pipe" is None, then this will not be transcoded.
+    self.pipe: Optional[str] = pipe
     self.input: Input = input
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
     self._features: Dict[str, str] = {}
@@ -124,22 +125,15 @@ class VideoOutputStream(OutputStream):
 
 class TextOutputStream(OutputStream):
 
-  def __init__(self, input):
-    super().__init__(
-        MediaType.TEXT,
-        # We don't transcode or process text yet,
-        # so this isn't really a pipe.
-        # But assigning the input name to pipe for
-        # text allows PackagerNode to be
-        # ignorant of these details.
-        input.name,
-        input,
-        # We don't have a codec per se for text,
-        # but we'd like to generically
-        # process OutputStream objects in ways that
-        # are easier with this attribute set, so set it to None.
-        None)
+  def __init__(self,
+               pipe: Optional[str],
+               input: Input):
+    # We don't have a codec per se for text, but we'd like to generically
+    # process OutputStream objects in ways that are easier with this attribute
+    # set, so set it to None.
+    codec = None
 
+    super().__init__(MediaType.TEXT, pipe, input, codec)
 
     # The features that will be used to generate the output filename.
     self._features = {

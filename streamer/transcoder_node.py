@@ -19,7 +19,7 @@ import shlex
 from streamer.bitrate_configuration import AudioCodec, VideoCodec
 from streamer.input_configuration import Input, InputConfig, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
-from streamer.output_stream import AudioOutputStream, VideoOutputStream, OutputStream
+from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from typing import List, Union
 
@@ -110,10 +110,6 @@ class TranscoderNode(PolitelyWaitOnFinish):
       ]
 
     for i, input in enumerate(self._input_config.inputs):
-      if input.media_type == MediaType.TEXT:
-        # We don't yet have the ability to transcode or process text inputs.
-        continue
-
       map_args = [
           # Map corresponding input stream to output file.
           # The format is "<INPUT FILE NUMBER>:<STREAM SPECIFIER>", so "i" here
@@ -127,6 +123,9 @@ class TranscoderNode(PolitelyWaitOnFinish):
         if output_stream.input != input:
           # Skip outputs that don't match this exact input object.
           continue
+        if output_stream.pipe is None:
+          # This input won't be transcoded.  This is common for VTT text input.
+          continue
 
         # Map arguments must be repeated for each output file.
         args += map_args
@@ -134,9 +133,12 @@ class TranscoderNode(PolitelyWaitOnFinish):
         if input.media_type == MediaType.AUDIO:
           assert(isinstance(output_stream, AudioOutputStream))
           args += self._encode_audio(output_stream, input)
-        else:
+        elif input.media_type == MediaType.VIDEO:
           assert(isinstance(output_stream, VideoOutputStream))
           args += self._encode_video(output_stream, input)
+        else:
+          assert(isinstance(output_stream, TextOutputStream))
+          args += self._encode_text(output_stream, input)
 
         # The output pipe.
         args += [output_stream.pipe]
@@ -302,3 +304,9 @@ class TranscoderNode(PolitelyWaitOnFinish):
         '-vf', ','.join(filters),
     ]
     return args
+
+  def _encode_text(self, stream: TextOutputStream, input: Input) -> List[str]:
+    return [
+        # Output WebVTT.
+        '-f', 'webvtt',
+    ]
