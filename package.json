@@ -16,7 +16,7 @@
     "karma-jasmine": "^2.0.1",
     "karma-junit-reporter": "^1.2.0",
     "karma-spec-reporter": "^0.0.32",
-    "shaka-player": "^2.5.5"
+    "shaka-player": "^2.5.10"
   },
   "repository": {
     "type": "git",

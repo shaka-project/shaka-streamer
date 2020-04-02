@@ -439,7 +439,7 @@ function codecTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
-      'audio_codecs': ['opus'],
+      'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -449,7 +449,7 @@ function codecTests(manifestUrl, format) {
     const videoCodecList = trackList.map(track => track.videoCodec);
     const audioCodecList = trackList.map(track => track.audioCodec);
     expect(videoCodecList).toEqual(['avc1.4d400c']);
-    expect(audioCodecList).toEqual(['opus']);
+    expect(audioCodecList).toEqual(['mp4a.40.2']);
   });
 
   it('supports AV1 ' + format, async () => {
@@ -1057,7 +1057,7 @@ function muxedTextTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
-      'audio_codecs': ['opus'],
+      'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
