@@ -237,6 +237,7 @@ def fetch_cloud_assets():
       'Sintel.2010.Esperanto.vtt',
       'Sintel.2010.French.vtt',
       'Sintel.2010.Spanish.vtt',
+      'Sintel.with.subs.mkv',
   ]
 
   # Downloading all the assests for tests.
