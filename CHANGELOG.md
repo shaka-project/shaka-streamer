@@ -13,6 +13,8 @@
    (https://github.com/google/shaka-streamer/issues/25)
  - Fix duplicate transcoder outputs with multiple audio languages
  - Fix resolution autodetection boundary cases
+ - Add support for extracting text streams from multiplexed inputs
+   (https://github.com/google/shaka-streamer/issues/53)
 
 
 ## 0.3.0 (2019-10-18)
