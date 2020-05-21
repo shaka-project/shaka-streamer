@@ -127,7 +127,7 @@ To run the end-to-end tests, you must install Flask and NPM. In Ubuntu 19.04+:
 
 .. code:: sh
 
-  sudo apt -y python3-flask nodejs npm
+  sudo apt -y install python3-flask nodejs npm
   # Upgrade to a recent npm, which is not packaged:
   sudo npm install -g npm
 
