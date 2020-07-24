@@ -212,18 +212,18 @@ class Field(Generic[FieldType]):
     # is something like "str" or "int" instead of "typing.List" or
     # "typing.Dict".
     if hasattr(typing, 'get_args'):
-      args = typing.get_args(type)  # type: ignore
+      args = typing.get_args(type)
     elif hasattr(type, '__args__'):
       # Before Python 3.8, you can use this undocumented attribute to get the
       # type parameters.  If this doesn't exist, you are probably dealing with a
       # basic type like "str" or "int".
-      args = type.__args__  # type: ignore
+      args = getattr(type, '__args__')
     else:
       args = ()
 
     underlying = Field.get_underlying_type(type)
     if underlying is dict:
-      return args
+      return cast(Tuple[Optional[Type], Optional[Type]], args)
     if underlying is list:
       return (None, args[0])
     return (None, None)
@@ -449,7 +449,11 @@ class RuntimeMap(Generic[RuntimeMapSubclass], Base):
 
     raise RuntimeError('Synthetic get_key is missing on RuntimeMapSubclass!')
 
-  @abc.abstractmethod
+  # NOTE: mypy 0.770 won't accept the @abc.abstractmethod decorator here.  The
+  # error is "Only concrete class can be given where
+  # Type[RuntimeMap[RuntimeMapSubclass]] is expected."  Removing the decorator
+  # makes this class technically concrete.  We still have the RuntimeError below
+  # if a subclass doesn't implement this required method.
   def _sortable_properties(self) -> Tuple:
     """Return a tuple of sortable properties.  Implemented by subclasses."""
     raise RuntimeError('_sortable_properties missing on RuntimeMapSubclass!')
