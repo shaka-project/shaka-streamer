@@ -144,7 +144,7 @@ def start():
   # Receives configs from the tests to start Shaka Streamer.
   try:
     configs = json.loads(flask.request.data)
-  except:
+  except Exception as e:
     return createCrossOriginResponse(status=400, body=str(e))
 
   # Enforce quiet mode without needing it specified in every test.
