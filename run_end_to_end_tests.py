@@ -195,7 +195,10 @@ def stop():
 
 @app.route('/output_files/<path:filename>', methods = ['GET','OPTIONS'])
 def send_file(filename):
-  if controller.is_vod():
+  if not controller:
+    return createCrossOriginResponse(
+        status=403, body='Instance already shut down!')
+  elif controller.is_vod():
     # If streaming mode is vod, needs to wait until packager is completely
     # done packaging contents.
     while True:
