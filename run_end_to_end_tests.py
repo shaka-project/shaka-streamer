@@ -49,7 +49,7 @@ log.setLevel(logging.ERROR)
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 controller = None
 
-app = flask.Flask(__name__, static_folder=OUTPUT_DIR)
+app = flask.Flask(__name__)
 # Stops browser from caching files to prevent cross-test contamination.
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
