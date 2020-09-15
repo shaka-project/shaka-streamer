@@ -193,7 +193,7 @@ def stop():
   cleanup()
   return resp
 
-@app.route('/output_files/<path:filename>', methods = ['GET','OPTIONS'])
+@app.route('/output_files/<path:filename>', methods = ['GET', 'OPTIONS'])
 def send_file(filename):
   if not controller:
     return createCrossOriginResponse(
@@ -283,7 +283,7 @@ def main():
   fails = 0
   trials = args.runs
   print('Running', trials, 'trials')
-  # Start up karma.
+
   for i in range(trials):
     # Start up karma.
     karma_args = [
