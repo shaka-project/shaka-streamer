@@ -58,8 +58,8 @@ encryption:
   # Must be either 16 digit or 32 digit hex
   iv: 8858d6731bee84d3b6e3d12f3c767a26
   # One or more pssh boxes in hex string format.
-  pssh: 000000317073736800000000EDEF8BA979D64ACEA3C827DCD51D21ED00000011220F\
-        7465737420636F6E74656E74206964
+  pssh: "000000317073736800000000EDEF8BA979D64ACEA3C827DCD\
+    51D21ED00000011220F7465737420636F6E74656E74206964"
   # Optional protection systems to be generated
   protection_systems:
     - Widevine
