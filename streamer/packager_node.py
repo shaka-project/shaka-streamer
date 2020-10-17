@@ -22,7 +22,7 @@ from . import node_base
 from . import pipeline_configuration
 
 from streamer.output_stream import OutputStream
-from streamer.pipeline_configuration import PipelineConfig
+from streamer.pipeline_configuration import EncryptionMode, PipelineConfig
 from typing import List, Optional, Union
 
 # Alias a few classes to avoid repeating namespaces later.
@@ -177,17 +177,57 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       ]
     return args
 
+  def _setup_encryption_keys(self) -> List[str]:
+    # Sets up encryption keys for raw encryption mode
+    keys = []
+    for key in self._pipeline_config.encryption.keys:
+      key_str = ''
+      if key.label:
+        key_str = 'label=' + key.label + ':'
+      key_str += 'key_id=' + key.key_id + ':key=' + key.key
+      keys.append(key_str)
+    return keys
+
   def _setup_encryption(self) -> List[str]:
     # Sets up encryption of content.
-    args = [
-      '--enable_widevine_encryption',
-      '--key_server_url', self._pipeline_config.encryption.key_server_url,
-      '--content_id', self._pipeline_config.encryption.content_id,
-      '--signer', self._pipeline_config.encryption.signer,
-      '--aes_signing_key', self._pipeline_config.encryption.signing_key,
-      '--aes_signing_iv', self._pipeline_config.encryption.signing_iv,
+
+    encryption = self._pipeline_config.encryption
+
+    args = []
+
+    if encryption.encryption_mode == EncryptionMode.WIDEVINE:
+      args = [
+        '--enable_widevine_encryption',
+        '--key_server_url', encryption.key_server_url,
+        '--content_id', encryption.content_id,
+        '--signer', encryption.signer,
+        '--aes_signing_key', encryption.signing_key,
+        '--aes_signing_iv', encryption.signing_iv,
+      ]
+    elif encryption.encryption_mode == EncryptionMode.RAW:
+      # raw key encryption mode
+      args = [
+        '--enable_raw_key_encryption',
+        '--keys',
+        ','.join(self._setup_encryption_keys()),
+      ]
+      if encryption.iv:
+        args.extend(['--iv', encryption.iv])
+      if encryption.pssh:
+        args.extend(['-pssh', encryption.pssh])
+
+    # Common arguments
+    args.extend([
       '--protection_scheme',
-      self._pipeline_config.encryption.protection_scheme.value,
-      '--clear_lead', str(self._pipeline_config.encryption.clear_lead),
-    ]
+      encryption.protection_scheme.value,
+      '--clear_lead', str(encryption.clear_lead),
+    ])
+
+    if encryption.protection_systems:
+      args.extend([
+        '--protection_systems', ','.join(
+          [p.value for p in encryption.protection_systems]
+        )
+      ])
+
     return args

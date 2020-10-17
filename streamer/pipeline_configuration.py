@@ -62,6 +62,33 @@ class ProtectionScheme(enum.Enum):
   CBCS = 'cbcs'
   """AES-128-CBC mode with pattern encryption."""
 
+class ProtectionSystem(enum.Enum):
+  WIDEVINE = 'Widevine'
+  FAIRPLAY = 'FairPlay'
+  PLAYREADY = 'PlayReady'
+  MARLIN = 'Marlin'
+  COMMON = 'CommonSystem'
+
+class EncryptionMode(enum.Enum):
+  WIDEVINE = 'widevine'
+  """Widevine key server mode"""
+
+  RAW = 'raw'
+  """Raw key mode"""
+
+class RawKeyConfig(configuration.Base):
+  """An object representing a list of keys for Raw key encryption"""
+
+  label = configuration.Field(str).cast()
+  """An arbitary string or a predefined DRM label like AUDIO, SD, HD, etc.
+  If not specified, indicates the default key and key_id."""
+
+  key_id = configuration.Field(configuration.HexString, required=True).cast()
+  """A key identifier as a 32-digit hex string"""
+
+  key = configuration.Field(configuration.HexString, required=True).cast()
+  """The encryption key to use as a 32-digit hex string"""
+
 
 class EncryptionConfig(configuration.Base):
   """An object representing the encryption config for Shaka Streamer."""
@@ -72,11 +99,43 @@ class EncryptionConfig(configuration.Base):
   Otherwise, all other encryption settings are ignored.
   """
 
+  encryption_mode = configuration.Field(
+    EncryptionMode, default=EncryptionMode.WIDEVINE).cast()
+  """Encryption mode to use. By default it is widevine but can be changed
+  to raw."""
+
+  protection_systems = configuration.Field(List[ProtectionSystem]).cast()
+  """Protection Systems to be generated. Supported protection systems include
+  Widevine, PlayReady, FairPlay, Marin and CommonSystem.
+  """
+
+  pssh = configuration.Field(configuration.HexString).cast()
+  """One or more concatenated PSSH boxes in hex string format. If this and
+  `protection_systems` is not specified, a v1 common PSSH box will be
+  generated.
+  
+  Applies to 'raw' encryption_mode only.
+  """
+
+  iv = configuration.Field(configuration.HexString).cast()
+  """IV in hex string format. If not specified, a random IV will be
+  generated.
+  
+  Applies to 'raw' encryption_mode only.
+  """
+
+  keys = configuration.Field(List[RawKeyConfig]).cast()
+  """A list of encryption keys to use.
+  
+  Applies to 'raw' encryption_mode only."""
+
   content_id = configuration.Field(
       configuration.HexString, default=RANDOM_CONTENT_ID).cast()
   """The content ID, in hex.
 
   If omitted, a random content ID will be chosen for you.
+  
+  Applies to 'widevine' encryption_mode only.
   """
 
   key_server_url = configuration.Field(str, default=UAT_SERVER).cast()
@@ -84,10 +143,14 @@ class EncryptionConfig(configuration.Base):
 
   This is used to generate an encryption key.  By default, it is Widevine's UAT
   server.
+  
+  Applies to 'widevine' encryption_mode only.
   """
 
   signer = configuration.Field(str, default=WIDEVINE_TEST_ACCOUNT).cast()
   """The name of the signer when authenticating to the key server.
+
+  Applies to 'widevine' encryption_mode only.
 
   Defaults to the Widevine test account.
   """
@@ -96,12 +159,16 @@ class EncryptionConfig(configuration.Base):
       configuration.HexString, default=WIDEVINE_TEST_SIGNING_KEY).cast()
   """The signing key, in hex, when authenticating to the key server.
 
+  Applies to 'widevine' encryption_mode only.
+
   Defaults to the Widevine test account's key.
   """
 
   signing_iv = configuration.Field(
       configuration.HexString, default=WIDEVINE_TEST_SIGNING_IV).cast()
   """The signing IV, in hex, when authenticating to the key server.
+
+  Applies to 'widevine' encryption_mode only.
 
   Defaults to the Widevine test account's IV.
   """
@@ -113,6 +180,29 @@ class EncryptionConfig(configuration.Base):
   clear_lead = configuration.Field(int, default=10).cast()
   """The seconds of unencrypted media at the beginning of the stream."""
 
+  def __init__(self, *args) -> None:
+    super().__init__(*args)
+
+    # Don't do any further checks if encryption is disabled
+    if not self.enable:
+      return
+
+    if self.encryption_mode == EncryptionMode.WIDEVINE:
+      field_names = ['keys', 'pssh', 'iv']
+      for field_name in field_names:
+        if getattr(self, field_name):
+          field = getattr(self.__class__, field_name)
+          reason = 'cannot be set when encryption_mode is "%s"' % \
+                   self.encryption_mode
+          raise configuration.MalformedField(
+            self.__class__, field_name, field, reason)
+    elif self.encryption_mode == EncryptionMode.RAW:
+      # Check at least one key has been specified
+      if not self.keys:
+        field = self.__class__.keys
+        reason = 'at least one key must be specified'
+        raise configuration.MalformedField(
+          self.__class__, 'keys', field, reason)
 
 class PipelineConfig(configuration.Base):
   """An object representing the entire pipeline config for Shaka Streamer."""

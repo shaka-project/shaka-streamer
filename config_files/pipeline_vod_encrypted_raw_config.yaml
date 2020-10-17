@@ -1,0 +1,74 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is a sample pipeline configuration file for Shaka Streamer in VOD mode.
+# Here you configure resolutions, manifest formats, segment size, and more.
+
+# Streaming mode.  Can be live or vod.
+streaming_mode: vod
+
+# A list of resolutions to encode.
+# For VOD, you can specify many more resolutions than you would with live,
+# since the encoding does not need to be done in real time.
+resolutions:
+  - 4k
+  - 1080p
+  - 720p
+  - 480p
+  - 360p
+
+# The number of audio channels to output.
+channels: 6
+
+# Manifest format (dash, hls or both)
+manifest_format:
+  - dash
+  - hls
+
+# Length of each segment in seconds.
+segment_size: 10
+
+# Forces the use of SegmentTemplate in DASH.
+segment_per_file: True
+
+encryption:
+  # Enables encryption.
+  # If disabled, the following settings are ignored.
+  enable: True
+  # Set to 'raw' to use the Raw Key Encryption mode. Default is widevine.
+  encryption_mode: raw
+  # List of keys. Key and key id are 32 digit hex strings
+  # Optionally 'label' can be specified. If no label is specified, it
+  # is assumed to be the default key.
+  keys:
+    - key_id: 8858d6731bee84d3b6e3d12f3c767a26
+      key: 1ae8ccd0e7985cc0b6203a55855a1034
+  # Optional IV. If not specified one will be randomly created
+  # Must be either 16 digit or 32 digit hex
+  iv: 8858d6731bee84d3b6e3d12f3c767a26
+  # One or more pssh boxes in hex string format.
+  pssh: 000000317073736800000000EDEF8BA979D64ACEA3C827DCD51D21ED00000011220F\
+        7465737420636F6E74656E74206964
+  # Optional protection systems to be generated
+  protection_systems:
+    - Widevine
+    - FairPlay
+    - PlayReady
+    - Marlin
+    - CommonSystem
+  # Protection scheme (cenc or cbcs)
+  # These are different methods of using a block cipher to encrypt media.
+  protection_scheme: cenc
+  # Seconds of unencrypted media at the beginning of the stream.
+  clear_lead: 10
