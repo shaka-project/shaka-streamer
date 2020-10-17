@@ -220,7 +220,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       if encryption.iv:
         args.extend(['--iv', encryption.iv])
       if encryption.pssh:
-        args.extend(['-pssh', encryption.pssh])
+        args.extend(['--pssh', encryption.pssh])
 
     # Common arguments
     args.extend([
