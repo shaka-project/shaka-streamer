@@ -422,7 +422,7 @@ function drmTests(manifestUrl, format) {
     // so for now we bypass the hls tests.
     // See: https://github.com/google/shaka-player/issues/2146
     if (manifestUrl.indexOf('hls.m3u8') !== -1) {
-      return;
+      return pending();
     }
     const inputConfigDict = {
       'inputs': [
@@ -444,6 +444,60 @@ function drmTests(manifestUrl, format) {
         'encryption_mode': 'raw',
         'keys': [
           {
+            'key_id': '1e044b199a81850e1927e776e7228cad',
+            'key': '0c3b6b7882ecbf9683bd34e189a5acf8',
+          }
+        ],
+        'clear_lead': 0,
+      },
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    // Player should raise an error and not load because the media
+    // is encrypted and the player doesn't have a license server.
+    await expectAsync(player.load(manifestUrl)).toBeRejectedWith(
+        jasmine.objectContaining({
+          code: shaka.util.Error.Code.NO_LICENSE_SERVER_GIVEN,
+        }));
+
+    player.configure({
+      drm: {
+        clearKeys: {
+          '1e044b199a81850e1927e776e7228cad': '0c3b6b7882ecbf9683bd34e189a5acf8'
+        },
+      },
+    });
+    // Player should now be able to load because the player has a license server.
+    await player.load(manifestUrl);
+  });
+
+  it('has raw key drm label support ' + format, async () => {
+    // Clear Key format is not supported in HLS with Shaka Player yet
+    // so for now we bypass the hls tests.
+    // See: https://github.com/google/shaka-player/issues/2146
+    if (manifestUrl.indexOf('hls.m3u8') !== -1) {
+      return pending();
+    }
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ]
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': ['144p'],
+      'encryption': {
+        // Enables encryption.
+        'enable': true,
+        // Enables raw keys
+        'encryption_mode': 'raw',
+        'keys': [
+          {
+            'label': 'SD',
             'key_id': '1e044b199a81850e1927e776e7228cad',
             'key': '0c3b6b7882ecbf9683bd34e189a5acf8',
           }

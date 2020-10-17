@@ -127,6 +127,12 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         'stream': stream.type.value,
     }
 
+    if stream.input.skip_encryption:
+      dict['skip_encryption'] = str(stream.input.skip_encryption)
+
+    if stream.input.drm_label:
+      dict['drm_label'] = stream.input.drm_label
+
     # Note: Shaka Packager will not accept 'und' as a language, but Shaka
     # Player will fill that in if the language metadata is missing from the
     # manifest/playlist.
