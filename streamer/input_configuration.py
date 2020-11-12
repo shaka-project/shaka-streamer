@@ -162,6 +162,16 @@ class Input(configuration.Base):
   Not supported with media_type of 'text'.
   """
 
+  drm_label = configuration.Field(str).cast()
+  """Optional value for a custom DRM label, which defines the encryption key
+  applied to the stream. If not provided, the DRM label is derived from stream
+  type (video, audio), resolutions, etc. Note that it is case sensitive.
+  
+  Applies to 'raw' encryption_mode only."""
+
+  skip_encryption = configuration.Field(int, default=0).cast()
+  """If set, no encryption of the stream will be made"""
+
   # TODO: Figure out why mypy 0.720 and Python 3.7.5 don't correctly deduce the
   # type parameter here if we don't specify it explicitly with brackets after
   # "Field".
