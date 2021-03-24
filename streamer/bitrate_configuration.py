@@ -39,6 +39,8 @@ class AudioCodec(enum.Enum):
 
   AAC: str = 'aac'
   OPUS: str = 'opus'
+  AC3: str = 'ac3'
+  EAC3: str = 'eac3'
 
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
@@ -61,7 +63,7 @@ class AudioCodec(enum.Enum):
     # TODO(#31): add support for configurable output format per-codec
     if self == AudioCodec.OPUS:
       return 'webm'
-    elif self == AudioCodec.AAC:
+    elif (self == AudioCodec.AAC) or (self == AudioCodec.AC3) or (self == AudioCodec.EAC3):
       return 'mp4'
     else:
       assert False, 'No mapping for output format for codec {}'.format(
@@ -152,13 +154,17 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
     'bitrates': {
       'aac': '128k',
       'opus': '64k',
+      'ac3': '192k',
+      'eac3': '96k',
     },
   }),
   'surround': AudioChannelLayout({
     'max_channels': 6,
     'bitrates': {
-      'aac': '192k',
-      'opus': '96k',
+      'aac': '256k',
+      'opus': '128k',
+      'ac3': '384k',
+      'eac3': '192k',
     },
   }),
 }
