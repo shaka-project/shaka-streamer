@@ -154,17 +154,17 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
     'bitrates': {
       'aac': '128k',
       'opus': '64k',
-      'ac3': '160k',
-      'eac3': '160k',
+      'ac3': '192k',
+      'eac3': '96k',
     },
   }),
   'surround': AudioChannelLayout({
     'max_channels': 6,
     'bitrates': {
-      'aac': '192k',
-      'opus': '96k',
-      'ac3': '240k',
-      'eac3': '240k',
+      'aac': '256k',
+      'opus': '128k',
+      'ac3': '384k',
+      'eac3': '192k',
     },
   }),
 }
