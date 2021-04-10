@@ -1,0 +1,90 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is a sample configuration file for Shaka Streamer to set custom
+# bitrates following Apple's HLS recommended values.
+
+audio_channel_layouts:
+  mono:
+    max_channels: 1
+    bitrates:
+      aac: '64k'
+      ac3: '92k'
+      eac3: '64k'
+  stereo:
+    max_channels: 2
+    bitrates:
+      aac: '160k'
+      ac3: '192k'
+      eac3: '160k'
+  surround:
+    max_channels: 6
+    bitrates:
+      aac: '320k'
+      ac3: '384k'
+      eac3: '192k'
+
+video_resolutions:
+  ninth-hd:
+    max_width: 416
+    max_height: 234
+    max_frame_rate: 30
+    bitrates:
+      h264: '145k'
+      h265: '100k'
+  fourth-hd:
+    max_width: 640
+    max_height: 360
+    max_frame_rate: 30
+    bitrates:
+      h264: '365k'
+      h265: '145k'
+  third-hd:
+    max_width: 768
+    max_height: 432
+    max_frame_rate: 30
+    bitrates:
+      h264: '1.1M'
+      h265: '300k'
+  quarer-fhd:
+    max_width: 960
+    max_height: 540
+    bitrates:
+      h264: '2M'
+      h265: '1.6M'
+  hd:
+    max_width: 1280
+    max_height: 720
+    bitrates:
+      h264: '4.5M'
+      h265: '3.4M'
+  full-hd:
+    max_width: 1920
+    max_height: 1080
+    bitrates:
+      h264: '7.8M'
+      h265: '5.8M'
+  quad-hd:
+    max_width: 2560
+    max_height: 1440
+    bitrates:
+      h264: '16M'
+      h265: '8.1M'
+  ultra-hd:
+    max_width: 3840
+    max_height: 2160
+    bitrates:
+      h264: '34M'
+      h265: '16.8M'
+
