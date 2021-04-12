@@ -46,10 +46,13 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 # Changes relative path to where this file is.
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BASE_DIR)
 controller = None
 
-app = flask.Flask(__name__)
+# Flask was unable to autofind the root_path correctly after an os.chdir() from another directory
+# Dunno why,refer to https://stackoverflow.com/questions/35864584/error-no-such-file-or-directory-when-using-os-chdir-in-flask
+app = flask.Flask(__name__, root_path=BASE_DIR)
 # Stops browser from caching files to prevent cross-test contamination.
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
@@ -222,7 +225,7 @@ def send_file(filename):
 
   # Sending over requested files.
   try:
-    response = flask.send_file(OUTPUT_DIR + filename);
+    response = flask.send_file(OUTPUT_DIR + filename)
   except FileNotFoundError:
     response = flask.Response(response='File not found', status=404)
 
