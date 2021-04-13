@@ -57,7 +57,7 @@ video_resolutions:
     bitrates:
       h264: '1.1M'
       h265: '300k'
-  quarer-fhd:
+  quarter-fhd:
     max_width: 960
     max_height: 540
     bitrates:
