@@ -119,7 +119,7 @@ class VideoCodec(enum.Enum):
     # TODO: consider VP9 in mp4 by default
     # TODO(#31): add support for configurable output format per-codec
     if self.get_base_codec() == VideoCodec.VP9:
-      return 'mp4'
+      return 'webm'
     elif self.get_base_codec() == VideoCodec.H264 or VideoCodec.HEVC:
       return 'mp4'
     elif self.get_base_codec() == VideoCodec.AV1:
