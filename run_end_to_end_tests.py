@@ -46,10 +46,13 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 # Changes relative path to where this file is.
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BASE_DIR)
 controller = None
 
-app = flask.Flask(__name__, static_folder=OUTPUT_DIR)
+# Flask was unable to autofind the root_path correctly after an os.chdir() from another directory
+# Dunno why,refer to https://stackoverflow.com/questions/35864584/error-no-such-file-or-directory-when-using-os-chdir-in-flask
+app = flask.Flask(__name__, root_path=BASE_DIR)
 # Stops browser from caching files to prevent cross-test contamination.
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
@@ -144,7 +147,7 @@ def start():
   # Receives configs from the tests to start Shaka Streamer.
   try:
     configs = json.loads(flask.request.data)
-  except:
+  except Exception as e:
     return createCrossOriginResponse(status=400, body=str(e))
 
   # Enforce quiet mode without needing it specified in every test.
@@ -193,9 +196,12 @@ def stop():
   cleanup()
   return resp
 
-@app.route('/output_files/<path:filename>', methods = ['GET','OPTIONS'])
+@app.route('/output_files/<path:filename>', methods = ['GET', 'OPTIONS'])
 def send_file(filename):
-  if controller.is_vod():
+  if not controller:
+    return createCrossOriginResponse(
+        status=403, body='Instance already shut down!')
+  elif controller.is_vod():
     # If streaming mode is vod, needs to wait until packager is completely
     # done packaging contents.
     while True:
@@ -219,7 +225,7 @@ def send_file(filename):
 
   # Sending over requested files.
   try:
-    response = flask.send_file(OUTPUT_DIR + filename);
+    response = flask.send_file(OUTPUT_DIR + filename)
   except FileNotFoundError:
     response = flask.Response(response='File not found', status=404)
 
@@ -280,7 +286,7 @@ def main():
   fails = 0
   trials = args.runs
   print('Running', trials, 'trials')
-  # Start up karma.
+
   for i in range(trials):
     # Start up karma.
     karma_args = [
