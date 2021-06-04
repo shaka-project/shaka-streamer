@@ -224,7 +224,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
     # https://github.com/google/shaka-streamer/issues/36
     filters.append('setsar=1:1')
 
-    if stream.codec == VideoCodec.H264:
+    if stream.codec == VideoCodec.H264 or VideoCodec.HEVC:
       # These presets are specifically recognized by the software encoder.
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
@@ -248,15 +248,20 @@ class TranscoderNode(PolitelyWaitOnFinish):
         profile = 'main'
 
       args += [
-          # The only format supported by QT/Apple.
-          '-pix_fmt', 'yuv420p',
-          # Require a closed GOP.  Some decoders don't support open GOPs.
-          '-flags', '+cgop',
           # Set the H264 profile.  Without this, the default would be "main".
           # Note that this gets overridden to "baseline" in live streams by the
           # "-preset ultrafast" option, presumably because the baseline encoder
           # is faster.
           '-profile:v', profile,
+      ]
+      
+    if stream.codec.get_base_codec() == VideoCodec.H264 or VideoCodec.HEVC:
+      args += [
+          # The only format supported by QT/Apple.
+          '-pix_fmt', 'yuv420p',
+          # Require a closed GOP.  Some decoders don't support open GOPs.
+          '-flags', '+cgop',
+         
       ]
 
     elif stream.codec.get_base_codec() == VideoCodec.VP9:
