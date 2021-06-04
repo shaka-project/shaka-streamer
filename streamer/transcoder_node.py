@@ -177,8 +177,11 @@ class TranscoderNode(PolitelyWaitOnFinish):
         '-b:a', stream.get_bitrate(),
         # Output MP4 in the pipe, for all codecs.
         '-f', 'mp4',
-        # These flags make it fragmented MP4, which is necessary for a pipe.
-        '-movflags', '+faststart+frag_keyframe',
+        # This explicit fragment duration affects both audio and video, and
+        # ensures that there are no single large MP4 boxes that Shaka Packager
+        # can't consume from a pipe.
+        # FFmpeg fragment duration is in microseconds.
+        '-frag_duration', str(self._pipeline_config.segment_size * 1e6),
         # Opus in MP4 is considered "experimental".
         '-strict', 'experimental',
       ]
@@ -301,8 +304,13 @@ class TranscoderNode(PolitelyWaitOnFinish):
         '-b:v', stream.get_bitrate(),
         # Output MP4 in the pipe, for all codecs.
         '-f', 'mp4',
-        # These flags make it fragmented MP4, which is necessary for a pipe.
-        '-movflags', '+faststart+frag_keyframe',
+        # This flag forces a video fragment at each keyframe.
+        '-movflags', '+frag_keyframe',
+        # This explicit fragment duration affects both audio and video, and
+        # ensures that there are no single large MP4 boxes that Shaka Packager
+        # can't consume from a pipe.
+        # FFmpeg fragment duration is in microseconds.
+        '-frag_duration', str(self._pipeline_config.segment_size * 1e6),
         # Set minimum and maximum GOP length.
         '-keyint_min', str(keyframe_interval), '-g', str(keyframe_interval),
         # Set video filters.
