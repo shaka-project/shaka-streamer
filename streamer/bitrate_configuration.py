@@ -221,7 +221,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '144p': VideoResolution({
     'max_width': 256,
     'max_height': 144,
-    'max_frame_rate': 30,
     'bitrates': {
       'h264': '108k',
       'vp9': '96k',
@@ -232,7 +231,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '240p': VideoResolution({
     'max_width': 426,
     'max_height': 240,
-    'max_frame_rate': 30,
     'bitrates': {
       'h264': '242k',
       'vp9': '151k',
@@ -243,7 +241,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '360p': VideoResolution({
     'max_width': 640,
     'max_height': 360,
-    'max_frame_rate': 30,
     'bitrates': {
       'h264': '400k',
       'vp9': '277k',
@@ -254,7 +251,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '480p': VideoResolution({  # NTSC analog broadcast TV resolution
     'max_width': 854,
     'max_height': 480,
-    'max_frame_rate': 30,
     'bitrates': {
       'h264': '1M',
       'vp9': '512k',
@@ -265,7 +261,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '576p': VideoResolution({  # PAL analog broadcast TV resolution
     'max_width': 1024,
     'max_height': 576,
-    'max_frame_rate': 30,
     'bitrates': {
       'h264': '1.5M',
       'vp9': '768k',
@@ -287,7 +282,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '720p-hfr': VideoResolution({
     'max_width': 1280,
     'max_height': 720,
-    'max_frame_rate': 60,
     'bitrates': {
       'h264': '3M',
       'vp9': '2M',
@@ -309,7 +303,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '1080p-hfr': VideoResolution({
     'max_width': 1920,
     'max_height': 1080,
-    'max_frame_rate': 60,
     'bitrates': {
       'h264': '5M',
       'vp9': '3M',
@@ -331,7 +324,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '1440p-hfr': VideoResolution({
     'max_width': 2560,
     'max_height': 1440,
-    'max_frame_rate': 60,
     'bitrates': {
       'h264': '14M',
       'vp9': '9M',
@@ -353,7 +345,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '4k-hfr': VideoResolution({
     'max_width': 4096,
     'max_height': 2160,
-    'max_frame_rate': 60,
     'bitrates': {
       'h264': '25M',
       'vp9': '18M',
@@ -375,7 +366,6 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '8k-hfr': VideoResolution({
     'max_width': 8192,
     'max_height': 4320,
-    'max_frame_rate': 60,
     'bitrates': {
       'h264': '60M',
       'vp9': '36M',
