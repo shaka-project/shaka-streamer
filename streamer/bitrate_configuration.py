@@ -87,6 +87,12 @@ class VideoCodec(enum.Enum):
 
   AV1 = 'av1'
   """AV1."""
+  
+  HEVC = 'hevc'
+  """HEVC, also known as h.265"""
+
+  HARDWARE_HEVC = 'hw:hevc'
+  """HEVC, with hardware encoding"""
 
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
@@ -114,7 +120,7 @@ class VideoCodec(enum.Enum):
     # TODO(#31): add support for configurable output format per-codec
     if self.get_base_codec() == VideoCodec.VP9:
       return 'webm'
-    elif self.get_base_codec() == VideoCodec.H264:
+    elif self.get_base_codec() in {VideoCodec.H264, VideoCodec.HEVC}:
       return 'mp4'
     elif self.get_base_codec() == VideoCodec.AV1:
       return 'mp4'
@@ -218,6 +224,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '108k',
       'vp9': '96k',
+      'hevc': '96k',
       'av1': '72k',
     },
   }),
@@ -227,6 +234,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '242k',
       'vp9': '151k',
+      'hevc': '151k',
       'av1': '114k',
     },
   }),
@@ -236,6 +244,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '400k',
       'vp9': '277k',
+      'hevc': '277k',
       'av1': '210k',
     },
   }),
@@ -245,6 +254,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '1M',
       'vp9': '512k',
+      'hevc': '512k',
       'av1': '389k',
     },
   }),
@@ -254,6 +264,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '1.5M',
       'vp9': '768k',
+      'hevc': '768k',
       'av1': '450k',
     },
   }),
@@ -264,6 +275,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '2M',
       'vp9': '1M',
+      'hevc': '1M',
       'av1': '512k',
     },
   }),
@@ -273,6 +285,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '3M',
       'vp9': '2M',
+      'hevc': '2M',
       'av1': '778k',
     },
   }),
@@ -283,6 +296,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '4M',
       'vp9': '2M',
+      'hevc': '2M',
       'av1': '850k',
     },
   }),
@@ -292,6 +306,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '5M',
       'vp9': '3M',
+      'hevc': '3M',
       'av1': '1M',
     },
   }),
@@ -302,6 +317,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '9M',
       'vp9': '6M',
+      'hevc': '6M',
       'av1': '3.5M',
     },
   }),
@@ -311,6 +327,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '14M',
       'vp9': '9M',
+      'hevc': '9M',
       'av1': '5M',
     },
   }),
@@ -321,6 +338,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '17M',
       'vp9': '12M',
+      'hevc': '12M',
       'av1': '6M',
     },
   }),
@@ -330,6 +348,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '25M',
       'vp9': '18M',
+      'hevc': '18M',
       'av1': '9M',
     },
   }),
@@ -340,6 +359,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '40M',
       'vp9': '24M',
+      'hevc': '24M',
       'av1': '12M',
     },
   }),
@@ -349,6 +369,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
     'bitrates': {
       'h264': '60M',
       'vp9': '36M',
+      'hevc': '36M',
       'av1': '18M',
     },
   }),
