@@ -18,7 +18,7 @@ import platform
 from . import bitrate_configuration
 from . import configuration
 
-from typing import List, Optional
+from typing import List, Dict, Any, Optional
 
 
 class InputType(enum.Enum):
@@ -315,10 +315,50 @@ class Input(configuration.Base):
   def get_resolution(self) -> bitrate_configuration.VideoResolution:
     return bitrate_configuration.VideoResolution.get_value(self.resolution)
 
-
+class SingleInput(configuration.Base):
+  """An object repersenting a single video stream with its audio and text streams"""
+  
+  inputs = configuration.Field(List[Input], required=True).cast()
+  
+class MultiPeriodInputs(configuration.Base):
+  """An object reperesenting a multi-period concatenated inputs"""
+  
+  inputs_list = configuration.Field(List[SingleInput], required=True).cast()
+  
 class InputConfig(configuration.Base):
   """An object representing the entire input config to Shaka Streamer."""
 
-  inputs = configuration.Field(List[Input], required=True).cast()
-  """A list of Input objects, one per input stream."""
+  multiperiod_inputs = configuration.Field(List[MultiPeriodInputs])
+  """A list of MultiPeriodInputs objects"""
+  
+  single_inputs = configuration.Field(List[SingleInput])
+  """A list of SingleInput objects"""
 
+  def __init__(self, mixed_inputs: List[Dict[str, list]]):
+    """To keep the input_config.yaml simple, this function manipulates
+    the input list before it is sent to the Base class constrcutor,
+    it serialized each list item into either 'multiperiod_inputs' or 
+    'single_inputs' based on its dictionary key name.
+    
+    inputs_list 
+    """
+    
+    # A dictionary to serialize the input_configuration into
+    dictionary: Dict[str, list] = {
+      'multiperiod_inputs': [],
+      'single_inputs': [],
+      }
+    
+    for input in mixed_inputs:
+      if not isinstance(input, dict):
+        raise configuration.MalformedField(self.__class__, input.__str__(), configuration.Field(Dict[str, list]), 'Only `- inputs_list` or `- single_inputs` expected!')
+      if input.get('inputs_list'):
+        dictionary['multiperiod_inputs'].append(input)
+      elif input.get('inputs'):
+        dictionary['single_inputs'].append(input)
+      else:
+        for key in input.keys():
+          raise configuration.UnrecognizedField(self.__class__, key, configuration.Field(None))
+      
+    super().__init__(dictionary)
+    

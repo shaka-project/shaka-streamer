@@ -1,0 +1,73 @@
+# inputs_list -> contains multiple inputs to be concated with periods
+# inputs -> a single video + multi-audio & multi-text (like old InputConfig)
+
+# A multi_period input
+- inputs_list:
+
+  - inputs:
+    - name: blah.mp4
+      media_type: video
+    
+    - name: blah.mp4
+      media_type: audio
+      language: ar
+
+  - inputs:
+    - name: file.mkv
+      media_type: video
+
+# Another multi_period input
+- inputs_list: # this list will be concatenated as periods as a final output
+  - inputs: # list of inputs (one video stream & multiple audio/text streams)
+  - inputs: # list of inputs (one video stream & multiple audio/text streams)
+  - inputs: # list of inputs (one video stream & multiple audio/text streams)
+
+# A single input, it repersents what a whole config file was representing before
+- inputs: # this single inputs serves as the whole input_config file before
+  - name: blahblah.mp4
+    media_type: video # single video stream per 'inputs'
+  
+  - name: blahb.mp4
+    media_type: audio ################
+    language: de                    ###
+                                    ###### multiple audio streams
+  - name: blahbbutinarabic.mp4      ###
+    media_type: audio ################
+    language: ar
+
+  - name: blah.mkv
+    media_type: text
+    language: de
+  
+# Another single input
+- inputs:
+  - name: anotherblah.mp4
+    media_type: video
+
+
+# load(input_multiperiod_multiinput_simple_config.yaml) = 
+# [
+#   {'inputs_list': [
+#     {'inputs': [
+#       {'name': 'blah.mp4', 'media_type': 'video'}, 
+#       {'name': 'blah.mp4', 'media_type': 'audio', 'language': 'ar'}
+#       ]},
+#     {'inputs': [
+#       {'name': 'file.mkv', 'media_type': 'video'}
+#       ]}
+#     ]},
+#   {'inputs_list': [
+#     {'inputs': None},
+#     {'inputs': None},
+#     {'inputs': None}
+#     ]},
+#   {'inputs': [
+#     {'name': 'blahblah.mp4', 'media_type': 'video'},
+#     {'name': 'blahb.mp4', 'media_type': 'audio', 'language': 'de'},
+#     {'name': 'blahbbutinarabic.mp4', 'media_type': 'audio', 'language': 'ar'},
+#     {'name': 'blah.mkv', 'media_type': 'text', 'language': 'de'}
+#     ]},
+#   {'inputs': [
+#     {'name': 'anotherblah.mp4', 'media_type': 'video'}
+#     ]},
+#   ]
