@@ -340,7 +340,8 @@ class InputConfig(configuration.Base):
     it serialized each list item into either 'multiperiod_inputs' or 
     'single_inputs' based on its dictionary key name.
     
-    inputs_list 
+    inputs_list refers to multiple inputs to be concatenated with periods (append to multiperiod_inputs)
+    single_inputs refers to a single video track alogn with its audio and text tracks (append to single_inputs)
     """
     
     # A dictionary to serialize the input_configuration into
