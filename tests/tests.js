@@ -130,8 +130,9 @@ describe('Shaka Streamer', () => {
   mapTests(dashManifestUrl, '(dash)');
 
   // The player doesn't have any framerate or other metadata from an HLS
-  // manifest that would let us detect our filters, so only test this in DASH.
+  // manifest that would let us detect our filters, so only test these in DASH.
   filterTests(dashManifestUrl, '(dash)');
+  outputFramerateTests(dashManifestUrl, '(dash)');
 
   // TODO: Add tests for interlaced video.  We need interlaced source material
   // for this.
@@ -353,6 +354,48 @@ function resolutionTests(manifestUrl, format) {
     heightList.sort((a, b) => a - b);
     // No 4k or 1440p, since those are above the 1080p input res.
     expect(heightList).toEqual([144, 240, 480, 720, 1080]);
+  });
+}
+
+function outputFramerateTests(manifestUrl, format) {
+  it('has output framerate not exceeding configured maximum ' + format,
+      async () => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
+          'media_type': 'video',
+          'resolution': 'very_small',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ]
+    };
+    const bitrateConfigDict = {
+      video_resolutions: {
+        very_small: {
+          max_width: 256,
+          max_height: 144,
+          max_frame_rate: 25,
+          bitrates: {
+            h264: '108k'
+          }
+        }
+      }
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': [
+        'very_small'
+      ]
+    };
+
+    await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
+    await player.load(manifestUrl);
+
+    const trackList = player.getVariantTracks();
+    expect(trackList[0].frameRate).toBe(25);
+
   });
 }
 

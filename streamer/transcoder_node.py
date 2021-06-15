@@ -201,6 +201,9 @@ class TranscoderNode(PolitelyWaitOnFinish):
     if input.is_interlaced:
       filters.append('pp=fd')
       args.extend(['-r', str(input.frame_rate)])
+    
+    if stream.resolution.max_frame_rate < input.frame_rate:
+       args.extend(['-r', str(stream.resolution.max_frame_rate)])
 
     filters.extend(input.filters)
 
