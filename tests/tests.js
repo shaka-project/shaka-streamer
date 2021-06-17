@@ -582,6 +582,34 @@ function codecTests(manifestUrl, format) {
     const videoCodecList = trackList.map(track => track.videoCodec);
     expect(videoCodecList).toEqual(['av01.0.00M.08']);
   });
+
+  it('appropriately filters WebM formats ' + format, async () => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'audio',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': [],
+      'audio_codecs': ['aac', 'opus'],
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+
+    const trackList = player.getVariantTracks();
+    const audioCodecList = trackList.map(track => track.audioCodec);
+    if (manifestUrl == hlsManifestUrl) {
+      expect(audioCodecList).toEqual(['mp4a.40.2']);
+    } else if (manifestUrl == dashManifestUrl) {
+      expect(audioCodecList).toEqual(['opus']);
+    } 
+  })
 }
 
 function autoDetectionTests(manifestUrl) {
