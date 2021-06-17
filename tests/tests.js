@@ -605,9 +605,9 @@ function codecTests(manifestUrl, format) {
     const trackList = player.getVariantTracks();
     const audioCodecList = trackList.map(track => track.audioCodec);
     if (manifestUrl == hlsManifestUrl) {
-      expect(audioCodecList).toEqual(['mp4a.40.2']);
+      expect(audioCodecList).not.toContain('opus');
     } else if (manifestUrl == dashManifestUrl) {
-      expect(audioCodecList).toEqual(['opus']);
+      expect(audioCodecList).toContain('opus');
     } 
   })
 }
