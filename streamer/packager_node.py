@@ -152,7 +152,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
           dir=self._segment_dir)
 
     if stream.is_dash_only():
-      dict['dash_only'] = str(1)
+      dict['dash_only'] = '1'
 
     # The format of this argument to Shaka Packager is a single string of
     # key=value pairs separated by commas.
