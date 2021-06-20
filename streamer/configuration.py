@@ -18,7 +18,7 @@ import functools
 import re
 
 import typing
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type
 from typing import Generic, TypeVar, cast
 
 
@@ -75,6 +75,15 @@ class MalformedField(ConfigError):
     return 'In {}, {} field is malformed: {}'.format(
         self.class_name, self.field_name, self.reason)
 
+class ConflictingFields(ConfigError):
+  """An error raised when multiple fields are given and only one of them is allowed at a time."""
+  def __init__(self, class_ref, field_name, field, field_names):
+    super().__init__(class_ref, field_name, field)
+    self.field_names = field_names
+    
+  def __str__(self):
+    return 'In {}, fields {} are conflicting, consider using only one of them.'.format(
+        self.class_name, self.field_names)
 
 class ValidatingType(metaclass=abc.ABCMeta):
   """A base wrapper type that validates the input against a limited range.
@@ -223,7 +232,7 @@ class Field(Generic[FieldType]):
 
     underlying = Field.get_underlying_type(type)
     if underlying is dict:
-      return cast(Tuple[Optional[Type], Optional[Type]], args)
+      return (args[0], args[1])
     if underlying is list:
       return (None, args[0])
     return (None, None)
@@ -238,23 +247,26 @@ class Field(Generic[FieldType]):
     if type is str:
       # Call it a string, not a "str".
       return 'string'
-    elif type is list:
+    if type is list:
       # Mention the subtype.
       return 'list of {}'.format(
           Field.get_type_name_static(subtype, None, None))
-    elif type is dict:
+    if type is dict:
       # Mention the subtype.
       return 'dictionary of {} to {}'.format(
           Field.get_type_name_static(keytype, None, None),
           Field.get_type_name_static(subtype, None, None))
-    elif type is None:
+    if type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'
-    elif issubclass(type, enum.Enum):
+    if type is Any:
+      # This is only here to allow generic handling of List[Any] and Dict[Any, Any]
+      return 'Any'
+    if issubclass(type, enum.Enum):
       # Get the list of valid options as quoted strings.
       options = [repr(str(member.value)) for member in type]
       return '{} (one of {})'.format(type.__name__, ', '.join(options))
-    elif issubclass(type, ValidatingType):
+    if issubclass(type, ValidatingType):
       return type.name()
 
     # Otherwise, return the name of the type.
@@ -458,10 +470,13 @@ class RuntimeMap(Generic[RuntimeMapSubclass], Base):
     """Return a tuple of sortable properties.  Implemented by subclasses."""
     raise RuntimeError('_sortable_properties missing on RuntimeMapSubclass!')
 
-  def __eq__(self, other: Any) -> bool:
+  # NOTE: ignore[override] is needed to suppress the following the mypy
+  # error: "This violates the Liskov substitution principle,
+  # See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides"
+  def __eq__(self, other: 'RuntimeMap') -> bool: # type: ignore[override]
     return self._sortable_properties() == other._sortable_properties()
 
-  def __lt__(self, other: Any) -> bool:
+  def __lt__(self, other: 'RuntimeMap') -> bool:
     return self._sortable_properties() < other._sortable_properties()
 
 
@@ -512,7 +527,7 @@ class RuntimeMapKeyValidator(ValidatingType, str):
 
   """Must be provided by subclasses and point to the matching RuntimeMap
   subclass."""
-  map_class: Type[RuntimeMap] = None  # type: ignore
+  map_class: Type[RuntimeMap] = RuntimeMap
 
   @classmethod
   def name(cls) -> str:

@@ -315,51 +315,43 @@ class Input(configuration.Base):
   def get_resolution(self) -> bitrate_configuration.VideoResolution:
     return bitrate_configuration.VideoResolution.get_value(self.resolution)
 
-class SingleInput(configuration.Base):
-  """An object repersenting a single video stream with its audio and text streams"""
-  
+class SinglePeriod(configuration.Base):
+  """An object repersenting one optional video stream and multiple audio and text streams"""
+
   inputs = configuration.Field(List[Input], required=True).cast()
-  
-class MultiPeriodInputs(configuration.Base):
-  """An object reperesenting a multi-period concatenated inputs"""
-  
-  inputs_list = configuration.Field(List[SingleInput], required=True).cast()
-  
+
 class InputConfig(configuration.Base):
   """An object representing the entire input config to Shaka Streamer."""
 
-  multiperiod_inputs = configuration.Field(List[MultiPeriodInputs])
-  """A list of MultiPeriodInputs objects"""
-  
-  single_inputs = configuration.Field(List[SingleInput])
-  """A list of SingleInput objects"""
+  multiperiod_inputs_list = configuration.Field(List[SinglePeriod]).cast()
+  """A list of SinglePeriod objects"""
 
-  def __init__(self, mixed_inputs: List[Dict[str, list]]):
-    """To keep the input_config.yaml simple, this function manipulates
-    the input list before it is sent to the Base class constrcutor,
-    it serialized each list item into either 'multiperiod_inputs' or 
-    'single_inputs' based on its dictionary key name.
+  inputs = configuration.Field(List[Input]).cast()
+  """A list of Input objects"""
+
+  def __init__(self, dictionary: Dict[str, Any]):
+    """A constructor to check that either inputs or mutliperiod_inputs_list is provided,
+    and produce a helpful error message in case both or none are provided.
     
-    inputs_list refers to multiple inputs to be concatenated with periods (append to multiperiod_inputs)
-    single_inputs refers to a single video track alogn with its audio and text tracks (append to single_inputs)
+    We need these checks before passing the input dictionary to the configuration.Base constructor,
+    because it does not check for this 'exclusive or-ing' relationship between fields.
     """
+
+    assert isinstance(dictionary, dict), """Malformed Input Config File,
+    See some examples at https://github.com/google/shaka-streamer/tree/master/config_files.
+    """
+
+    if dictionary.get('inputs') and dictionary.get('multiperiod_inputs_list'):
+      raise configuration.ConflictingFields(
+        InputConfig, 'inputs', configuration.Field(List[Input]), ['inputs', 'multiperiod_inputs_list']
+      )
     
-    # A dictionary to serialize the input_configuration into
-    dictionary: Dict[str, list] = {
-      'multiperiod_inputs': [],
-      'single_inputs': [],
-      }
-    
-    for input in mixed_inputs:
-      if not isinstance(input, dict):
-        raise configuration.MalformedField(self.__class__, input.__str__(), configuration.Field(Dict[str, list]), 'Only `- inputs_list` or `- single_inputs` expected!')
-      if input.get('inputs_list'):
-        dictionary['multiperiod_inputs'].append(input)
-      elif input.get('inputs'):
-        dictionary['single_inputs'].append(input)
-      else:
-        for key in input.keys():
-          raise configuration.UnrecognizedField(self.__class__, key, configuration.Field(None))
+    # Because these fields are not marked as required at the class level
+    # , we need to check ourselves that one of them is provided.
+    if dictionary.get('inputs') is None and dictionary.get('multiperiod_inputs_list') is None:
+      raise configuration.MissingRequiredField(
+        InputConfig, 'either inputs or multiperiod_inputs_list', configuration.Field(Dict[str, Any])
+      )
       
     super().__init__(dictionary)
-    
+
