@@ -14,10 +14,9 @@
 
 """Concatenates inputs into periods by creating a master DASH/HLS file."""
 
-import streamer
 import xml.etree.ElementTree as ET
-import m3u8 # type: ignore
 import os
+from streamer import __version__
 from streamer.node_base import NodeBase, ProcessStatus, ThreadedNodeBase
 from streamer.transcoder_node import TranscoderNode
 from streamer.packager_node import PackagerNode
@@ -84,26 +83,18 @@ class PeriodConcatNode(ThreadedNodeBase):
     class ISO8601:
       """A helper class represeting the iso8601:2004 duration format."""
       
-      PY: int = 0 # Years
-      PM: int = 0 # Months
-      PW: int = 0 # Weeks
-      PD: int = 0 # Days
-      TH: int = 0 # Hours
-      TM: int = 0 # Minutes
-      TS: float = 0.0 # Seconds
-      dur: str = '' # Duration is iso8601
-      
       def __init__(self, Y=0, PM=0, W=0, D=0, H=0, TM=0, S=0,
                    duration: Optional[str] =None):
-        """If given a duration, it uses it uses it to set the time containers."""
+        """If given a duration, it uses it to set the time containers."""
         
-        self.PY = Y
-        self.PM = PM
-        self.PW = W
-        self.PD = D
-        self.TH = H
-        self.TM = TM
-        self.TS = S
+        self.PY: int = Y # Years
+        self.PM: int = PM  # Months
+        self.PW: int = W # Weeks
+        self.PD: int = D # Days
+        self.TH: int = H # Hours
+        self.TM: int = TM  # Minutes
+        self.TS: float = S # Seconds
+        self.dur = 'PT0S' # Duration string in iso8601
         if duration:
           self.parse(duration)
         
@@ -153,7 +144,7 @@ class PeriodConcatNode(ThreadedNodeBase):
         duration = duration[1:]
 
         # Split the string to (Y,M,W,D) together in before_t and (H,M,S) together in after_t.
-        # The 'T' letter in the ISO8601 is the time designator, we need to split upon it becuase
+        # The 'T' letter in the iso8601 is the time designator, we need to split upon it becuase
         # 'M' stands for months before it and minutes after it.
         before_t, after_t = duration.split('T')
 
@@ -182,9 +173,6 @@ class PeriodConcatNode(ThreadedNodeBase):
       def __str__(self) -> str:
         return self.dur
       
-      def __iadd__(self, other: 'ISO8601') -> 'ISO8601':
-        return self + other
-      
       def __add__(self, other: 'ISO8601') -> 'ISO8601':
         """Addes two iso8601 time durations together, and returns their sum.
         Since each time container is not limited by when it overflows (ie, we can have 61S or 36H
@@ -200,25 +188,46 @@ class PeriodConcatNode(ThreadedNodeBase):
           self.TM + other.TM,
           self.TS + other.TS,
         )
+      
+      def __iadd__(self, other: 'ISO8601') -> 'ISO8601':
+        return self + other
     
     dash_namespace = 'urn:mpeg:dash:schema:mpd:2011'
     
-    def find(elem: ET.Element, *args: str) -> Optional[ET.Element]:
-      """A better interface for the Element.find() method"""
+    def find(elem: ET.Element, *args: str) -> ET.Element:
+      """A better interface for the Element.find() method.
+      Use it only if it is guaranteed that the element we are searching for is inside,
+      Otherwise it will raise an AssertionError."""
       full_path = ''
       for tag in args:
-          full_path+='shaka-live:'+tag+'/'
-      return elem.find(full_path[:-1], {'shaka-live':dash_namespace})
+        full_path+='{'+dash_namespace+'}'+tag+'/'
+      child_elem =  elem.find(full_path[:-1])
+      # elem.find() returns either an ET.Element or None.
+      assert child_elem is not None
+      return child_elem
     
     def findall(elem: ET.Element, *args: str) -> List[ET.Element]:
       """A better interface for the Element.findall() method"""
       full_path = ''
       for tag in args:
-          full_path+='shaka-live:'+tag+'/'
+        full_path+='{'+dash_namespace+'}'+tag+'/'
       return elem.findall(full_path[:-1], {'shaka-live':dash_namespace})
     
+    # We will add the time of each period on this container to set that time later
+    # as 'mediaPresentationDuration' for the MPD tag for VOD.
+    # For LIVE we use this object to determine the start time of each period.
     total_time: ISO8601 = ISO8601()
+    
+    # Periods that are going to be collected from different MPD files.
     periods: List[ET.Element] = []
+    
+    # Get an MPD file that we will concatenate periods into.
+    ref_mpd = ET.ElementTree(file=os.path.join(
+        self._packager_nodes[0]._output_dir,
+        self._pipeline_config.dash_output)).getroot()
+    
+    # Remove the Period element in that MPD.
+    ref_mpd.remove(find(ref_mpd, 'Period'))
     
     for i, packager_node in enumerate(self._packager_nodes):
       
@@ -229,12 +238,17 @@ class PeriodConcatNode(ThreadedNodeBase):
       mpd = ET.ElementTree(file=dash_file_path).getroot()
       period = find(mpd, 'Period')
       
-      assert period is not None, 'No Period tag was found in '+ dash_file_path # For mypy's static analysis
-      
       period.attrib['id'] = str(i)
-      period.attrib['duration'] = mpd.attrib['mediaPresentationDuration']
-      total_time += ISO8601(duration=period.attrib['duration'])
       
+      if self._pipeline_config.streaming_mode == StreamingMode.VOD:
+        # For VOD, use the 'mediaPresentationDuration' to set the Period duration.
+        period.attrib['duration'] = mpd.attrib['mediaPresentationDuration']
+        total_time += ISO8601(duration=period.attrib['duration'])
+      else:
+        # For LIVE, set the start attribute.
+        period.attrib['start'] = str(total_time)
+        #total_time += ISO8601(duration=period.attrib['where to get the total time of that period from???'])
+        
       # For multi segment media
       for segment_template in findall(
         period,
@@ -270,35 +284,35 @@ class PeriodConcatNode(ThreadedNodeBase):
         )
         
       periods.append(period)
-      
+    
+    # Add the periods collected from all the files.
+    ref_mpd.extend(periods)
+    
+    # Update total duration for vod.
+    if self._pipeline_config.streaming_mode == StreamingMode.VOD:
+      ref_mpd.attrib['mediaPresentationDuration'] = str(total_time)
+    
     # Remove the placeholder namespace put by the module and set it to be the default namespace.
     ET.register_namespace('', dash_namespace)
     
-    # Remove the Period element from the last mpd open.
-    # Only leave the MPD tag.
-    assert period is not None, 'No Period tag was found in '+ str(dash_file_path) # For mypy's static analysis
-    mpd.remove(period)
-    # Add the periods collected form the other files.
-    mpd.extend(periods)
-    # Update total time
-    mpd.attrib['mediaPresentationDuration'] = str(total_time)
-    # Write the period concat to the outpud_dir
-    path_to_master_dash = os.path.join(
-        self._output_dir,
-        self._pipeline_config.dash_output
-        )
-    ET.ElementTree(element=mpd).write(path_to_master_dash)
     
-    # Write xml version and comments on the file.
-    with open(path_to_master_dash, 'r+') as master_dash:
-      content = master_dash.read()
-      master_dash.seek(0)
-      xml_version = '<?xml version="1.0" encoding="UTF-8"?>'
-      shaka_packager_comment = '<!--Generated with https://github.com/google/shaka-packager -->'
-      shaka_streamer_comment = '<!--Made Multi-Period with https://github.com/google/shaka-streamer version {}-->'.format(streamer.__version__)
-      content = '\n'.join([xml_version, shaka_packager_comment, shaka_streamer_comment, content])
-      master_dash.write(content)
+    # Write the period concat to the outpud_dir.
+    with open(os.path.join(
+        self._output_dir,
+        self._pipeline_config.dash_output), 'w') as master_dash:
+      contents = "<?xml version='1.0' encoding='UFT-8'?>\n"
+      contents += "<!--Generated with https://github.com/google/shaka-packager -->\n"
+      contents += "<!--Made Multi-Period with https://github.com/google/shaka-streamer version {} -->\n".format(__version__)
+      # ET already have an ElementTree().write() method, but it won't allow putting comments
+      # at the begining of the file.
+      contents += ET.tostring(element=ref_mpd, encoding="unicode")
+      master_dash.write(contents)
+      
     
   def _hls_concat(self) -> None:
-    m3u8
+    """Concatenates multiple HLS playlists with #EXT-X-DISCONTINUITY."""
+    
+    import m3u8 # type: ignore
+    
+    
   

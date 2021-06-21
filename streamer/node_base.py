@@ -132,13 +132,13 @@ class NodeBase(object):
         # If it's not dead yet, wait 1 second.
         time.sleep(1)
 
-      if self.check_status() == ProcessStatus.RUNNING:
-        # If it's still not dead, use kill.
-        self._process.kill()
-        # Wait for the process to die and read its exit code.  There is no way
-        # to ignore a kill signal, so this will happen quickly.  If we don't do
-        # this, it can create a zombie process.
-        self._process.wait()
+        if self.check_status() == ProcessStatus.RUNNING:
+          # If it's still not dead, use kill.
+          self._process.kill()
+          # Wait for the process to die and read its exit code.  There is no way
+          # to ignore a kill signal, so this will happen quickly.  If we don't do
+          # this, it can create a zombie process.
+          self._process.wait()
 
 class PolitelyWaitOnFinish(node_base.NodeBase):
   """A mixin that makes stop() wait for the subprocess if status is FINISHED.

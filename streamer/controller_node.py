@@ -167,12 +167,10 @@ class ControllerNode(object):
         sub_dir_name = 'period_' + str(i)
         self._append_nodes_for_inputs_list(singleperiod.inputs, sub_dir_name)
 
-      # Period concatenate only when the streaming mode is VOD.
-      if self._pipeline_config.streaming_mode == StreamingMode.VOD:
-        self._nodes.append(PeriodConcatNode(
-          self._pipeline_config,
-          self._nodes,
-          self._output_dir))
+      self._nodes.append(PeriodConcatNode(
+        self._pipeline_config,
+        self._nodes,
+        self._output_dir))
 
     if bucket_url:
       cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
@@ -242,7 +240,7 @@ class ControllerNode(object):
           # in it.  These will be extracted by the transcoder and passed in a
           # pipe to the packager.
           text_pipe = self._create_pipe('.vtt')
-        
+
         outputs.append(TextOutputStream(text_pipe, input))
 
     self._nodes.append(TranscoderNode(inputs,
