@@ -85,7 +85,12 @@ class CloudNode(ThreadedNodeBase):
                             universal_newlines=True)
     # If the command failed, raise an error.
     if status.returncode != 0:
-      message = "Unable to write to cloud storage URL: {}\n\nPlease double-check that the URL is correct, that you are signed into the\nGoogle Cloud SDK or Amazon AWS CLI, and that you have access to the\ndestination bucket.\n\nAdditional output from gsutil:\n  {}".format(bucket_url, status.stderr)
+      message = ("Unable to write to cloud storage URL: {}\n\n"
+                 "Please double-check that the URL is correct, that you are signed into the\n"
+                 "Google Cloud SDK or Amazon AWS CLI, and that you have access to the\n"
+                 "destination bucket.\n\n"
+                 "Additional output from gsutil:\n"
+                 "  {}".format(bucket_url, status.stderr))
       raise CloudAccessError(message)
 
   def _thread_single_pass(self) -> None:

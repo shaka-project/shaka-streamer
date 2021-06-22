@@ -247,26 +247,26 @@ class Field(Generic[FieldType]):
     if type is str:
       # Call it a string, not a "str".
       return 'string'
-    if type is list:
+    elif type is list:
       # Mention the subtype.
       return 'list of {}'.format(
           Field.get_type_name_static(subtype, None, None))
-    if type is dict:
+    elif type is dict:
       # Mention the subtype.
       return 'dictionary of {} to {}'.format(
           Field.get_type_name_static(keytype, None, None),
           Field.get_type_name_static(subtype, None, None))
-    if type is None:
+    elif type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'
-    if type is Any:
+    elif type is Any:
       # This is only here to allow generic handling of List[Any] and Dict[Any, Any]
       return 'Any'
-    if issubclass(type, enum.Enum):
+    elif issubclass(type, enum.Enum):
       # Get the list of valid options as quoted strings.
       options = [repr(str(member.value)) for member in type]
       return '{} (one of {})'.format(type.__name__, ', '.join(options))
-    if issubclass(type, ValidatingType):
+    elif issubclass(type, ValidatingType):
       return type.name()
 
     # Otherwise, return the name of the type.
