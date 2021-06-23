@@ -16,11 +16,12 @@
 
 import glob
 import os
+from streamer.packager_node import PackagerNode
 import subprocess
 import time
 
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
-from typing import Optional
+from typing import Optional, List
 
 # This is the HTTP header "Cache-Control" which will be attached to the Cloud
 # Storage blobs uploaded by this tool.  When the browser requests a file from
@@ -54,11 +55,13 @@ class CloudNode(ThreadedNodeBase):
                input_dir: str,
                bucket_url: str,
                temp_dir: str,
+               packager_nodes: List[PackagerNode],
                is_vod: bool):
     super().__init__(thread_name='cloud', continue_on_exception=True, sleep_time=1)
     self._input_dir: str = input_dir
     self._bucket_url: str = bucket_url
     self._temp_dir: str = temp_dir
+    self._packager_nodes: List[PackagerNode] = packager_nodes
     self._is_vod: bool = is_vod
 
   @staticmethod
@@ -96,6 +99,20 @@ Additional output from gsutil:
       raise CloudAccessError(message)
 
   def _thread_single_pass(self) -> None:
+    
+    # Sync the files with the cloud storage.
+    self.upload()
+    
+    for packager_node in self._packager_nodes:
+      status = packager_node.check_status()
+      if status != ProcessStatus.Finished:
+        return
+    
+    # Do one last sync to be sure that the latest versions of the files are uploaded.
+    self.upload()
+    self._status = ProcessStatus.Finished
+    
+  def upload(self) -> None:
     # With recursive=True, glob's ** will also match the base dir.
     manifest_files = (
         glob.glob(self._input_dir + '/**/*.mpd', recursive=True) +
@@ -152,7 +169,7 @@ Additional output from gsutil:
         self._bucket_url, # destination in cloud storage
     ]
     subprocess.check_call(args)
-
+    
   def stop(self,
            status: Optional[ProcessStatus]) -> None:
     super().stop(status)

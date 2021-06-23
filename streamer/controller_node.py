@@ -167,18 +167,22 @@ class ControllerNode(object):
         sub_dir_name = 'period_' + str(i)
         self._append_nodes_for_inputs_list(singleperiod.inputs, sub_dir_name)
 
-      self._nodes.append(PeriodConcatNode(
-        self._pipeline_config,
-        self._nodes,
-        self._output_dir))
+      if self._pipeline_config.streaming_mode == StreamingMode.VOD:
+        packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
+        self._nodes.append(PeriodConcatNode(
+          self._pipeline_config,
+          packager_nodes,
+          self._output_dir))
 
     if bucket_url:
       cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
       os.mkdir(cloud_temp_dir)
 
+      packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
       self._nodes.append(CloudNode(self._output_dir,
                                    bucket_url,
                                    cloud_temp_dir,
+                                   packager_nodes,
                                    self.is_vod()))
 
     for node in self._nodes:
@@ -262,36 +266,20 @@ class ControllerNode(object):
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
 
-    If one node is errored, this returns Errored; otherwise if one Transcoder, Packager or PeriodConcat 
-    node is running, this returns Running; this only returns Finished if all Transcoder, Packager and
-    PeriodConcat nodes are finished. If there are no nodes, this returns Finished.
+    If one node is errored, this returns Errored; otherwise if one node is running,
+    this returns Running; this only returns Finished if all nodes are finished.
+    If there are no nodes, this returns Finished.
     """
-    
-    values: Set[int] = set([ProcessStatus.Finished.value])
+    if not self._nodes:
+      return ProcessStatus.Finished
 
-    for node in self._nodes:
-      status: ProcessStatus = node.check_status()
-      if isinstance(node, (TranscoderNode, PackagerNode, PeriodConcatNode)):
-        values.add(status.value)
-      # Return Errored even if the node wasn't an instance of the checked nodes.
-      if status == ProcessStatus.Errored:
-        return ProcessStatus.Errored
-        
-    value: int = max(values)
+    value = max(node.check_status().value for node in self._nodes)
     return ProcessStatus(value)
 
   def stop(self) -> None:
-    """Stop all nodes.
-    Each Transcoder and Packager nodes are paired together, the status sent to each one of them
-    in the stop(status) is the status of the other.
-    """
-    
-    for i, node in enumerate(self._nodes):
-      status: Optional[ProcessStatus] = None
-      if isinstance(node, TranscoderNode):
-        status = self._nodes[i+1].check_status()
-      elif isinstance(node, PackagerNode):
-        status = self._nodes[i-1].check_status()
+    """Stop all nodes."""
+    status = self.check_status()
+    for node in self._nodes:
       node.stop(status)
     self._nodes = []
 
