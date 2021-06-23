@@ -105,7 +105,7 @@ Additional output from gsutil:
     
     for packager_node in self._packager_nodes:
       status = packager_node.check_status()
-      if status != ProcessStatus.Finished:
+      if status == ProcessStatus.Running:
         return
     
     # Do one last sync to be sure that the latest versions of the files are uploaded.
