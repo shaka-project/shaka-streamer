@@ -229,9 +229,9 @@ class ControllerNode(object):
               continue
 
             outputs.append(VideoOutputStream(self._create_pipe(),
-                                           input,
-                                           video_codec,
-                                           output_resolution))
+                                             input,
+                                             video_codec,
+                                             output_resolution))
 
       elif input.media_type == MediaType.TEXT:
         if input.name.endswith('.vtt') or input.name.endswith('.ttml'):
