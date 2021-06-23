@@ -56,6 +56,10 @@ class OutputStream(object):
     assert self.codec is not None
     return self.codec.get_ffmpeg_codec_string(hwaccel_api)
 
+  def is_dash_only(self) -> bool:
+    """Returns True if the output format is restricted to DASH protocol"""
+    assert self.codec is not None
+    return self.codec.get_output_format() is 'webm'
 
 class AudioOutputStream(OutputStream):
 
@@ -140,4 +144,3 @@ class TextOutputStream(OutputStream):
       'language': input.language,
       'format': 'mp4',
     }
-
