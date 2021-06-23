@@ -101,7 +101,7 @@ Additional output from gsutil:
   def _thread_single_pass(self) -> None:
     
     # Sync the files with the cloud storage.
-    self.upload()
+    self._upload()
     
     for packager_node in self._packager_nodes:
       status = packager_node.check_status()
@@ -109,10 +109,10 @@ Additional output from gsutil:
         return
     
     # Do one last sync to be sure that the latest versions of the files are uploaded.
-    self.upload()
+    self._upload()
     self._status = ProcessStatus.Finished
     
-  def upload(self) -> None:
+  def _upload(self) -> None:
     # With recursive=True, glob's ** will also match the base dir.
     manifest_files = (
         glob.glob(self._input_dir + '/**/*.mpd', recursive=True) +
