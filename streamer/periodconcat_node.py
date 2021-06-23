@@ -118,7 +118,7 @@ class PeriodConcatNode(ThreadedNodeBase):
         self._pipeline_config.dash_output), 'w') as master_dash:
       
       contents = "<?xml version='1.0' encoding='UTF-8'?>\n"
-      # TODO: Add Shaka-Packager version to this comment.
+      # TODO: Add Shaka-Packager version to this xml comment.
       contents += "<!--Generated with https://github.com/google/shaka-packager -->\n"
       contents += "<!--Made Multi-Period with https://github.com/google/shaka-streamer version {} -->\n".format(__version__)
       

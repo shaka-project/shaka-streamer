@@ -169,7 +169,7 @@ Additional output from gsutil:
         self._bucket_url, # destination in cloud storage
     ]
     subprocess.check_call(args)
-    
+
   def stop(self,
            status: Optional[ProcessStatus]) -> None:
     super().stop(status)
