@@ -78,34 +78,37 @@ class MalformedField(ConfigError):
 class ConflictingFields(ConfigError):
   """An error raised when multiple fields are given and only one of them is allowed at a time."""
   
-  def __init__(self, class_ref, field_names):
-    self.conflicting_exclusive_fields = {}
-    for field_name in field_names:
-      self.conflicting_exclusive_fields[field_name] = class_ref.__dict__[field_name].get_type_name()
-    super().__init__(class_ref, field_names[0], self.conflicting_exclusive_fields[field_names[0]])
+  def __init__(self, class_ref, field1_name, field2_name):
+    self.field1_name = field1_name
+    self.field1_type = class_ref.__dict__[field1_name].get_type_name()
+    self.field2_name = field2_name
+    self.field2_type = class_ref.__dict__[field2_name].get_type_name()
+    super().__init__(class_ref, field1_name, class_ref.__dict__[field1_name])
   
   def __str__(self):
-    conflicing_fields = ''
-    for field_name, field_type in self.conflicting_exclusive_fields.items():
-      conflicing_fields += "\n-> {} a {}".format(field_name, field_type)
-    return "In {}, these fields are conflicting:{}\nconsider using only one of them.".format(
-      self.class_name, conflicing_fields)
+    return """In {}, these fields are conflicting:
+    {} a {}
+    and
+    {} a {}\n  consider using only one of them.""".format(self.class_name,
+                      self.field1_name, self.field1_type,
+                      self.field2_name, self.field2_type)
     
 class MissingRequiredExclusiveFields(ConfigError):
   """An error raised when one of an exclusively required fields is missing."""
   
-  def __init__(self, class_ref, field_names):
-    self.allowed_exclusive_fields = {}
-    for field_name in field_names:
-      self.allowed_exclusive_fields[field_name] = class_ref.__dict__[field_name].get_type_name()
-    super().__init__(class_ref, field_names[0], self.allowed_exclusive_fields[field_names[0]])
+  def __init__(self, class_ref, field1_name, field2_name):
+    self.field1_name = field1_name
+    self.field1_type = class_ref.__dict__[field1_name].get_type_name()
+    self.field2_name = field2_name
+    self.field2_type = class_ref.__dict__[field2_name].get_type_name()
+    super().__init__(class_ref, field1_name, class_ref.__dict__[field1_name])
   
   def __str__(self):
-    allowed_fields = ''
-    for field_name, field_type in self.allowed_exclusive_fields.items():
-      allowed_fields += "\n-> {} a {}".format(field_name, field_type)
-    return "{} is missing a required field. Use exactly one of these fields:{}".format(
-      self.class_name, allowed_fields)
+    return """{} is missing a required field. Use exactly one of these fields:
+    {} a {}
+    or
+    {} a {}""".format(self.class_name, self.field1_name, self.field1_type,
+                      self.field2_name, self.field2_type)
 
 class ValidatingType(metaclass=abc.ABCMeta):
   """A base wrapper type that validates the input against a limited range.
