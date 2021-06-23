@@ -68,7 +68,7 @@ class PeriodConcatNode(ThreadedNodeBase):
       Use it only if it is guaranteed that the element we are searching for is inside,
       Otherwise it will raise an AssertionError."""
       
-      full_path = '/'.join(['shaka-live:'+tag for tag in args])
+      full_path = '/'.join(['shaka-live:' + tag for tag in args])
       child_elem =  elem.find(full_path, {'shaka-live': default_dash_namespace})
       
       # elem.find() returns either an ElementTree.Element or None.
