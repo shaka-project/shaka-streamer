@@ -189,7 +189,7 @@ def stop():
   resp = createCrossOriginResponse()
   if controller is not None:
     # Check status to see if one of the processes exited.
-    if controller.check_status() == node_base.ProcessStatus.ERRORED:
+    if controller.check_status() == node_base.ProcessStatus.Errored:
       resp = createCrossOriginResponse(
           status=500, body='Some processes exited with non-zero exit codes')
 
@@ -206,9 +206,9 @@ def send_file(filename):
     # done packaging contents.
     while True:
       status = controller.check_status()
-      if status == node_base.ProcessStatus.FINISHED:
+      if status == node_base.ProcessStatus.Finished:
         break
-      elif status != node_base.ProcessStatus.RUNNING:
+      elif status != node_base.ProcessStatus.Running:
         return createCrossOriginResponse(
             status=500, body='Some processes exited with non-zero exit codes')
 

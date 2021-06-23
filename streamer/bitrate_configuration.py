@@ -37,10 +37,10 @@ class BitrateString(configuration.ValidatingType, str):
 
 class AudioCodec(enum.Enum):
 
-  AAC = 'aac'
-  OPUS = 'opus'
-  AC3 = 'ac3'
-  EAC3 = 'eac3'
+  AAC: str = 'aac'
+  OPUS: str = 'opus'
+  AC3: str = 'ac3'
+  EAC3: str = 'eac3'
 
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
@@ -368,8 +368,7 @@ class BitrateConfig(configuration.Base):
   """
 
   video_resolutions = configuration.Field(
-      Dict[str, VideoResolution],
-      default=DEFAULT_VIDEO_RESOLUTIONS).cast()
+      Dict[str, VideoResolution], default=DEFAULT_VIDEO_RESOLUTIONS).cast()
   """A map of named resolutions.
 
   For example, the key would be a name like "1080p", and the value would be an

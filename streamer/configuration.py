@@ -18,7 +18,7 @@ import functools
 import re
 
 import typing
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 from typing import Generic, TypeVar, cast
 
 
@@ -77,13 +77,35 @@ class MalformedField(ConfigError):
 
 class ConflictingFields(ConfigError):
   """An error raised when multiple fields are given and only one of them is allowed at a time."""
-  def __init__(self, class_ref, field_name, field, field_names):
-    super().__init__(class_ref, field_name, field)
-    self.field_names = field_names
-    
+  
+  def __init__(self, class_ref, field_names):
+    self.conflicting_exclusive_fields = {}
+    for field_name in field_names:
+      self.conflicting_exclusive_fields[field_name] = class_ref.__dict__[field_name].get_type_name()
+    super().__init__(class_ref, field_names[0], self.conflicting_exclusive_fields[field_names[0]])
+  
   def __str__(self):
-    return 'In {}, fields {} are conflicting, consider using only one of them.'.format(
-        self.class_name, self.field_names)
+    conflicing_fields = ''
+    for field_name, field_type in self.conflicting_exclusive_fields.items():
+      conflicing_fields += "\n-> {} a {}".format(field_name, field_type)
+    return "In {}, these fields are conflicting:{}\nconsider using only one of them.".format(
+      self.class_name, conflicing_fields)
+    
+class MissingRequiredExclusiveFields(ConfigError):
+  """An error raised when one of an exclusively required fields is missing."""
+  
+  def __init__(self, class_ref, field_names):
+    self.allowed_exclusive_fields = {}
+    for field_name in field_names:
+      self.allowed_exclusive_fields[field_name] = class_ref.__dict__[field_name].get_type_name()
+    super().__init__(class_ref, field_names[0], self.allowed_exclusive_fields[field_names[0]])
+  
+  def __str__(self):
+    allowed_fields = ''
+    for field_name, field_type in self.allowed_exclusive_fields.items():
+      allowed_fields += "\n-> {} a {}".format(field_name, field_type)
+    return "{} is missing a required field. Use exactly one of these fields:{}".format(
+      self.class_name, allowed_fields)
 
 class ValidatingType(metaclass=abc.ABCMeta):
   """A base wrapper type that validates the input against a limited range.
@@ -232,7 +254,7 @@ class Field(Generic[FieldType]):
 
     underlying = Field.get_underlying_type(type)
     if underlying is dict:
-      return (args[0], args[1])
+      return cast(Tuple[Optional[Type], Optional[Type]], args)
     if underlying is list:
       return (None, args[0])
     return (None, None)
@@ -259,9 +281,6 @@ class Field(Generic[FieldType]):
     elif type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'
-    elif type is Any:
-      # This is only here to allow generic handling of List[Any] and Dict[Any, Any]
-      return 'Any'
     elif issubclass(type, enum.Enum):
       # Get the list of valid options as quoted strings.
       options = [repr(str(member.value)) for member in type]
@@ -470,13 +489,10 @@ class RuntimeMap(Generic[RuntimeMapSubclass], Base):
     """Return a tuple of sortable properties.  Implemented by subclasses."""
     raise RuntimeError('_sortable_properties missing on RuntimeMapSubclass!')
 
-  # NOTE: ignore[override] is needed to suppress the following the mypy
-  # error: "This violates the Liskov substitution principle,
-  # See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides"
-  def __eq__(self, other: 'RuntimeMap') -> bool: # type: ignore[override]
+  def __eq__(self, other: Any) -> bool:
     return self._sortable_properties() == other._sortable_properties()
 
-  def __lt__(self, other: 'RuntimeMap') -> bool:
+  def __lt__(self, other: Any) -> bool:
     return self._sortable_properties() < other._sortable_properties()
 
 
@@ -527,7 +543,7 @@ class RuntimeMapKeyValidator(ValidatingType, str):
 
   """Must be provided by subclasses and point to the matching RuntimeMap
   subclass."""
-  map_class: Type[RuntimeMap] = RuntimeMap
+  map_class: Type[RuntimeMap] = None  # type: ignore
 
   @classmethod
   def name(cls) -> str:

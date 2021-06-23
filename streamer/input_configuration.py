@@ -343,15 +343,13 @@ class InputConfig(configuration.Base):
 
     if dictionary.get('inputs') and dictionary.get('multiperiod_inputs_list'):
       raise configuration.ConflictingFields(
-        InputConfig, 'inputs', configuration.Field(List[Input]), ['inputs', 'multiperiod_inputs_list']
-      )
+        InputConfig, ['inputs', 'multiperiod_inputs_list'])
     
     # Because these fields are not marked as required at the class level
     # , we need to check ourselves that one of them is provided.
     if dictionary.get('inputs') is None and dictionary.get('multiperiod_inputs_list') is None:
-      raise configuration.MissingRequiredField(
-        InputConfig, 'either inputs or multiperiod_inputs_list', configuration.Field(Dict[str, Any])
-      )
+      raise configuration.MissingRequiredExclusiveFields(
+        InputConfig, ['inputs', 'multiperiod_inputs_list'])
       
     super().__init__(dictionary)
 

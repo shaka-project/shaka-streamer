@@ -51,12 +51,12 @@ class CloudAccessError(Exception):
 
 class CloudNode(ThreadedNodeBase):
   def __init__(self,
-               upload_dir: str,
+               input_dir: str,
                bucket_url: str,
                temp_dir: str,
                is_vod: bool):
     super().__init__(thread_name='cloud', continue_on_exception=True, sleep_time=1)
-    self._upload_dir: str = upload_dir
+    self._input_dir: str = input_dir
     self._bucket_url: str = bucket_url
     self._temp_dir: str = temp_dir
     self._is_vod: bool = is_vod
@@ -85,19 +85,21 @@ class CloudNode(ThreadedNodeBase):
                             universal_newlines=True)
     # If the command failed, raise an error.
     if status.returncode != 0:
-      message = ("Unable to write to cloud storage URL: {}\n\n"
-                 "Please double-check that the URL is correct, that you are signed into the\n"
-                 "Google Cloud SDK or Amazon AWS CLI, and that you have access to the\n"
-                 "destination bucket.\n\n"
-                 "Additional output from gsutil:\n"
-                 "  {}".format(bucket_url, status.stderr))
+      message = """Unable to write to cloud storage URL: {}
+
+Please double-check that the URL is correct, that you are signed into the
+Google Cloud SDK or Amazon AWS CLI, and that you have access to the
+destination bucket.
+
+Additional output from gsutil:
+  {}""".format(bucket_url, status.stderr)
       raise CloudAccessError(message)
 
   def _thread_single_pass(self) -> None:
     # With recursive=True, glob's ** will also match the base dir.
     manifest_files = (
-        glob.glob(self._upload_dir + '/**/*.mpd', recursive=True) +
-        glob.glob(self._upload_dir + '/**/*.m3u8', recursive=True))
+        glob.glob(self._input_dir + '/**/*.mpd', recursive=True) +
+        glob.glob(self._input_dir + '/**/*.m3u8', recursive=True))
 
     # The manifest at any moment will reference existing segment files.
     # We must be careful not to upload a manifest that references segments that
@@ -106,18 +108,20 @@ class CloudNode(ThreadedNodeBase):
     # captured.
 
     for manifest_path in manifest_files:
-      # The path within the upload dir.
-      subdir_path = os.path.relpath(manifest_path, self._upload_dir)
+      # The path within the input dir.
+      subdir_path = os.path.relpath(manifest_path, self._input_dir)
 
       # Capture manifest contents, and retry until the file is non-empty or
       # until the thread is killed.
       with open(manifest_path, 'rb') as f:
-        while (self.check_status() == ProcessStatus.RUNNING):
-          f.seek(0)
+        contents = f.read()
+
+      while (not contents and
+             self.check_status() == ProcessStatus.Running):
+        time.sleep(0.1)
+
+        with open(manifest_path, 'rb') as f:
           contents = f.read()
-          if contents:
-            break
-          time.sleep(0.1)
 
       # Now that we have manifest contents, put them into a temp file so that
       # the manifests can be pushed en masse later.
@@ -134,7 +138,7 @@ class CloudNode(ThreadedNodeBase):
         '-d', # delete remote files that are no longer needed
         '-x', '.*m3u8', # skip m3u8 files, which we'll push separately later
         '-x', '.*mpd', # skip mpd files, which we'll push separately later
-        self._upload_dir, # local upload folder to sync
+        self._input_dir, # local input folder to sync
         self._bucket_url, # destination in cloud storage
     ]
     # NOTE: The -d option above will not result in the files ignored by -x
@@ -144,7 +148,7 @@ class CloudNode(ThreadedNodeBase):
     # Sync the temporary copies of the manifest files.
     args = COMMON_GSUTIL_ARGS + [
         '-J', # compress all files in transit, since they are text
-        self._temp_dir, # local upload folder to sync
+        self._temp_dir, # local input folder to sync
         self._bucket_url, # destination in cloud storage
     ]
     subprocess.check_call(args)

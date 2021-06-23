@@ -30,13 +30,13 @@ from typing import Any, Dict, IO, List, Optional, Union
 class ProcessStatus(enum.Enum):
   # Use number values so we can sort based on value.
 
-  FINISHED = 0
+  Finished = 0
   """The node has completed its task and shut down."""
 
-  RUNNING = 1
+  Running = 1
   """The node is still running."""
 
-  ERRORED = 2
+  Errored = 2
   """The node has failed."""
 
 
@@ -115,12 +115,12 @@ class NodeBase(object):
 
     self._process.poll()
     if self._process.returncode is None:
-      return ProcessStatus.RUNNING
+      return ProcessStatus.Running
 
     if self._process.returncode == 0:
-      return ProcessStatus.FINISHED
+      return ProcessStatus.Finished
     else:
-      return ProcessStatus.ERRORED
+      return ProcessStatus.Errored
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
     """Stop the subprocess if it's still running."""
@@ -128,27 +128,27 @@ class NodeBase(object):
       # Slightly more polite than kill.  Try this first.
       self._process.terminate()
 
-      if self.check_status() == ProcessStatus.RUNNING:
+      if self.check_status() == ProcessStatus.Running:
         # If it's not dead yet, wait 1 second.
         time.sleep(1)
 
-        if self.check_status() == ProcessStatus.RUNNING:
-          # If it's still not dead, use kill.
-          self._process.kill()
-          # Wait for the process to die and read its exit code.  There is no way
-          # to ignore a kill signal, so this will happen quickly.  If we don't do
-          # this, it can create a zombie process.
-          self._process.wait()
+      if self.check_status() == ProcessStatus.Running:
+        # If it's still not dead, use kill.
+        self._process.kill()
+        # Wait for the process to die and read its exit code.  There is no way
+        # to ignore a kill signal, so this will happen quickly.  If we don't do
+        # this, it can create a zombie process.
+        self._process.wait()
 
 class PolitelyWaitOnFinish(node_base.NodeBase):
-  """A mixin that makes stop() wait for the subprocess if status is FINISHED.
+  """A mixin that makes stop() wait for the subprocess if status is Finished.
 
   This is as opposed to the base class behavior, in which stop() forces
   the subprocesses of a node to terminate.
   """
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
-    if self._process and status == ProcessStatus.FINISHED:
+    if self._process and status == ProcessStatus.Finished:
       try:
         print('Waiting for', self.__class__.__name__)
         self._process.wait(timeout=300)  # 5m timeout
@@ -166,14 +166,14 @@ class ThreadedNodeBase(NodeBase):
 
   def __init__(self, thread_name: str, continue_on_exception: bool, sleep_time: float):
     super().__init__()
-    self._status = ProcessStatus.FINISHED
+    self._status = ProcessStatus.Finished
     self._thread_name = thread_name
     self._continue_on_exception = continue_on_exception
     self._sleep_time = sleep_time
     self._thread = threading.Thread(target=self._thread_main, name=thread_name)
 
   def _thread_main(self) -> None:
-    while self._status == ProcessStatus.RUNNING:
+    while self._status == ProcessStatus.Running:
       try:
         self._thread_single_pass()
       except:
@@ -183,7 +183,7 @@ class ThreadedNodeBase(NodeBase):
           print(self.__class__.__name__+": 'Continuing.'")
         else:
           print(self.__class__.__name__+": 'Quitting.'")
-          self._status = ProcessStatus.ERRORED
+          self._status = ProcessStatus.Errored
           return
 
       # Wait a little bit before performing the next pass.
@@ -203,11 +203,11 @@ class ThreadedNodeBase(NodeBase):
     pass
 
   def start(self) -> None:
-    self._status = ProcessStatus.RUNNING
+    self._status = ProcessStatus.Running
     self._thread.start()
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
-    self._status = ProcessStatus.FINISHED
+    self._status = ProcessStatus.Finished
     self._thread.join()
 
   def check_status(self) -> ProcessStatus:

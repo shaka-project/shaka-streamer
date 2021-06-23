@@ -16,7 +16,7 @@
 
 multiperiod_inputs_list:
 
-  # List of inputs.
+  # List of inputs, this will be the first period in the final multi-period manifest.
   - inputs:
       # Name of the input file.
       # This example can be downloaded from https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.4k.mkv
@@ -59,7 +59,7 @@ multiperiod_inputs_list:
       media_type: text
       language: zh
 
-  # List of inputs.
+  # List of inputs, this will be the second period in the final multi-period manifest.
   - inputs:
       # Name of the input file.
       # This example can be downloaded from https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.4k.mkv

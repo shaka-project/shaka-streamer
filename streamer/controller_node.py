@@ -262,20 +262,20 @@ class ControllerNode(object):
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
 
-    If one node is errored, this returns ERRORED; otherwise if one Transcoder, Packager or PeriodConcat 
-    node is running, this returns RUNNING; this only returns FINISHED if all Transcoder, Packager and
-    PeriodConcat nodes are finished. If there are no nodes, this returns FINISHED.
+    If one node is errored, this returns Errored; otherwise if one Transcoder, Packager or PeriodConcat 
+    node is running, this returns Running; this only returns Finished if all Transcoder, Packager and
+    PeriodConcat nodes are finished. If there are no nodes, this returns Finished.
     """
     
-    values: Set[int] = set([ProcessStatus.FINISHED.value])
+    values: Set[int] = set([ProcessStatus.Finished.value])
 
     for node in self._nodes:
       status: ProcessStatus = node.check_status()
       if isinstance(node, (TranscoderNode, PackagerNode, PeriodConcatNode)):
         values.add(status.value)
-      # Return ERRORED even if the node wasn't an instance of the checked nodes.
-      if status == ProcessStatus.ERRORED:
-        return ProcessStatus.ERRORED
+      # Return Errored even if the node wasn't an instance of the checked nodes.
+      if status == ProcessStatus.Errored:
+        return ProcessStatus.Errored
         
     value: int = max(values)
     return ProcessStatus(value)
