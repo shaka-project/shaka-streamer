@@ -341,13 +341,14 @@ class InputConfig(configuration.Base):
     See some examples at https://github.com/google/shaka-streamer/tree/master/config_files.
     """
 
-    if dictionary.get('inputs') and dictionary.get('multiperiod_inputs_list'):
+    if (dictionary.get('inputs') is not None 
+        and dictionary.get('multiperiod_inputs_list') is not None):
       raise configuration.ConflictingFields(
         InputConfig, 'inputs', 'multiperiod_inputs_list')
     
     # Because these fields are not marked as required at the class level
     # , we need to check ourselves that one of them is provided.
-    if dictionary.get('inputs') is None and dictionary.get('multiperiod_inputs_list') is None:
+    if not dictionary.get('inputs') and not dictionary.get('multiperiod_inputs_list'):
       raise configuration.MissingRequiredExclusiveFields(
         InputConfig, 'inputs', 'multiperiod_inputs_list')
       
