@@ -1240,7 +1240,7 @@ function multiPeriodTests(manifestUrl, format) {
 
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
-    const duration = player.seekRange().end
+    const duration = player.getManifest().presentationTimeline.getDuration()
 
     // Since we processed only 0:01s, the total duration shoud be 2s.
     // Be more tolerant with float comparison, (D > 1.9 * length) instead of (D == 2 * length).
