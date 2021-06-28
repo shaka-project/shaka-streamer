@@ -319,12 +319,12 @@ function errorTests() {
         }));
   });
 
-  it('fails when both "inputs" and "multiperiod_inputs_list" are given', async() =>{
+  it('fails when both "inputs" and "multiperiod_inputs_list" are given', async() => {
     const inputConfig = getBasicInputConfig();
     inputConfig.multiperiod_inputs_list = [
       getBasicInputConfig(),
       getBasicInputConfig(),
-    ]
+    ];
     const pipeline_config = {
       streaming_mode: 'vod',
       resolutions: [],
@@ -337,8 +337,8 @@ function errorTests() {
         }));
   });
 
-  it('fails when neither "inputs" nor "multiperiod_inputs_list" is given', async() =>{
-    const inputConfig = {}
+  it('fails when neither "inputs" nor "multiperiod_inputs_list" is given', async() => {
+    const inputConfig = {};
     const pipeline_config = {
       streaming_mode: 'vod',
       resolutions: [],
@@ -1240,10 +1240,9 @@ function multiPeriodTests(manifestUrl, format) {
 
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
-    const duration = player.getManifest().presentationTimeline.getDuration()
 
     // Since we processed only 0:01s, the total duration shoud be 2s.
     // Be more tolerant with float comparison, (D > 1.9 * length) instead of (D == 2 * length).
-    expect(duration).toBeGreaterThan(1.9 * 1)
+    expect(video.duration).toBeGreaterThan(1.9);
   });
 }
