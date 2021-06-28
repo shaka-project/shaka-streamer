@@ -10,3 +10,5 @@ dist/
 shaka_streamer.egg-info/
 .idea/
 venv/
+dev/
+.vscode/

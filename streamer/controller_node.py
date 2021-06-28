@@ -30,16 +30,17 @@ import sys
 import tempfile
 import uuid
 
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
-from streamer.input_configuration import InputConfig, InputType, MediaType
+from streamer.input_configuration import InputConfig, InputType, MediaType, Input
 from streamer.node_base import NodeBase, ProcessStatus
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
+from streamer.periodconcat_node import PeriodConcatNode
 
 
 class ControllerNode(object):
@@ -136,6 +137,14 @@ class ControllerNode(object):
       # the destination, independent of the version check above.
       CloudNode.check_access(bucket_url)
 
+
+    self._output_dir = output_dir
+    # Check if the directory for outputted Packager files exists, and if it
+    # does, delete it and remake a new one.
+    if os.path.exists(self._output_dir):
+      shutil.rmtree(self._output_dir)
+    os.mkdir(self._output_dir)
+
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
 
@@ -145,12 +154,54 @@ class ControllerNode(object):
     VideoResolution.set_map(bitrate_config.video_resolutions)
     AudioChannelLayout.set_map(bitrate_config.audio_channel_layouts)
 
-    input_config = InputConfig(input_config_dict)
-    pipeline_config = PipelineConfig(pipeline_config_dict)
-    self._pipeline_config = pipeline_config
+    self._input_config = InputConfig(input_config_dict)
+    self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
+    if self._input_config.inputs:
+      # InputConfig contains inputs only.
+      self._append_nodes_for_inputs_list(self._input_config.inputs)
+    else:
+      # InputConfig contains multiperiod_inputs_list only.
+      # Create one Transcoder node and one Packager node for each period.
+      for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
+        sub_dir_name = 'period_' + str(i)
+        self._append_nodes_for_inputs_list(singleperiod.inputs, sub_dir_name)
+
+      if self._pipeline_config.streaming_mode == StreamingMode.VOD:
+        packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
+        self._nodes.append(PeriodConcatNode(
+          self._pipeline_config,
+          packager_nodes,
+          self._output_dir))
+
+    if bucket_url:
+      cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
+      os.mkdir(cloud_temp_dir)
+
+      packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
+      self._nodes.append(CloudNode(self._output_dir,
+                                   bucket_url,
+                                   cloud_temp_dir,
+                                   packager_nodes,
+                                   self.is_vod()))
+
+    for node in self._nodes:
+      node.start()
+      
+    return self
+
+  def _append_nodes_for_inputs_list(self, inputs: List[Input],
+               period_dir: Optional[str] = None) -> None:
+    """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
+    
+    Args:
+      inputs (List[Input]): A list of Input streams.
+      period_dir (Optional[str]): A subdirectory name where a single period will be outputted to.
+      If passed, this indicates that inputs argument is one period in a list of periods.
+    """
+    
     outputs: List[OutputStream] = []
-    for input in input_config.inputs:
+    for input in inputs:
       # External command inputs need to be processed by an additional node
       # before being transcoded.  In this case, the input doesn't have a
       # filename that FFmpeg can read, so we generate an intermediate pipe for
@@ -163,15 +214,15 @@ class ControllerNode(object):
         input.set_pipe(command_output)
 
       if input.media_type == MediaType.AUDIO:
-        for audio_codec in pipeline_config.audio_codecs:
+        for audio_codec in self._pipeline_config.audio_codecs:
           outputs.append(AudioOutputStream(self._create_pipe(),
                                            input,
                                            audio_codec,
-                                           pipeline_config.channels))
+                                           self._pipeline_config.channels))
 
       elif input.media_type == MediaType.VIDEO:
-        for video_codec in pipeline_config.video_codecs:
-          for output_resolution in pipeline_config.get_resolutions():
+        for video_codec in self._pipeline_config.video_codecs:
+          for output_resolution in self._pipeline_config.get_resolutions():
             # Only going to output lower or equal resolution videos.
             # Upscaling is costly and does not do anything.
             if input.get_resolution() < output_resolution:
@@ -196,33 +247,28 @@ class ControllerNode(object):
 
         outputs.append(TextOutputStream(text_pipe, input))
 
-    self._nodes.append(TranscoderNode(input_config,
-                                      pipeline_config,
+    self._nodes.append(TranscoderNode(inputs,
+                                      self._pipeline_config,
                                       outputs))
 
-    self._nodes.append(PackagerNode(pipeline_config,
+    output_dir = self._output_dir
+    
+    # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
+    # and put that period in it.
+    if period_dir:
+      output_dir = os.path.join(output_dir, period_dir)
+      os.mkdir(output_dir)
+
+    self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_dir,
                                     outputs))
-
-    if bucket_url:
-      cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
-      os.mkdir(cloud_temp_dir)
-
-      self._nodes.append(CloudNode(output_dir,
-                                   bucket_url,
-                                   cloud_temp_dir,
-                                   self.is_vod()))
-
-    for node in self._nodes:
-      node.start()
-    return self
 
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
 
-    If one node is errored, this returns Errored; otherwise if one node is
-    finished, this returns Finished; this only returns Running if all nodes are
-    running.  If there are no nodes, this returns Finished.
+    If one node is errored, this returns Errored; otherwise if one node is running,
+    this returns Running; this only returns Finished if all nodes are finished.
+    If there are no nodes, this returns Finished.
     """
     if not self._nodes:
       return ProcessStatus.Finished

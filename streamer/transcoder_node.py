@@ -17,7 +17,7 @@
 import shlex
 
 from streamer.bitrate_configuration import AudioCodec, VideoCodec
-from streamer.input_configuration import Input, InputConfig, InputType, MediaType
+from streamer.input_configuration import Input, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
@@ -26,11 +26,11 @@ from typing import List, Union
 class TranscoderNode(PolitelyWaitOnFinish):
 
   def __init__(self,
-               input_config: InputConfig,
+               inputs: List[Input],
                pipeline_config: PipelineConfig,
                outputs: List[OutputStream]) -> None:
     super().__init__()
-    self._input_config = input_config
+    self._inputs = inputs
     self._pipeline_config = pipeline_config
     self._outputs = outputs
 
@@ -59,7 +59,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
             '-vaapi_device', '/dev/dri/renderD128',
         ]
 
-    for input in self._input_config.inputs:
+    for input in self._inputs:
       # Get any required input arguments for this input.
       # These are like hard-coded extra_input_args for certain input types.
       # This means users don't have to know much about FFmpeg options to handle
@@ -109,7 +109,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           '-i', input.get_path_for_transcode(),
       ]
 
-    for i, input in enumerate(self._input_config.inputs):
+    for i, input in enumerate(self._inputs):
       map_args = [
           # Map corresponding input stream to output file.
           # The format is "<INPUT FILE NUMBER>:<STREAM SPECIFIER>", so "i" here

@@ -30,11 +30,11 @@ from typing import Any, Dict, IO, List, Optional, Union
 class ProcessStatus(enum.Enum):
   # Use number values so we can sort based on value.
 
-  Running = 0
-  """The node is still running."""
-
-  Finished = 1
+  Finished = 0
   """The node has completed its task and shut down."""
+
+  Running = 1
+  """The node is still running."""
 
   Errored = 2
   """The node has failed."""
@@ -164,11 +164,12 @@ class ThreadedNodeBase(NodeBase):
   The thread repeats some callback in a background thread.
   """
 
-  def __init__(self, thread_name: str, continue_on_exception: bool):
+  def __init__(self, thread_name: str, continue_on_exception: bool, sleep_time: float):
     super().__init__()
     self._status = ProcessStatus.Finished
     self._thread_name = thread_name
     self._continue_on_exception = continue_on_exception
+    self._sleep_time = sleep_time
     self._thread = threading.Thread(target=self._thread_main, name=thread_name)
 
   def _thread_main(self) -> None:
@@ -179,17 +180,17 @@ class ThreadedNodeBase(NodeBase):
         print('Exception in', self._thread_name, '-', sys.exc_info())
 
         if self._continue_on_exception:
-          print('Continuing.')
+          print(self.__class__.__name__+": 'Continuing.'")
         else:
-          print('Quitting.')
+          print(self.__class__.__name__+": 'Quitting.'")
           self._status = ProcessStatus.Errored
           return
 
-      # Yield time to other threads.
-      time.sleep(1)
+      # Wait a little bit before performing the next pass.
+      time.sleep(self._sleep_time)
 
   @abc.abstractmethod
-  def _thread_single_pass(self):
+  def _thread_single_pass(self) -> None:
     """Runs a single step of the thread loop.
 
     This is implemented by subclasses to do whatever it is they do.  It will be
