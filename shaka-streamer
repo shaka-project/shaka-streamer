@@ -66,7 +66,8 @@ def main():
                            'upload to.  (Starts with gs:// or s3://)')
   parser.add_argument('-o', '--output',
                       default='output_files',
-                      help='The output folder to write files to. ' +
+                      help='The output folder to write files to, or an HTTP ' +
+                           'or HTTPS URL where files will be PUT.' +
                            'Used even if uploading to cloud storage.')
   parser.add_argument('--skip_deps_check',
                       action='store_true',
