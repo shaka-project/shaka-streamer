@@ -18,4 +18,3 @@ def is_url(output_location: str) -> bool:
   """Returns True if the output location is a URL."""
   return (output_location.startswith('http:') or
       output_location.startswith('https:'))
-      
