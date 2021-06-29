@@ -13,13 +13,15 @@
 // limitations under the License.
 
 const flaskServerUrl = 'http://localhost:5000/';
+const outputHttpUrl = 'http://0.0.0.0:8080/';
+const cloudUrl = "gs://my_gcs_bucket/folder/";
 const dashManifestUrl = flaskServerUrl + 'output_files/dash.mpd';
 const hlsManifestUrl = flaskServerUrl + 'output_files/hls.m3u8';
 const TEST_DIR = 'test_assets/';
 let player;
 let video;
 
-async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}) {
+async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}, outputLocation="", bucketUrl=null) {
   // Send a request to flask server to start Shaka Streamer.
   const response = await fetch(flaskServerUrl + 'start', {
     method: 'POST',
@@ -30,6 +32,8 @@ async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}) {
       'input_config': inputConfig,
       'pipeline_config': pipelineConfig,
       'bitrate_config': bitrateConfig,
+      'output_location': outputLocation,
+      'bucket_url': bucketUrl
     }),
   });
 
@@ -349,6 +353,46 @@ function errorTests() {
           error_type: 'MissingRequiredExclusiveFields',
           field_name: 'inputs',
         }));
+  });
+
+  it('fails when segment_per_file is false with a HTTP url output', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      streaming_mode: 'live',
+      resolutions: [],
+      segment_per_file: false,
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig, {}, outputHttpUrl))
+        .toBeRejected();
+  });
+
+  it('fails when bucket_url is used with a HTTP url output', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      streaming_mode: 'live',
+      resolutions: [],
+      segment_per_file: false,
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig, {}, outputHttpUrl, cloudUrl))
+        .toBeRejected();
+  });
+
+  it('fails when multiperiod_inputs_list is used with a HTTP url output', async () => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.multiperiod_inputs_list = [
+      getBasicInputConfig(),
+      getBasicInputConfig(),
+    ];
+    const pipelineConfig = {
+      streaming_mode: 'live',
+      resolutions: [],
+      segment_per_file: false,
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig, {}, outputHttpUrl))
+        .toBeRejected();
   });
 }
 
