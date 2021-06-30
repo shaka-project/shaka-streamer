@@ -221,6 +221,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '144p': VideoResolution({
     'max_width': 256,
     'max_height': 144,
+    'max_frame_rate': 30,
     'bitrates': {
       'h264': '108k',
       'vp9': '96k',
@@ -231,6 +232,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '240p': VideoResolution({
     'max_width': 426,
     'max_height': 240,
+    'max_frame_rate': 30,
     'bitrates': {
       'h264': '242k',
       'vp9': '151k',
@@ -241,6 +243,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '360p': VideoResolution({
     'max_width': 640,
     'max_height': 360,
+    'max_frame_rate': 30,
     'bitrates': {
       'h264': '400k',
       'vp9': '277k',
@@ -251,6 +254,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '480p': VideoResolution({  # NTSC analog broadcast TV resolution
     'max_width': 854,
     'max_height': 480,
+    'max_frame_rate': 30,
     'bitrates': {
       'h264': '1M',
       'vp9': '512k',
@@ -261,6 +265,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
   '576p': VideoResolution({  # PAL analog broadcast TV resolution
     'max_width': 1024,
     'max_height': 576,
+    'max_frame_rate': 30,
     'bitrates': {
       'h264': '1.5M',
       'vp9': '768k',
