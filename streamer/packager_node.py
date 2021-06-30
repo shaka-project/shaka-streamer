@@ -15,7 +15,6 @@
 """A module that feeds information from two named pipes into shaka-packager."""
 
 import os
-from streamer.util import is_url
 import subprocess
 
 from . import input_configuration
@@ -24,6 +23,7 @@ from . import pipeline_configuration
 
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import EncryptionMode, PipelineConfig
+from streamer.util import is_url
 from typing import List, Optional, Union
 
 # Alias a few classes to avoid repeating namespaces later.

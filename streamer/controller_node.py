@@ -24,7 +24,6 @@ also want to look at the source code to the command-line front end script
 import os
 import re
 import shutil
-import streamer.util
 import string
 import subprocess
 import sys
@@ -42,6 +41,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
+from streamer.util import is_url
 
 
 class ControllerNode(object):
@@ -136,7 +136,7 @@ class ControllerNode(object):
     if bucket_url:
       # If using cloud storage, make sure the user is logged in and can access
       # the destination, independent of the version check above.
-      CloudNode.check_access(bucket_url)    
+      CloudNode.check_access(bucket_url)
 
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
@@ -150,7 +150,7 @@ class ControllerNode(object):
     self._input_config = InputConfig(input_config_dict)
     self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
-    if not streamer.util.is_url(output_location):
+    if not is_url(output_location):
       # Check if the directory for outputted Packager files exists, and if it
       # does, delete it and remake a new one.
       if os.path.exists(output_location):
