@@ -275,6 +275,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
           # resources and speeds up encoding.  This is still not the default
           # setting as of libvpx v1.7.
           '-row-mt', '1',
+          # speeds up encoding, balancing against quality
+          '-speed', '2',
       ]
     elif stream.codec == VideoCodec.AV1:
       args += [
