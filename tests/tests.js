@@ -14,7 +14,6 @@
 
 const flaskServerUrl = 'http://localhost:5000/';
 const outputHttpUrl = 'http://0.0.0.0:8080/';
-const cloudUrl = "gs://my_gcs_bucket/folder/";
 const dashManifestUrl = flaskServerUrl + 'output_files/dash.mpd';
 const hlsManifestUrl = flaskServerUrl + 'output_files/hls.m3u8';
 const OUTPUT_DIR = 'output_files/'
