@@ -371,7 +371,7 @@ function errorTests() {
   it('fails when multiperiod_inputs_list is used with a HTTP url output', async () => {
     const inputConfig = {
       'multiperiod_inputs_list': [
-      getBasicInputConfig(),
+        getBasicInputConfig(),
       ],
     };
 
