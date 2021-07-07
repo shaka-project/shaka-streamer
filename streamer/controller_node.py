@@ -156,7 +156,7 @@ class ControllerNode(object):
       if os.path.exists(output_location):
         shutil.rmtree(output_location)
       os.mkdir(output_location)
-    else :
+    else:
       # Check some restrictions and other details on HTTP output.
       if not self._pipeline_config.segment_per_file:
         raise RuntimeError(
