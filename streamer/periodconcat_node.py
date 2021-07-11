@@ -21,7 +21,8 @@ from xml.etree import ElementTree
 from streamer import __version__
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 from streamer.packager_node import PackagerNode
-from streamer.pipeline_configuration import PipelineConfig, ManifestFormat, StreamingMode
+from streamer.pipeline_configuration import PipelineConfig, ManifestFormat
+from streamer.m3u8_concater import MasterPlaylist, MediaPlaylist
 
 
 class PeriodConcatNode(ThreadedNodeBase):
@@ -130,9 +131,46 @@ class PeriodConcatNode(ThreadedNodeBase):
       # but it won't allow putting comments at the begining of the file.
       contents += ElementTree.tostring(element=concat_mpd, encoding='unicode')
       master_dash.write(contents)
-      
+  
   def _hls_concat(self) -> None:
-    """Concatenates multiple HLS playlists with #EXT-X-DISCONTINUITY."""
+    """Concatenates multiple HLS playlists using #EXT-X-DISCONTINUITY."""
     
-    import m3u8 # type: ignore
+    all_master_playlists: List[MasterPlaylist] = []
     
+    # This static method will extract a header from the master playlist file
+    # given and save it in MasterPlaylist.header that is used when writing 
+    # the final playlist to a file.
+    # This method will also call MediaPlaylist.save_header_from_file to assign
+    # the MediaPlaylist.header which is also a common header that will be used
+    # with all the media playlists when writing them to files.
+    MasterPlaylist.save_header_from_file(os.path.join(
+      self._packager_nodes[0].output_dir,
+      self._pipeline_config.hls_output))
+    
+    # Register the output_dir to the MediaPlaylist class.
+    # We need to register it before instantiating any MediaPlaylist object
+    # because we calculate the the relative path of the media segements
+    # in the __init__ method of MediaPlaylist.
+    MediaPlaylist.output_dir = self._output_dir
+    
+    for packager_node in self._packager_nodes:
+      
+      master_playlist = MasterPlaylist(file=os.path.join(
+        packager_node.output_dir, 
+        self._pipeline_config.hls_output))
+      
+      for media_playlist in master_playlist.media_playlists:
+        # Only add this master playlist if it has an #EXT-X-STREAM-INF tag
+        # this would escape the subtitles-only playlists.
+        if not media_playlist.stream_info.get('TYPE'):
+          all_master_playlists.append(master_playlist)
+          break
+      
+    
+    hls = MasterPlaylist.concat_master_playlists(all_master_playlists)
+    
+    hls.write(os.path.join(
+      self._output_dir,
+      self._pipeline_config.hls_output),
+      'Concatenated with https://github.com/google/shaka-streamer version {}'.format(__version__))
+  
