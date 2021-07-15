@@ -55,6 +55,7 @@ class MediaPlaylist:
     
     self.content = ''
     self.codec: Optional[Enum] = None
+    self.associate_inf: Optional[MediaPlaylist] = None
     
     if dir_name is None:
       # Do not read, The content will be added manually.
@@ -382,11 +383,15 @@ class MediaPlaylist:
     return concat_txt_playlists
   
   @staticmethod
-  def concat_aud(all_aud_playlists: List[List['MediaPlaylist']],
-                 durations: List[float]) -> List['MediaPlaylist']:
-    """Concatenates multiple audio playlists into one multi-period playlist for
-    different languages and codecs, since all the codecs will be present anyway,
-    we match the language then the number of channels."""
+  def concat_aud_common(all_aud_playlists: List[List['MediaPlaylist']]
+                        ) -> Dict[AudioCodec,
+                                  Dict[str,
+                                       Dict[int,
+                                            List[Optional['MediaPlaylist']]]]]:
+    """A common method that is used to divide the audio playlists into a structure
+    that is easy to porcess.
+    
+    This common method is used by concat_aud and concat_aud_only methods."""
     
     codecs: Set[AudioCodec] = set()
     langs: Set[str] = set()
@@ -454,6 +459,17 @@ class MediaPlaylist:
             if not division[codec][lang][sorted_channels[ch_ind]][i]:
               division[codec][lang][sorted_channels[ch_ind]][i] = division[
                 codec][lang][sorted_channels[ch_ind - 1]][i]
+  
+    return division
+  
+  @staticmethod
+  def concat_aud(all_aud_playlists: List[List['MediaPlaylist']],
+                 durations: List[float]) -> List['MediaPlaylist']:
+    """Concatenates multiple audio playlists into one multi-period playlist for
+    different languages and codecs, since all the codecs will be present anyway,
+    we match the language then the number of channels."""
+
+    division = MediaPlaylist.concat_aud_common(all_aud_playlists)
     
     concat_aud_playlists: List[MediaPlaylist] = []
     for codec, lang_channel_div in division.items():
@@ -580,12 +596,67 @@ class MediaPlaylist:
   @staticmethod
   def concat_aud_only(all_aud_playlists: List[List['MediaPlaylist']],
                       all_inf_playlists: List[List['MediaPlaylist']],
-                      duration: List[float]) -> List['MediaPlaylist']:
+                      durations: List[float]) -> List['MediaPlaylist']:
     """Concatenates audio only periods with other audio only periods."""
     
-    concat_aud_only_playlists: List['MediaPlaylist'] = []
+    # Pair audio media streams with their equivalent variant streams.
+    for aud_playlists, inf_playlists in zip(all_aud_playlists, all_inf_playlists):
+      for aud_playlist in aud_playlists:
+        for inf_playlist in inf_playlists:
+          if inf_playlist.stream_info['URI'] == aud_playlist.stream_info['URI']:
+            aud_playlist.associate_inf = inf_playlist
+            break
+    
+    division = MediaPlaylist.concat_aud_common(all_aud_playlists)
+    
+    concat_aud_only_playlists: List[MediaPlaylist] = []
+    for codec, lang_channel_div in division.items():
+      for lang, channel_div in lang_channel_div.items():
+        for channel, opt_aud_playlists in channel_div.items():
+          stream_info = MediaPlaylist._keep_similar_stream_info(
+            opt_aud_playlists)
+          # Put the language in case it was removed.
+          if lang != '"und"':
+            stream_info['LANGUAGE'] = lang
+          # Get a unique file name.
+          stream_info['NAME'], stream_info['URI'] = MediaPlaylist._next_unq_name()
+          # Get the max channels for this playlist.
+          stream_info['CHANNELS'] = MediaPlaylist._max_channels(opt_aud_playlists)
+          concat_aud_playlist = MediaPlaylist(stream_info)
+          stream_info = MediaPlaylist._keep_similar_stream_info(
+            [opt_aud_playlist.associate_inf
+             for opt_aud_playlist in opt_aud_playlists if opt_aud_playlist])
+          stream_info['URI'] = concat_aud_playlist.stream_info['URI']
+          # Get the peak and average bandwidth for this codec-resolution pair.
+          (stream_info['BANDWIDTH'],
+           stream_info['AVERAGE-BANDWIDTH']) = MediaPlaylist._get_bandwidth(
+             [opt_aud_playlist.associate_inf
+              for opt_aud_playlist in opt_aud_playlists if opt_aud_playlist],
+              all_inf_playlists, durations)
+          # Get the codecs for the associated stream-infs.
+          stream_info['CODECS'] = MediaPlaylist._get_codec(
+            [opt_aud_playlist.associate_inf
+             for opt_aud_playlist in opt_aud_playlists if opt_aud_playlist],
+            all_inf_playlists)
+          concat_inf_playlist = MediaPlaylist(stream_info)
+          # Set the target duration.
+          concat_aud_playlist.target_duration = MediaPlaylist._max_targer_dur(
+            opt_aud_playlists)
+          for i, opt_aud_playlist in enumerate(opt_aud_playlists):
+            if opt_aud_playlist:
+              concat_aud_playlist.content += opt_aud_playlist.content
+            else:
+              # We will get into here if there were no audio in this period.
+              durations[i]
+            # Add a discontinuity after each period.
+            concat_aud_playlist.content += '#EXT-X-DISCONTINUITY\n'
+          # The media and the inf stream will be exactly the same.
+          concat_inf_playlist.content = concat_aud_playlist.content
+          concat_aud_only_playlists.extend(
+            (concat_aud_playlist, concat_inf_playlist))
     
     return concat_aud_only_playlists
+    
 
 class MasterPlaylist:
   """A class representing a master playlist."""
