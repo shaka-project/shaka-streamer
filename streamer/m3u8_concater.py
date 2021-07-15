@@ -348,7 +348,8 @@ class MediaPlaylist:
       stream_info: Dict[str, str] = MediaPlaylist._keep_similar_stream_info(
         opt_txt_playlists)
       # Put the language in case it was removed.
-      stream_info['LANGUAGE'] = lang
+      if lang != '"und"':
+        stream_info['LANGUAGE'] = lang
       # Get a unique name and uri.
       stream_info['NAME'], stream_info['URI'] = MediaPlaylist._next_unq_name()
       concat_txt_playlist = MediaPlaylist(stream_info)
@@ -461,7 +462,8 @@ class MediaPlaylist:
           stream_info = MediaPlaylist._keep_similar_stream_info(
             opt_aud_playlists)
           # Put the language in case it was removed.
-          stream_info['LANGUAGE'] = lang
+          if lang != '"und"':
+            stream_info['LANGUAGE'] = lang
           # Get a unique file name.
           stream_info['NAME'], stream_info['URI'] = MediaPlaylist._next_unq_name()
           # Get the max channels for this playlist.
