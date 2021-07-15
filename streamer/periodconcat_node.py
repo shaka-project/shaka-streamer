@@ -16,6 +16,8 @@
 
 import os
 import re
+import time
+from streamer.output_stream import AudioOutputStream, VideoOutputStream
 from typing import List
 from xml.etree import ElementTree
 from streamer import __version__
@@ -39,6 +41,36 @@ class PeriodConcatNode(ThreadedNodeBase):
     self._pipeline_config = pipeline_config
     self._output_dir = output_dir
     self._packager_nodes: List[PackagerNode] = packager_nodes
+    
+    # know whether the first period has video and audio or not.
+    fp_has_vid, fp_has_aud = False, False
+    for output_stream in packager_nodes[0].output_streams:
+      if isinstance(output_stream, VideoOutputStream):
+        fp_has_vid = True
+      elif isinstance(output_stream, AudioOutputStream):
+        fp_has_aud = True
+    
+    for i, packager_node in enumerate(self._packager_nodes):
+      has_vid, has_aud = False, False
+      for output_stream in packager_node.output_streams:
+        if isinstance(output_stream, VideoOutputStream):
+          has_vid = True
+        elif isinstance(output_stream, AudioOutputStream):
+          has_aud = True
+      if has_vid != fp_has_vid or has_aud != fp_has_aud:
+        # Overwrite the start and the stop methods.
+        setattr(self, 'start', lambda: None)
+        setattr(self, 'stop', lambda _: None)
+        print("\nWARNING: Stopping period concatenation.")
+        print("Period#{}: For the period concatenation to be done successfully, "
+              "I need to have {}video and have {}audio.".format(i + 1,
+                                                            "" if fp_has_vid else "no ",
+                                                            "" if fp_has_aud else "no "))
+        print("\nBe sure that either all the periods have video or all do not, and all "
+              "the periods have audio or all do not, i.e. don't mix videoless periods "
+              "with other periods that have video.\n")
+        time.sleep(5)
+        break
   
   def _thread_single_pass(self) -> None:
     """Watches all the PackagerNode(s), if at least one of them is running it skips this
@@ -51,7 +83,9 @@ class PeriodConcatNode(ThreadedNodeBase):
       if status == ProcessStatus.Running:
         return
       elif status == ProcessStatus.Errored:
-        raise RuntimeError('Concatenation is stopped due to an error in PackagerNode#{}.'.format(i))
+        raise RuntimeError(
+          'Concatenation is stopped due '
+          'to an error in PackagerNode#{}.'.format(i + 1))
     
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
       self._dash_concat()
@@ -154,18 +188,8 @@ class PeriodConcatNode(ThreadedNodeBase):
     MediaPlaylist.output_dir = self._output_dir
     
     for packager_node in self._packager_nodes:
-      
-      master_playlist = MasterPlaylist(file=os.path.join(
-        packager_node.output_dir, 
-        self._pipeline_config.hls_output))
-      
-      for media_playlist in master_playlist.media_playlists:
-        # Only add this master playlist if it has an #EXT-X-STREAM-INF tag
-        # this would escape the subtitles-only playlists.
-        if not media_playlist.stream_info.get('TYPE'):
-          all_master_playlists.append(master_playlist)
-          break
-      
+      all_master_playlists.append(MasterPlaylist(file=os.path.join(
+        packager_node.output_dir, self._pipeline_config.hls_output)))
     
     hls = MasterPlaylist.concat_master_playlists(all_master_playlists)
     

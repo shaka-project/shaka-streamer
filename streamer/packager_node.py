@@ -65,14 +65,14 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     self._pipeline_config: PipelineConfig = pipeline_config
     self.output_dir: str = output_dir
     self._segment_dir: str = os.path.join(output_dir, pipeline_config.segment_folder)
-    self._output_streams: List[OutputStream] = output_streams
+    self.output_streams: List[OutputStream] = output_streams
 
   def start(self) -> None:
     args = [
         'packager',
     ]
 
-    args += [self._setup_stream(stream) for stream in self._output_streams]
+    args += [self._setup_stream(stream) for stream in self.output_streams]
 
     if self._pipeline_config.quiet:
       args += [
