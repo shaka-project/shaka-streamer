@@ -389,7 +389,7 @@ class MediaPlaylist:
                                        Dict[int,
                                             List[Optional['MediaPlaylist']]]]]:
     """A common method that is used to divide the audio playlists into a structure
-    that is easy to porcess.
+    that is easy to process.
     
     This common method is used by concat_aud and concat_aud_only methods."""
     
@@ -437,8 +437,8 @@ class MediaPlaylist:
             for channel in channels:
               division[codec][lang][channel][i] = division[codec][sub_lang][channel][i]
     
-    # Substitute for the lowest missing channel in the division map.
     sorted_channels = sorted(channels)
+    # Substitute for the lowest missing channel in the division map.
     for i in range(len(all_aud_playlists)):
       for codec in codecs:
         for lang in langs:
@@ -656,7 +656,6 @@ class MediaPlaylist:
             (concat_aud_playlist, concat_inf_playlist))
     
     return concat_aud_only_playlists
-    
 
 class MasterPlaylist:
   """A class representing a master playlist."""
@@ -733,7 +732,7 @@ class MasterPlaylist:
       line = master_playlist.readline()
       # Store each line in header until one of these tags is encountered.
       while line and not line.startswith(('#EXT-X-MEDIA', '#EXT-X-STREAM-INF')):
-          # lstrip() will convert '\n' -> '' but will keep non-empty lines unchanged.
+          # lstrip() will convert empty lines -> '' but will keep non-empty lines unchanged.
           MasterPlaylist.header += line.lstrip()
           line = master_playlist.readline()
       else:

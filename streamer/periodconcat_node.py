@@ -60,15 +60,18 @@ class PeriodConcatNode(ThreadedNodeBase):
       if has_vid != fp_has_vid or has_aud != fp_has_aud:
         # Overwrite the start and the stop methods.
         setattr(self, 'start', lambda: None)
-        setattr(self, 'stop', lambda _: None)
+        setattr(self, 'stop', lambda _=None: None)
         print("\nWARNING: Stopping period concatenation.")
-        print("Period#{}: For the period concatenation to be done successfully, "
-              "I need to have {}video and have {}audio.".format(i + 1,
-                                                            "" if fp_has_vid else "no ",
-                                                            "" if fp_has_aud else "no "))
-        print("\nBe sure that either all the periods have video or all do not, and all "
-              "the periods have audio or all do not, i.e. don't mix videoless periods "
-              "with other periods that have video.\n")
+        print("Period#{} has {}video and has {}audio while Period#1 "
+              "has {}video and has {}audio.".format(i + 1, 
+                                                    "" if has_vid else "no ",
+                                                    "" if has_aud else "no ",
+                                                    "" if fp_has_vid else "no ",
+                                                    "" if fp_has_aud else "no "))
+        print("\nHINT:\n\tBe sure that either all the periods have video or all do not,\n"
+              "\tand all the periods have audio or all do not, i.e. don't mix videoless\n"
+              "\tperiods with other periods that have video that is for the concatenation\n"
+              "\tto be performed successfully.\n")
         time.sleep(5)
         break
   
