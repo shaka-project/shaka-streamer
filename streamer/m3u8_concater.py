@@ -227,7 +227,7 @@ class MediaPlaylist:
                     ) -> str:
     """Returns the maximum channel count found in one of the given playlists."""
     
-    return _quote(str(max(media_playlist.channels  if media_playlist else 0 
+    return _quote(str(max(media_playlist.channels
                           for media_playlist in media_playlists)))
   
   @staticmethod
