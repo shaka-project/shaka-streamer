@@ -17,14 +17,14 @@
 import os
 import re
 import time
-from streamer.output_stream import AudioOutputStream, VideoOutputStream
 from typing import List
 from xml.etree import ElementTree
 from streamer import __version__
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, ManifestFormat
-from streamer.m3u8_concater import MasterPlaylist, MediaPlaylist
+from streamer.output_stream import AudioOutputStream, VideoOutputStream
+from streamer.m3u8_concater import HLSConcater
 
 
 class PeriodConcatNode(ThreadedNodeBase):
@@ -172,32 +172,21 @@ class PeriodConcatNode(ThreadedNodeBase):
   def _hls_concat(self) -> None:
     """Concatenates multiple HLS playlists using #EXT-X-DISCONTINUITY."""
     
-    all_master_playlists: List[MasterPlaylist] = []
-    
-    # This static method will extract a header from the master playlist file
-    # given and save it in MasterPlaylist.header that is used when writing 
-    # the final playlist to a file.
-    # This method will also call MediaPlaylist.save_header_from_file to assign
-    # the MediaPlaylist.header which is also a common header that will be used
-    # with all the media playlists when writing them to files.
-    MasterPlaylist.save_header_from_file(os.path.join(
-      self._packager_nodes[0].output_dir,
-      self._pipeline_config.hls_output))
-    
-    # Register the output_dir to the MediaPlaylist class.
-    # We need to register it before instantiating any MediaPlaylist object
-    # because we calculate the the relative path of the media segements
-    # in the __init__ method of MediaPlaylist.
-    MediaPlaylist.output_dir = self._output_dir
+    # Initialize the HLS concater with a sample Master HLS playlist and
+    # the output direcotry of the concatenated playlists.
+    hls_concater = HLSConcater(os.path.join(self._packager_nodes[0].output_dir,
+                                            self._pipeline_config.hls_output),
+                               self._output_dir)
     
     for packager_node in self._packager_nodes:
-      all_master_playlists.append(MasterPlaylist(file=os.path.join(
-        packager_node.output_dir, self._pipeline_config.hls_output)))
+      hls_concater.add(os.path.join(packager_node.output_dir,
+                                    self._pipeline_config.hls_output))
     
-    hls = MasterPlaylist.concat_master_playlists(all_master_playlists)
+    # Start the period concatenation.
+    hls_concater.concat()
     
-    hls.write(os.path.join(
-      self._output_dir,
-      self._pipeline_config.hls_output),
-      'Concatenated with https://github.com/google/shaka-streamer version {}'.format(__version__))
-  
+    # Write the concatenated playlists in the output directory passed while
+    # constructing a concater instance.
+    hls_concater.write(self._pipeline_config.hls_output,
+                       'Concatenated with https://github.com/google/shaka-streamer'
+                       ' version {}'.format(__version__))
