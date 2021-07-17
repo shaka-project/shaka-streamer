@@ -418,6 +418,7 @@ class MediaPlaylist:
               if division[codec][lang][sub_channel][i]:
                 division[codec][lang][sorted_channels[0]][i] = division[
                   codec][lang][sub_channel][i]
+                break
           # This assertion verifies the cast done below, if we are sure that all the
           # lower channels are not None, so the higher channels won't be None too.
           assert division[codec][lang][sorted_channels[0]][i] is not None
