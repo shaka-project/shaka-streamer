@@ -314,8 +314,7 @@ class MediaPlaylist:
       for lang in langs:
         if not division[lang][i]:
           division[lang][i] = division[MediaPlaylist._fit_missing_lang(
-            _non_nones([division[lg][i]
-                        for lg in langs if division[lg][i]]), lang)][i]
+            _non_nones([division[lg][i] for lg in langs]), lang)][i]
     
     concat_txt_playlists: List[MediaPlaylist] = []
     for lang, opt_txt_playlists in division.items():
@@ -549,7 +548,7 @@ class MediaPlaylist:
     
     # Get all possible video codecs. We should not use the codecs that are present
     # in the pipeline config, because for some codecs we might have given the packager
-    # argument 'dash_only'.
+    # the 'dash_only' flag.
     codecs: Set[VideoCodec] = set()
     # Get all the available resolutions.
     resolutions: Set[VideoResolution] = set()
@@ -710,7 +709,7 @@ class MasterPlaylist:
     all_aud_playlists: List[List['MediaPlaylist']] = []
     all_inf_playlists: List[List['MediaPlaylist']] = []
     # The durations will be used to insert a gap in subtitles playlists when
-    # there is no applicable media to insert, Will also be used to calculate
+    # there is no applicable media to insert. Will also be used to calculate
     # the average bandwidth.
     durations: List[float] = []
     
