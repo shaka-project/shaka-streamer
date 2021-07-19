@@ -94,10 +94,10 @@ class MediaPlaylist:
           self.target_duration = int(line[len('#EXT-X-TARGETDURATION:'):])
         else:
           # Store lines that didn't match one of the above cases.
-          # Like ENCRYPTIONKEYS, DISCONTINUITIES, COMMENTS, etc....
+          # Like ENCRYPTIONKEYS, DISCONTINUITIES, COMMENTS, etc... .
           self.content += line
         line = media_playlist.readline()
-    self._set_codec_res_channels(self.content)
+    self._set_codec_res_channels()
   
   def write(self, dir_name: str) -> None:
     with open(os.path.join(
@@ -119,22 +119,22 @@ class MediaPlaylist:
           MediaPlaylist.header += line
         line = media_playlist.readline()
   
-  def _set_codec_res_channels(self, content: str) -> None:
+  def _set_codec_res_channels(self) -> None:
     """Get the audio and video codecs from file names, this will be used for the
     codec matching process in the concater, but the codecs that will be written in
     the final concated files will be the codecs from stream_info dictionary."""
     
     # We can't depend on the stream_info['CODECS'] to get the codecs from because 
-    # this is only present for STREAM-INF as per Shaka-Packager's output this makes 
-    # it harder to get codecs for audio segments. Also if we try to get the audio
-    # codecs from one of the #EXT-X-STREAM-INF tags we will have to matche these 
-    # codecs with each stream, for example a codec attribute might be like 
-    # CODECS="avc1,ac-3,mp4a,opus", the video codec is put first then the audio codecs
-    # are put in lexicographical order, which isn't nesseccary the same order of 
+    # this is only present for STREAM-INF, this makes it harder to get codecs for
+    # audio segments. Also if we try to get the audio codecs from one of the 
+    # #EXT-X-STREAM-INF tags we will have to matche these codecs with each stream,
+    # for example a codec attribute might be like CODECS="avc1,ac-3,mp4a,opus",
+    # the video codec is put first then the audio codecs are put in 
+    # lexicographical order(by observation), which isn't nesseccary the same order of 
     # #EXT-X-MEDIA in the master playlist, thus there is no solid baseground for 
     # matching the codecs using the information in the master playlist.
     
-    lines = content.split('\n')
+    lines = self.content.split('\n')
     for i in range(len(lines)):
       # Don't use #EXT-X-MAP to get the codec, because HLS specs says
       # it is an optional tag.
@@ -169,7 +169,9 @@ class MediaPlaylist:
   def _keep_similar_stream_info(media_playlists: List['MediaPlaylist']
                                 ) -> Dict[str, str]:
     """A helper method, used to keep only the similar stream_info values and pop
-    out the values that are different between multiple streams."""
+    out the values that are different between multiple streams.
+    
+    A non-empty list must be passed for the `media_playlist` argument."""
     
     # Get an arbitrary stream info.
     stream_info = media_playlists[0].stream_info.copy()
@@ -189,16 +191,15 @@ class MediaPlaylist:
   def _get_bandwidth(inf_playlists: List['MediaPlaylist'],
                      durations: List[float]) -> Tuple[str, str]:
     """A helper method to get the bandwidth and average bandwidth for INF-STEAMs.
-    BANDWIDTH = max(BANDWIDTHIS)
-    AVERAGE-BANDWIDTH = sum(AVERAGE-BANDWIDTHS*DURATIONS)/sum(DURATIONS)"""
+    BANDWIDTH = max(BANDWIDTHIs)
+    AVERAGE-BANDWIDTH = sum(AVERAGE-BANDWIDTHs*DURATIONs)/sum(DURATIONs)"""
     
-    band, avgband, tot_dur = 0, 0.0, 0.0
+    band, avgband = 0, 0.0
     for i, inf_playlist in enumerate(inf_playlists):
       band = max(int(inf_playlist.stream_info['BANDWIDTH']), band)
       avgband += int(inf_playlist.stream_info['AVERAGE-BANDWIDTH']) * durations[i]
-      tot_dur += durations[i]
     
-    return str(band), str(math.ceil(avgband/tot_dur))
+    return str(band), str(math.ceil(avgband/sum(durations)))
   
   @staticmethod
   def _get_codec(inf_playlists: List['MediaPlaylist']) -> str:
@@ -245,7 +246,8 @@ class MediaPlaylist:
     Returns the argument lang only if all the variants are None."""
     
     if not variants:
-      # In case all the sibling periods had no subtitles.
+      # This handles the case when all the sibling playlists have
+      # no subtitles either.
       return lang
     
     best_fit: str = _unquote(variants[0].stream_info.get('LANGUAGE', '"und"'))
@@ -257,9 +259,9 @@ class MediaPlaylist:
       cand_splt = candidate.split('-', 1)
       cand_base, cand_is_reg = cand_splt[0], len(cand_splt) > 1
       # Only kick the previous best fit out when: the base of the candidate 
-      # is the same as the base of the original language, and (either the
-      # base of the best fit is not the same as the base of the origianl 
-      # language, or the candidate is a regional variant).
+      # is the same as the base of the original language, and (the base of 
+      # the best fit is not the same as the base of the origianl language,
+      # or the candidate is a regional variant).
       if lang_base == cand_base:
         if lang_base != bsft_base or cand_is_reg:
           best_fit = candidate
@@ -279,8 +281,9 @@ class MediaPlaylist:
     number of langauges found, and the number of periods (discontinuities) in each playlist
     is `len(all_txt_playlists)`.
     
-    When no subtitles are there for a specific langauge for a specific period, we add
-    a shaka-streamer text says 'no subtitles' as a filler for this period's duration.
+    When no subtitles are there for a specific langauge for a specific period, we
+    try to substitue for it with other languages, when no substitution is possible, 
+    we insert some text saying 'no subtitles' as a filler for this period's duration.
     
     All the language un-annotated streams for each period gets concatenated together."""
     
@@ -311,7 +314,8 @@ class MediaPlaylist:
       for lang in langs:
         if not division[lang][i]:
           division[lang][i] = division[MediaPlaylist._fit_missing_lang(
-            _non_nones([division[lg][i] for lg in langs]), lang)][i]
+            _non_nones([division[lg][i]
+                        for lg in langs if division[lg][i]]), lang)][i]
     
     concat_txt_playlists: List[MediaPlaylist] = []
     for lang, opt_txt_playlists in division.items():
@@ -325,9 +329,8 @@ class MediaPlaylist:
       concat_txt_playlist = MediaPlaylist(stream_info)
       # Set the target duration of the concated playlist to the max of 
       # all children playlists.
-      concat_txt_playlist.target_duration = max(
-        txt_playlist.target_duration for txt_playlist in _non_nones(
-          opt_txt_playlists))
+      concat_txt_playlist.target_duration = MediaPlaylist._max_targer_dur(
+        _non_nones(opt_txt_playlists))
       for i, opt_txt_playlist in enumerate(opt_txt_playlists):
         if opt_txt_playlist:
           # If a playlist is there, append it.
@@ -361,8 +364,9 @@ class MediaPlaylist:
     """A common method that is used to divide the audio playlists into a structure
     that is easy to process.
     
-    This common method is used by concat_aud and concat_aud_only methods."""
+    This common method is used by `concat_aud` and `concat_aud_only` methods."""
     
+    # Extract all the codecs, languages, and channel counts.
     codecs: Set[AudioCodec] = set()
     langs: Set[str] = set()
     channels: Set[int] = set()
@@ -373,7 +377,7 @@ class MediaPlaylist:
         channels.add(aud_playlist.channels)
         langs.add(aud_playlist.stream_info.get('LANGUAGE', '"und"'))
     
-    # Create and initialize a division map.    
+    # Create and initialize a division map.
     division: Dict[AudioCodec,
                    Dict[str,
                         Dict[int,
@@ -401,10 +405,12 @@ class MediaPlaylist:
           # If all the channels are None for this language in period i,
           # then we are missing the language.
           if all(division[codec][lang][channel][i] is None for channel in channels):
+            # Get a substitute language.
             sub_lang = MediaPlaylist._fit_missing_lang(
               _non_nones([division[codec][lg][ch][i]
                           for lg in langs for ch in channels]), lang)
             for channel in channels:
+              # Replace the missing language with the substitute.
               division[codec][lang][channel][i] = division[codec][sub_lang][channel][i]
     
     sorted_channels = sorted(channels)
@@ -428,7 +434,7 @@ class MediaPlaylist:
       for codec in codecs:
         for lang in langs:
           for ch_ind in range(1, len(sorted_channels)):
-            # If None was found for this channel layout, use the one just before it.
+            # If None was found for this channel count, use the one just before it.
             if division[codec][lang][sorted_channels[ch_ind]][i] is None:
               division[codec][lang][sorted_channels[ch_ind]][i] = division[
                 codec][lang][sorted_channels[ch_ind - 1]][i]
@@ -444,8 +450,7 @@ class MediaPlaylist:
   def concat_aud(all_aud_playlists: List[List['MediaPlaylist']]
                  ) -> List['MediaPlaylist']:
     """Concatenates multiple audio playlists into one multi-period playlist for
-    different languages and codecs, since all the codecs will be present anyway,
-    we match the language then the number of channels."""
+    different languages and codecs."""
 
     division = MediaPlaylist.concat_aud_common(all_aud_playlists)
     
@@ -480,11 +485,12 @@ class MediaPlaylist:
                       durations: List[float]) -> List['MediaPlaylist']:
     """Concatenates audio only periods with other audio only periods."""
     
-    # Pair audio media streams with their equivalent variant streams.
+    # Pair audio media streams with their equivalent variant streams to
+    # retrieve them back later.
     pair: Dict[MediaPlaylist, MediaPlaylist] = {}
     for aud_playlists, inf_playlists in zip(all_aud_playlists, all_inf_playlists):
       for aud_playlist in aud_playlists:
-        # Just search for it, as we don't know a specific order.
+        # Search for the matching stream-inf.
         for inf_playlist in inf_playlists:
           if inf_playlist.stream_info['URI'] == aud_playlist.stream_info['URI']:
             pair[aud_playlist] = inf_playlist
@@ -521,12 +527,12 @@ class MediaPlaylist:
           # Set the target duration.
           concat_aud_playlist.target_duration = MediaPlaylist._max_targer_dur(
             aud_playlists)
-          concat_inf_playlist.target_duration = concat_aud_playlist.target_duration
           for aud_playlist in aud_playlists:
             concat_aud_playlist.content += aud_playlist.content
             # Add a discontinuity after each period.
             concat_aud_playlist.content += '#EXT-X-DISCONTINUITY\n'
           # The media and the inf stream will be exactly the same.
+          concat_inf_playlist.target_duration = concat_aud_playlist.target_duration
           concat_inf_playlist.content = concat_aud_playlist.content
           concat_aud_only_playlists.extend(
             (concat_aud_playlist, concat_inf_playlist))
@@ -542,23 +548,18 @@ class MediaPlaylist:
     resolution was not available."""
     
     # Get all possible video codecs. We should not use the codecs that are present
-    # in the pipeline config, because for some codecs we might want it 'dash_only'.
+    # in the pipeline config, because for some codecs we might have given the packager
+    # argument 'dash_only'.
     codecs: Set[VideoCodec] = set()
     # Get all the available resolutions.
     resolutions: Set[VideoResolution] = set()
     for inf_playlists in all_inf_playlists:
-      if MediaPlaylist.inf_is_vid(inf_playlists):
-        for inf_playlist in inf_playlists:
-          assert isinstance(inf_playlist.codec, VideoCodec)
-          codecs.add(inf_playlist.codec)
-          resolutions.add(inf_playlist.resolution)
+      for inf_playlist in inf_playlists:
+        assert isinstance(inf_playlist.codec, VideoCodec)
+        codecs.add(inf_playlist.codec)
+        resolutions.add(inf_playlist.resolution)
     
-    # You can imagine this division map as a 3D volume. X axis for video codecs,
-    # Y axis for resolutions and on Z we have a list of periods.
-    # In any selection of (x, y) values we should have the same period(video)
-    # in some different video codec or/and resolution.
-    # we can have None for some period if it doesn't have a video, thus
-    # it is optional.
+    # Create and initialize a division map.
     division: Dict[VideoCodec,
                    Dict[VideoResolution,
                         List[MediaPlaylist]]] = {}
@@ -583,7 +584,7 @@ class MediaPlaylist:
         codec_division[codec].sort(key=lambda pl: pl.resolution)
         for i, resolution in enumerate(sorted(resolutions)):
           division[codec][resolution].append(
-            # Append the ith resolution if found, else, append the max available 
+            # Append the ith resolution if found, else, append the max available
             # resolution.
             codec_division[codec][min(i, len(codec_division[codec]) - 1)])
     
@@ -598,8 +599,7 @@ class MediaPlaylist:
         (stream_info['BANDWIDTH'],
          stream_info['AVERAGE-BANDWIDTH']) = MediaPlaylist._get_bandwidth(
            inf_playlists, durations)
-        # Get all the codecs that will be inside the new variant
-        # (all the codecs in the children periods).
+        # Get all the codecs that will be inside the new variant.
         stream_info['CODECS'] = MediaPlaylist._get_codec(inf_playlists)
         concat_vid_playlist = MediaPlaylist(stream_info)
         concat_vid_playlist.target_duration = MediaPlaylist._max_targer_dur(
@@ -629,7 +629,7 @@ class MasterPlaylist:
     
     if `file` is None, an empty MasterPlaylist object is returned."""
     
-    self.media_playlists: List[MediaPlaylist] = []
+    self.playlists: List[MediaPlaylist] = []
     self.duration = 0.0
     
     if file is None:
@@ -642,15 +642,15 @@ class MasterPlaylist:
       while line:
         if line.startswith('#EXT-X-MEDIA'):
           stream_info = _search_attributes(line)
-          self.media_playlists.append(MediaPlaylist(stream_info, dir_name))
+          self.playlists.append(MediaPlaylist(stream_info, dir_name))
         elif line.startswith('#EXT-X-STREAM-INF'):
           stream_info = _search_attributes(line)
           # Quote the URI to keep consistent, as the URIs in EXT-X-MEDIA are quoted too.
           stream_info['URI'] = _quote(master_playlist.readline().strip())
-          self.media_playlists.append(MediaPlaylist(stream_info, dir_name))
+          self.playlists.append(MediaPlaylist(stream_info, dir_name))
         line = master_playlist.readline()
       # Get the master playlist duration from an arbitrary stream.
-      self.duration = self.media_playlists[-1].duration
+      self.duration = self.playlists[-1].duration
   
   def write(self, file: str, comment: str) -> None:
     """Writes the master playlist and the nested media playlists in 
@@ -661,7 +661,7 @@ class MasterPlaylist:
       content = MasterPlaylist.header
       content += comment
       # Write #EXT-X-MEDIA playlists first.
-      for media_playlist in self.media_playlists:
+      for media_playlist in self.playlists:
         if media_playlist.stream_info.get('TYPE'):
           media_playlist.write(dir_name)
           content += '#EXT-X-MEDIA:' + ','.join(
@@ -669,9 +669,10 @@ class MasterPlaylist:
              for key, value in media_playlist.stream_info.items()]) + '\n'
       content += '\n'
       # Then write #EXT-X-STREAM-INF playlists.
-      for media_playlist in self.media_playlists:
-        if not media_playlist.stream_info.get('TYPE'):
+      for media_playlist in self.playlists:
+        if media_playlist.stream_info.get('TYPE') is None:
           media_playlist.write(dir_name)
+          # Pop out the URI, we don't write the URI in stream-infs.
           uri = _unquote(media_playlist.stream_info.pop('URI'))
           content += '#EXT-X-STREAM-INF:' + ','.join(
             [key + '=' + value
@@ -708,9 +709,9 @@ class MasterPlaylist:
     all_txt_playlists: List[List['MediaPlaylist']] = []
     all_aud_playlists: List[List['MediaPlaylist']] = []
     all_inf_playlists: List[List['MediaPlaylist']] = []
-    # The durations will be used to insert a gap in media playlists when
-    # there is no applicable media to insert, like when there is no subtitles
-    # for a particular period or when there is no frensh audio for another.
+    # The durations will be used to insert a gap in subtitles playlists when
+    # there is no applicable media to insert, Will also be used to calculate
+    # the average bandwidth.
     durations: List[float] = []
     
     for master_playlist in master_playlists:
@@ -719,7 +720,7 @@ class MasterPlaylist:
       aud_playlists: List['MediaPlaylist'] = []
       inf_playlists: List['MediaPlaylist'] = []
       
-      for media_playlist in master_playlist.media_playlists:
+      for media_playlist in master_playlist.playlists:
         stream_type = media_playlist.stream_info.get('TYPE', 'STREAM-INF')
         if stream_type == 'SUBTITLES':
           txt_playlists.append(media_playlist)
@@ -736,7 +737,7 @@ class MasterPlaylist:
       durations.append(master_playlist.duration)
     
     master_hls = MasterPlaylist()
-    master_hls.media_playlists.extend(
+    master_hls.playlists.extend(
       MediaPlaylist.concat_sub(all_txt_playlists, durations))
     
     if all(not MediaPlaylist.inf_is_vid(inf_pl) for inf_pl in all_inf_playlists):
@@ -744,15 +745,15 @@ class MasterPlaylist:
       # once in a #EXT-X-MEDIA tag and another time in a #EXT-X-STREAM-INF tag.
       # If the user has an audio-only content, the concatenation will go a little
       # bit different to produce the desired output.
-      master_hls.media_playlists.extend(
+      master_hls.playlists.extend(
         MediaPlaylist.concat_aud_only(
           all_aud_playlists,
           all_inf_playlists,
           durations))
     else:
-      master_hls.media_playlists.extend(
+      master_hls.playlists.extend(
         MediaPlaylist.concat_aud(all_aud_playlists))
-      master_hls.media_playlists.extend(
+      master_hls.playlists.extend(
         MediaPlaylist.concat_vid(all_inf_playlists, durations))
     
     return master_hls
@@ -773,15 +774,16 @@ class HLSConcater:
     # Will be used when writing the concated playlists.
     self.output_dir = output_dir
     self.all_master_playlists: List[MasterPlaylist] = []
+    self._concated_hls = MasterPlaylist()
     
+  def add(self, master_playlist_path: str) -> None:
+    
+    self.all_master_playlists.append(MasterPlaylist(master_playlist_path))
+  
   def concat(self) -> None:
     
     self._concated_hls = MasterPlaylist.concat_master_playlists(
       self.all_master_playlists)
-  
-  def add(self, master_playlist_path: str) -> None:
-    
-    self.all_master_playlists.append(MasterPlaylist(master_playlist_path))
   
   def write(self,concated_file_name: str ,comment: str = ''):
     
@@ -810,15 +812,14 @@ def _search_attributes(line: str) -> Dict[str, str]:
   return attributes
 
 def _quote(string: str) -> str:
-  """Puts a string in quotes, opposite of _unquote()."""
+  """Puts a string in double quotes, opposite of _unquote()."""
   
   return '"' + string + '"'
 
 def _unquote(string: str) -> str:
-  """A wrapper around eval() to provide type annotations.
-  Should be used to unquote quoted strings only, otherwise it's not safe."""
+  """Removes the double quotes that surround a string."""
   
-  return eval(string)
+  return string[1:-1]
 
 def _codec_resolution_channels_regex(filename: str) -> Tuple[str, str]:
   """Gets the codec name and (resolution name or channel count) from a file name,
