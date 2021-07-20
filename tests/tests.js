@@ -130,8 +130,9 @@ describe('Shaka Streamer', () => {
   mapTests(dashManifestUrl, '(dash)');
 
   // The player doesn't have any framerate or other metadata from an HLS
-  // manifest that would let us detect our filters, so only test this in DASH.
+  // manifest that would let us detect our filters, so only test these in DASH.
   filterTests(dashManifestUrl, '(dash)');
+  outputFramerateTests(dashManifestUrl, '(dash)');
 
   // TODO: Add tests for interlaced video.  We need interlaced source material
   // for this.
@@ -390,6 +391,48 @@ function resolutionTests(manifestUrl, format) {
   });
 }
 
+function outputFramerateTests(manifestUrl, format) {
+  it('has output framerate not exceeding configured maximum ' + format,
+      async () => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
+          'media_type': 'video',
+          'resolution': 'very_small',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ]
+    };
+    const bitrateConfigDict = {
+      video_resolutions: {
+        very_small: {
+          max_width: 256,
+          max_height: 144,
+          max_frame_rate: 25,
+          bitrates: {
+            h264: '108k'
+          }
+        }
+      }
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': [
+        'very_small'
+      ]
+    };
+
+    await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
+    await player.load(manifestUrl);
+
+    const trackList = player.getVariantTracks();
+    expect(trackList[0].frameRate).toBe(25);
+
+  });
+}
+
 function liveTests(manifestUrl, format) {
   it('has a live streaming mode ' + format, async () => {
     const inputConfigDict = {
@@ -560,6 +603,40 @@ function drmTests(manifestUrl, format) {
 }
 
 function codecTests(manifestUrl, format) {
+  // Returns the audio codecs and video codecs, in that order.
+  // Will not fail due to a lack of browser support for any codec.
+  async function getAudioAndVideoCodecs(manifestUrl) {
+    // In case the browser can't play it, check the manifest early in the
+    // loading of the content.  We should at least be able to check the tracks
+    // before they are filtered out.
+    let codecs = null;
+    player.addEventListener('manifestparsed', () => {
+      const trackList = player.getVariantTracks();
+      const audioCodecList = trackList.map(track => track.audioCodec)
+          .filter((x) => x != null);
+      const videoCodecList = trackList.map(track => track.videoCodec)
+          .filter((x) => x != null);
+      codecs = audioCodecList.concat(videoCodecList);
+    });
+
+    try {
+      await player.load(manifestUrl);
+    } catch (error) {
+      // It's fine if the browser can't play any given codec.
+      // Most browsers won't play HEVC, for example, as of 2021-06-08.
+      // Any other error should be propagated up and fail the test.
+      if (error.code != shaka.util.Error.Code.CONTENT_UNSUPPORTED_BY_BROWSER) {
+        throw error;
+      }
+    }
+
+    // Ensure that our event handler fired.  If not, fail the test.
+    if (codecs == null) {
+      throw new Error('manifestparsed event never fired!');
+    }
+    return codecs;
+  }
+
   it('has output codecs matching the codecs in config ' + format, async () => {
     const inputConfigDict = {
       'inputs': [
@@ -584,13 +661,9 @@ function codecTests(manifestUrl, format) {
       'video_codecs': ['h264'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
-    await player.load(manifestUrl);
 
-    const trackList = player.getVariantTracks();
-    const videoCodecList = trackList.map(track => track.videoCodec);
-    const audioCodecList = trackList.map(track => track.audioCodec);
-    expect(videoCodecList).toEqual(['avc1.4d400c']);
-    expect(audioCodecList).toEqual(['mp4a.40.2']);
+    const codecList = await getAudioAndVideoCodecs(manifestUrl);
+    expect(codecList).toEqual(['mp4a.40.2', 'avc1.4d400c']);
   });
 
   it('supports AV1 ' + format, async () => {
@@ -610,12 +683,62 @@ function codecTests(manifestUrl, format) {
       'video_codecs': ['av1'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
+
+    const codecList = await getAudioAndVideoCodecs(manifestUrl);
+    expect(codecList).toEqual(['av01.0.00M.08']);
+  });
+
+  it('supports HEVC ' + format, async () => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': ['144p'],
+      'video_codecs': ['hevc'],
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+
+    let codecList = await getAudioAndVideoCodecs(manifestUrl);
+    // In HLS, we get "hvc1", but in DASH, it's "hev1".  Accept both.
+    codecList = codecList.map((x) => x.replace('hvc1', 'hev1'));
+    expect(codecList).toEqual(['hev1.1.6.L60.90']);
+  });
+
+  it('appropriately filters WebM formats ' + format, async () => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'audio',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': [],
+      'audio_codecs': ['aac', 'opus'],
+    };
+    await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
 
     const trackList = player.getVariantTracks();
-    const videoCodecList = trackList.map(track => track.videoCodec);
-    expect(videoCodecList).toEqual(['av01.0.00M.08']);
-  });
+    const audioCodecList = trackList.map(track => track.audioCodec);
+    if (manifestUrl == hlsManifestUrl) {
+      expect(audioCodecList).not.toContain('opus');
+    } else if (manifestUrl == dashManifestUrl) {
+      expect(audioCodecList).toContain('opus');
+    } 
+  })
 }
 
 function autoDetectionTests(manifestUrl) {

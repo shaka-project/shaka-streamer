@@ -201,6 +201,9 @@ class TranscoderNode(PolitelyWaitOnFinish):
     if input.is_interlaced:
       filters.append('pp=fd')
       args.extend(['-r', str(input.frame_rate)])
+    
+    if stream.resolution.max_frame_rate < input.frame_rate:
+       args.extend(['-r', str(stream.resolution.max_frame_rate)])
 
     filters.extend(input.filters)
 
@@ -224,7 +227,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
     # https://github.com/google/shaka-streamer/issues/36
     filters.append('setsar=1:1')
 
-    if stream.codec == VideoCodec.H264:
+    if stream.codec in {VideoCodec.H264, VideoCodec.HEVC}:
       # These presets are specifically recognized by the software encoder.
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
@@ -248,15 +251,20 @@ class TranscoderNode(PolitelyWaitOnFinish):
         profile = 'main'
 
       args += [
-          # The only format supported by QT/Apple.
-          '-pix_fmt', 'yuv420p',
-          # Require a closed GOP.  Some decoders don't support open GOPs.
-          '-flags', '+cgop',
           # Set the H264 profile.  Without this, the default would be "main".
           # Note that this gets overridden to "baseline" in live streams by the
           # "-preset ultrafast" option, presumably because the baseline encoder
           # is faster.
           '-profile:v', profile,
+      ]
+      
+    if stream.codec.get_base_codec() in {VideoCodec.H264, VideoCodec.HEVC}:
+      args += [
+          # The only format supported by QT/Apple.
+          '-pix_fmt', 'yuv420p',
+          # Require a closed GOP.  Some decoders don't support open GOPs.
+          '-flags', '+cgop',
+         
       ]
 
     elif stream.codec.get_base_codec() == VideoCodec.VP9:
@@ -267,6 +275,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
           # resources and speeds up encoding.  This is still not the default
           # setting as of libvpx v1.7.
           '-row-mt', '1',
+          # speeds up encoding, balancing against quality
+          '-speed', '2',
       ]
     elif stream.codec == VideoCodec.AV1:
       args += [
