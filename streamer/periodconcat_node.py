@@ -16,12 +16,15 @@
 
 import os
 import re
+import time
 from typing import List
 from xml.etree import ElementTree
 from streamer import __version__
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 from streamer.packager_node import PackagerNode
-from streamer.pipeline_configuration import PipelineConfig, ManifestFormat, StreamingMode
+from streamer.pipeline_configuration import PipelineConfig, ManifestFormat
+from streamer.output_stream import AudioOutputStream, VideoOutputStream
+from streamer.m3u8_concater import HLSConcater
 
 
 class PeriodConcatNode(ThreadedNodeBase):
@@ -38,6 +41,39 @@ class PeriodConcatNode(ThreadedNodeBase):
     self._pipeline_config = pipeline_config
     self._output_dir = output_dir
     self._packager_nodes: List[PackagerNode] = packager_nodes
+    
+    # know whether the first period has video and audio or not.
+    fp_has_vid, fp_has_aud = False, False
+    for output_stream in packager_nodes[0].output_streams:
+      if isinstance(output_stream, VideoOutputStream):
+        fp_has_vid = True
+      elif isinstance(output_stream, AudioOutputStream):
+        fp_has_aud = True
+    
+    for i, packager_node in enumerate(self._packager_nodes):
+      has_vid, has_aud = False, False
+      for output_stream in packager_node.output_streams:
+        if isinstance(output_stream, VideoOutputStream):
+          has_vid = True
+        elif isinstance(output_stream, AudioOutputStream):
+          has_aud = True
+      if has_vid != fp_has_vid or has_aud != fp_has_aud:
+        # Overwrite the start and the stop methods.
+        setattr(self, 'start', lambda: None)
+        setattr(self, 'stop', lambda _=None: None)
+        print("\nWARNING: Stopping period concatenation.")
+        print("Period#{} has {}video and has {}audio while Period#1 "
+              "has {}video and has {}audio.".format(i + 1, 
+                                                    "" if has_vid else "no ",
+                                                    "" if has_aud else "no ",
+                                                    "" if fp_has_vid else "no ",
+                                                    "" if fp_has_aud else "no "))
+        print("\nHINT:\n\tBe sure that either all the periods have video or all do not,\n"
+              "\tand all the periods have audio or all do not, i.e. don't mix videoless\n"
+              "\tperiods with other periods that have video that is for the concatenation\n"
+              "\tto be performed successfully.\n")
+        time.sleep(5)
+        break
   
   def _thread_single_pass(self) -> None:
     """Watches all the PackagerNode(s), if at least one of them is running it skips this
@@ -50,7 +86,9 @@ class PeriodConcatNode(ThreadedNodeBase):
       if status == ProcessStatus.Running:
         return
       elif status == ProcessStatus.Errored:
-        raise RuntimeError('Concatenation is stopped due to an error in PackagerNode#{}.'.format(i))
+        raise RuntimeError(
+          'Concatenation is stopped due '
+          'to an error in PackagerNode#{}.'.format(i + 1))
     
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
       self._dash_concat()
@@ -130,9 +168,25 @@ class PeriodConcatNode(ThreadedNodeBase):
       # but it won't allow putting comments at the begining of the file.
       contents += ElementTree.tostring(element=concat_mpd, encoding='unicode')
       master_dash.write(contents)
-      
+  
   def _hls_concat(self) -> None:
-    """Concatenates multiple HLS playlists with #EXT-X-DISCONTINUITY."""
+    """Concatenates multiple HLS playlists using #EXT-X-DISCONTINUITY."""
     
-    import m3u8 # type: ignore
+    # Initialize the HLS concater with a sample Master HLS playlist and
+    # the output direcotry of the concatenated playlists.
+    hls_concater = HLSConcater(os.path.join(self._packager_nodes[0].output_dir,
+                                            self._pipeline_config.hls_output),
+                               self._output_dir)
     
+    for packager_node in self._packager_nodes:
+      hls_concater.add(os.path.join(packager_node.output_dir,
+                                    self._pipeline_config.hls_output))
+    
+    # Start the period concatenation.
+    hls_concater.concat()
+    
+    # Write the concatenated playlists in the output directory passed while
+    # constructing a concater instance.
+    hls_concater.write(self._pipeline_config.hls_output,
+                       'Concatenated with https://github.com/google/shaka-streamer'
+                       ' version {}'.format(__version__))
