@@ -41,6 +41,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     self._pipeline_config = pipeline_config
     self._output_dir = output_dir
     self._packager_nodes: List[PackagerNode] = packager_nodes
+    self._concat_will_fail = False
     
     # know whether the first period has video and audio or not.
     fp_has_vid, fp_has_aud = False, False
@@ -58,9 +59,7 @@ class PeriodConcatNode(ThreadedNodeBase):
         elif isinstance(output_stream, AudioOutputStream):
           has_aud = True
       if has_vid != fp_has_vid or has_aud != fp_has_aud:
-        # Overwrite the start and the stop methods.
-        setattr(self, 'start', lambda: None)
-        setattr(self, 'stop', lambda _=None: None)
+        self._concat_will_fail = True
         print("\nWARNING: Stopping period concatenation.")
         print("Period#{} has {}video and has {}audio while Period#1 "
               "has {}video and has {}audio.".format(i + 1, 
@@ -70,8 +69,8 @@ class PeriodConcatNode(ThreadedNodeBase):
                                                     "" if fp_has_aud else "no "))
         print("\nHINT:\n\tBe sure that either all the periods have video or all do not,\n"
               "\tand all the periods have audio or all do not, i.e. don't mix videoless\n"
-              "\tperiods with other periods that have video that is for the concatenation\n"
-              "\tto be performed successfully.\n")
+              "\tperiods with other periods that have video.\n"
+              "\tThis is necessary for the concatenation to be performed successfully.\n")
         time.sleep(5)
         break
   
@@ -80,6 +79,10 @@ class PeriodConcatNode(ThreadedNodeBase):
     _thread_single_pass, if all of them are finished, it starts period concatenation, if one of
     them is errored, it raises a RuntimeError.
     """
+    
+    if self._concat_will_fail:
+      self._status = ProcessStatus.Finished
+      return
     
     for i, packager_node in enumerate(self._packager_nodes):
       status = packager_node.check_status()
@@ -173,14 +176,15 @@ class PeriodConcatNode(ThreadedNodeBase):
     """Concatenates multiple HLS playlists using #EXT-X-DISCONTINUITY."""
     
     # Initialize the HLS concater with a sample Master HLS playlist and
-    # the output direcotry of the concatenated playlists.
-    hls_concater = HLSConcater(os.path.join(self._packager_nodes[0].output_dir,
-                                            self._pipeline_config.hls_output),
-                               self._output_dir)
+    # the output directory of the concatenated playlists.
+    first_hls_playlist = os.path.join(self._packager_nodes[0].output_dir,
+                                      self._pipeline_config.hls_output)
+    hls_concater = HLSConcater(first_hls_playlist, self._output_dir)
     
     for packager_node in self._packager_nodes:
-      hls_concater.add(os.path.join(packager_node.output_dir,
-                                    self._pipeline_config.hls_output))
+      hls_playlist = os.path.join(packager_node.output_dir,
+                                  self._pipeline_config.hls_output)
+      hls_concater.add(hls_playlist)
     
     # Start the period concatenation.
     hls_concater.concat()

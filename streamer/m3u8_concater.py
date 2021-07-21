@@ -771,24 +771,24 @@ class HLSConcater:
     # relative direcoty to each media segment.
     MediaPlaylist.output_dir = output_dir
     # Will be used when writing the concated playlists.
-    self.output_dir = output_dir
-    self.all_master_playlists: List[MasterPlaylist] = []
+    self._output_dir = output_dir
+    self._all_master_playlists: List[MasterPlaylist] = []
     self._concated_hls = MasterPlaylist()
     
   def add(self, master_playlist_path: str) -> None:
     
-    self.all_master_playlists.append(MasterPlaylist(master_playlist_path))
+    self._all_master_playlists.append(MasterPlaylist(master_playlist_path))
   
   def concat(self) -> None:
     
     self._concated_hls = MasterPlaylist.concat_master_playlists(
-      self.all_master_playlists)
+      self._all_master_playlists)
   
   def write(self,concated_file_name: str ,comment: str = ''):
     
     if comment:
       comment = '## ' + comment + '\n\n'
-    self._concated_hls.write(os.path.join(self.output_dir,
+    self._concated_hls.write(os.path.join(self._output_dir,
                                           concated_file_name), comment)
 
 def _search_attributes(line: str) -> Dict[str, str]:
