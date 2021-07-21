@@ -118,7 +118,14 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = [
+    'autolink.js',
+]
+
+# Add these files as script tags to the generated HTML.
+html_js_files = [
+    'autolink.js',
+]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
