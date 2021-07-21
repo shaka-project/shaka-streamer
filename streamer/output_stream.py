@@ -119,12 +119,12 @@ class VideoOutputStream(OutputStream):
       'resolution_name': self.resolution.get_key(),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
-      'codec': self.codec.get_base_codec().value,
+      'codec': self.codec.value,
     }
 
   def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
-    return self.resolution.bitrates[self.codec.get_base_codec()]
+    return self.resolution.bitrates[self.codec]
 
 
 class TextOutputStream(OutputStream):
