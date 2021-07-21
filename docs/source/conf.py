@@ -207,12 +207,13 @@ epub_exclude_files = ['search.html']
 # -- Extension configuration -------------------------------------------------
 
 # Default settings for autdoc.
-autodoc_default_flags = [
-  'members',           # Document members,
-  'undoc-members',     # including those with no docstring,
-  'inherited-members', # and inherited members.
-  'show-inheritance',  # Show details on inheritance.
-]
+autodoc_default_options = {
+  'members': True,            # Document members,
+  'undoc-members': True,      # including those with no docstring,
+  'inherited-members': True,  # and inherited members,
+  'member-order': 'bysource', # in source-code order,
+  'show-inheritance': True,   # and show details on inheritance.
+}
 
 # By default, put everything in the docs in the same order it appears in the
 # source.
@@ -265,10 +266,7 @@ def process_doc_nodes(app, doctree, fromdocname):
     # Find the ones that refer to "Field" objects.
     if 'streamer.configuration.Field' in str(node):
       # Get the name of the thing.
-      name = node['names'][0]
-      if name.startswith('streamer.configuration.Field'):
-        # Skip the Field object itself and all its members/attributes.
-        continue
+      name = node['ids'][0]
 
       # Find the node that contains the type text.
       annotation = get_first_child(node, sphinx.addnodes.desc_annotation)
