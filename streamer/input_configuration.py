@@ -146,6 +146,9 @@ class Input(configuration.Base):
   Otherwise, it will default to 'und' (undetermined).
   """
 
+  channels = configuration.Field(int).cast()
+  """The number of audio channels to encode."""
+
   start_time = configuration.Field(str).cast()
   """The start time of the slice of the input to use.
 
@@ -217,13 +220,17 @@ class Input(configuration.Base):
         self.resolution = autodetect.get_resolution(self)
       require_field('resolution')
 
-    if self.media_type == MediaType.AUDIO or self.media_type == MediaType.TEXT:
-      # Language is required for audio and text inputs.
-      # We will attempt to auto-detect this.
+    if self.media_type == MediaType.AUDIO:
       if self.language is None:
         self.language = autodetect.get_language(self) or 'und'
 
+      if self.channels is None:
+        self.channels = autodetect.get_channel_count(self)
+      require_field('channels')
+
     if self.media_type == MediaType.TEXT:
+      if self.language is None:
+        self.language = autodetect.get_language(self) or 'und'
       # Text streams are only supported in plain file inputs.
       if self.input_type != InputType.FILE:
         reason = 'text streams are not supported in input_type "{}"'.format(

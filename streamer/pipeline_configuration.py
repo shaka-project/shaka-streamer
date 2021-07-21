@@ -242,10 +242,6 @@ class PipelineConfig(configuration.Base):
   multiple inputs.
   """
 
-  # TODO(joeyparrish): Default to whatever is in the input.
-  channels = configuration.Field(int, default=2).cast()
-  """The number of audio channels to encode."""
-
   audio_codecs = configuration.Field(
       List[bitrate_configuration.AudioCodec],
       default=[bitrate_configuration.AudioCodec.AAC]).cast()

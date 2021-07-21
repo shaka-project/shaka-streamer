@@ -143,3 +143,9 @@ def get_resolution(input: Input) -> Optional[VideoResolutionName]:
 
   return None
 
+def get_channel_count(input: Input) -> Optional[int]:
+  """Returns the autodetected channel count of the input."""
+  channel_count_string = _probe(input, 'stream=channels')
+  if channel_count_string is None:
+    return None
+  return int(channel_count_string)

@@ -66,19 +66,14 @@ class AudioOutputStream(OutputStream):
   def __init__(self,
                pipe: str,
                input: Input,
-               codec: AudioCodec,
-               channels: int) -> None:
+               codec: AudioCodec) -> None:
 
     super().__init__(MediaType.AUDIO, pipe, input, codec)
     # Override the codec type and specify that it's an audio codec
     self.codec: AudioCodec = codec
+    self.channels = input.channels
 
-    # TODO: Make channels an input feature instead of an output feature
-    self.channels = channels
-
-    # Until we make channels an input feature, match this output feature to a
-    # specific channel layout.  Use the first one the output channels fit into.
-    self.layout = None
+    self.layout: Optional[AudioChannelLayout] = None
     for layout in AudioChannelLayout.sorted_values():
       if self.channels <= layout.max_channels:
         self.layout = layout

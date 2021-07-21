@@ -217,8 +217,7 @@ class ControllerNode(object):
         for audio_codec in self._pipeline_config.audio_codecs:
           outputs.append(AudioOutputStream(self._create_pipe(),
                                            input,
-                                           audio_codec,
-                                           self._pipeline_config.channels))
+                                           audio_codec))
 
       elif input.media_type == MediaType.VIDEO:
         for video_codec in self._pipeline_config.video_codecs:
