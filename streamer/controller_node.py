@@ -79,21 +79,24 @@ class ControllerNode(object):
     Returns:
       The path to the named pipe, as a string.
     """
-
-    # TODO(#8): mkfifo only works on Unix.  We would need a special case for a
-    # Windows port some day.
-
-    if not hasattr(os, 'mkfifo'):
-      raise RuntimeError('Platform not supported due to lack of mkfifo')
-
     # Since the tempfile module creates actual files, use uuid to generate a
     # filename, then call mkfifo to create the named pipe.
     unique_name = str(uuid.uuid4()) + suffix
-    path = os.path.join(self._temp_dir, unique_name)
-
-    readable_by_owner_only = 0o600  # Unix permission bits
-    os.mkfifo(path, mode=readable_by_owner_only)
-
+    
+    # For POSIX systems.
+    if os.name == 'posix':
+      path = os.path.join(self._temp_dir, unique_name)
+      readable_by_owner_only = 0o600  # Unix permission bits
+      os.mkfifo(path, mode=readable_by_owner_only) # type: ignore
+    
+    # New Technology, aka WindowsNT.
+    elif os.name == 'nt':
+      from streamer.winfifo import WinFIFO
+      path = '-shaka-' + unique_name
+      WinFIFO(path).start()
+    else:
+      raise RuntimeError('Platform not supported.')
+    
     return path
 
   def start(self, output_dir: str,

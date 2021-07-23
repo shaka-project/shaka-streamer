@@ -14,6 +14,7 @@
 
 """A module that runs an external command to generate media."""
 
+import os
 from . import node_base
 
 class ExternalCommandNode(node_base.NodeBase):
@@ -22,6 +23,11 @@ class ExternalCommandNode(node_base.NodeBase):
     super().__init__()
     self._command = command
     self._output_path = output_path
+    
+    if os.name == 'nt':
+      # An external command is a writer process.
+      from streamer.winfifo import WinFIFO
+      self._output_path = WinFIFO.WRITER_PREFIX + self._output_path
 
   def start(self):
     # This environment/shell variable must be used by the external command as

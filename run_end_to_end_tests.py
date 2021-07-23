@@ -125,7 +125,9 @@ def hlsStreamsReady(master_playlist_path):
     return False
 
   for playlist_path in playlist_list:
-    if playlist_path == master_playlist_path:
+    # Use os.path.samefile method instead of the == operator because
+    # this might be a windows machine.
+    if os.path.samefile(playlist_path, master_playlist_path):
       # Skip the master playlist
       continue
 
@@ -269,7 +271,7 @@ def main():
     return 1
 
   # Install test dependencies.
-  subprocess.check_call(['npm', 'install'])
+  subprocess.check_call(['npm', 'install'], shell=True)
 
   # Fetch streams used in tests.
   if not os.path.exists(TEST_DIR):
@@ -290,6 +292,7 @@ def main():
   for i in range(trials):
     # Start up karma.
     karma_args = [
+        'node',
         'node_modules/karma/bin/karma',
         'start',
         'tests/karma.conf.js',
@@ -306,7 +309,7 @@ def main():
           converted_string,
       ]
     # If the exit code was not 0, the tests in karma failed or crashed.
-    if subprocess.call(karma_args) != 0:
+    if subprocess.call(karma_args, shell=True) != 0:
       fails += 1
 
   print('\n\nNumber of failures:', fails, '\nNumber of trials:', trials)

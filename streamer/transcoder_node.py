@@ -14,14 +14,15 @@
 
 """A module that pushes input to ffmpeg to transcode into various formats."""
 
+import os
 import shlex
+from typing import List, Union
 
 from streamer.bitrate_configuration import AudioCodec, VideoCodec
 from streamer.input_configuration import Input, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
-from typing import List, Union
 
 class TranscoderNode(PolitelyWaitOnFinish):
 
@@ -141,7 +142,11 @@ class TranscoderNode(PolitelyWaitOnFinish):
           args += self._encode_text(output_stream, input)
 
         # The output pipe.
-        args += [output_stream.pipe]
+        pipe = output_stream.pipe
+        if os.name == 'nt':
+          from streamer.winfifo import WinFIFO
+          pipe = WinFIFO.WRITER_PREFIX + pipe
+        args += [pipe]
 
     env = {}
     if self._pipeline_config.debug_logs:

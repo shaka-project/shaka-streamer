@@ -120,10 +120,16 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         stdout=stdout)
 
   def _setup_stream(self, stream: OutputStream) -> str:
+
+    pipe = stream.pipe
+    if os.name == 'nt' and pipe:
+      from streamer.winfifo import WinFIFO
+      pipe = WinFIFO.READER_PREFIX + pipe
+
     dict = {
         # If pipe is None, this wasn't transcoded, so we take the input path
         # directly.
-        'in': stream.pipe or stream.input.name,
+        'in': pipe or stream.input.name,
         'stream': stream.type.value,
     }
 
