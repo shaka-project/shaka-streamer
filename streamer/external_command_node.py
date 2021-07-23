@@ -25,8 +25,8 @@ class ExternalCommandNode(node_base.NodeBase):
     self._output_path = output_path
     
     if os.name == 'nt':
-      # An external command is a writer process.
       from streamer.winfifo import WinFIFO
+      # An external command is a writer process.
       self._output_path = WinFIFO.WRITER_PREFIX + self._output_path
 
   def start(self):
