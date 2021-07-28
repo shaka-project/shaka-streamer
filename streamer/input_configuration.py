@@ -116,6 +116,10 @@ class Input(configuration.Base):
   For example, required for input_type of 'external_command'.
   """
 
+  channel_layout = configuration.Field(
+      bitrate_configuration.AudioChannelLayoutName).cast()
+  """The name of the input channel layout (stereo, surround, etc)."""
+
   track_num = configuration.Field(int, default=0).cast()
   """The track number of the input.
 
@@ -145,10 +149,6 @@ class Input(configuration.Base):
   With input_type set to 'file' or 'looped_file', this will be auto-detected.
   Otherwise, it will default to 'und' (undetermined).
   """
-
-  channel_layout = configuration.Field(
-    bitrate_configuration.AudioChannelLayoutName).cast()
-  """The number of audio channels in the input."""
 
   start_time = configuration.Field(str).cast()
   """The start time of the slice of the input to use.
