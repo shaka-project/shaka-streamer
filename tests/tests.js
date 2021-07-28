@@ -106,10 +106,10 @@ describe('Shaka Streamer', () => {
   vodTests(hlsManifestUrl, '(hls)');
   vodTests(dashManifestUrl, '(dash)');
 
-  channelsTests(hlsManifestUrl, 2, '(hls)');
-  channelsTests(dashManifestUrl, 2, '(dash)');
-  channelsTests(hlsManifestUrl, 6, '(hls)');
-  channelsTests(dashManifestUrl, 6, '(dash)');
+  channelsTests(hlsManifestUrl, ['stereo'], 2, '(hls)');
+  channelsTests(dashManifestUrl, ['stereo'], 2, '(dash)');
+  channelsTests(hlsManifestUrl, ['surround'], 6, '(hls)');
+  channelsTests(dashManifestUrl, ['surround'], 6, '(dash)');
 
   // The HLS manifest does not indicate the availability window, so only test
   // this in DASH.
@@ -163,6 +163,7 @@ function errorTests() {
   const minimalPipelineConfig = {
     streaming_mode: 'vod',
     resolutions: ['144p'],
+    channel_layouts: ['stereo']
   };
 
   it('fails when extra fields are present', async () => {
@@ -292,6 +293,7 @@ function errorTests() {
     const pipelineConfig = {
       streaming_mode: 'live',
       resolutions: [],
+      channel_layouts: [],
       segment_per_file: false,
     };
 
@@ -307,6 +309,7 @@ function errorTests() {
     const pipelineConfig = {
       streaming_mode: 'vod',
       resolutions: [],
+      channel_layouts: [],
       encryption: {
         enable: true,
         content_id: 'foo',
@@ -329,6 +332,7 @@ function errorTests() {
     const pipeline_config = {
       streaming_mode: 'vod',
       resolutions: [],
+      channel_layouts: [],
     };
 
     await expectAsync(startStreamer(inputConfig, pipeline_config))
@@ -343,6 +347,7 @@ function errorTests() {
     const pipeline_config = {
       streaming_mode: 'vod',
       resolutions: [],
+      channel_layouts: [],
     };
 
     await expectAsync(startStreamer(inputConfig, pipeline_config))
@@ -379,6 +384,7 @@ function resolutionTests(manifestUrl, format) {
         '240p',
         '144p',
       ],
+      'channel_layouts' : [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -421,7 +427,8 @@ function outputFramerateTests(manifestUrl, format) {
       'streaming_mode': 'vod',
       'resolutions': [
         'very_small'
-      ]
+      ],
+      'channel_layouts': [],
     };
 
     await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
@@ -447,6 +454,7 @@ function liveTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'live',
       'resolutions': ['144p'],
+      'channel_layouts': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -469,6 +477,7 @@ function drmTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'encryption': {
         // Enables encryption.
         'enable': true,
@@ -514,6 +523,7 @@ function drmTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'encryption': {
         // Enables encryption.
         'enable': true,
@@ -567,6 +577,7 @@ function drmTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'encryption': {
         // Enables encryption.
         'enable': true,
@@ -657,6 +668,7 @@ function codecTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
       'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };
@@ -680,6 +692,7 @@ function codecTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'video_codecs': ['av1'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -702,6 +715,7 @@ function codecTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'video_codecs': ['hevc'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -726,17 +740,17 @@ function codecTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': [],
+      'channel_layouts': ['stereo'],
       'audio_codecs': ['aac', 'opus'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
 
-    const trackList = player.getVariantTracks();
-    const audioCodecList = trackList.map(track => track.audioCodec);
+    let codecList = await getAudioAndVideoCodecs(manifestUrl)
     if (manifestUrl == hlsManifestUrl) {
-      expect(audioCodecList).not.toContain('opus');
+      expect(codecList).not.toContain('opus');
     } else if (manifestUrl == dashManifestUrl) {
-      expect(audioCodecList).toContain('opus');
+      expect(codecList).toContain('opus');
     } 
   })
 }
@@ -758,6 +772,7 @@ function autoDetectionTests(manifestUrl) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': [],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -786,6 +801,7 @@ function autoDetectionTests(manifestUrl) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
 
@@ -819,6 +835,7 @@ function autoDetectionTests(manifestUrl) {
         '1080p',
         '720p',
       ],
+      'channel_layouts': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
 
@@ -877,6 +894,7 @@ function autoDetectionTests(manifestUrl) {
         'big_enough',
         'much_bigger',
       ],
+      'channel_layouts': [],
     };
 
     await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
@@ -910,6 +928,7 @@ function languageTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': [],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -958,6 +977,7 @@ function textTracksTests(manifestUrl, format) {
       // Text inputs are currently only supported for VOD.
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -986,6 +1006,7 @@ function vodTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -993,8 +1014,8 @@ function vodTests(manifestUrl, format) {
   });
 }
 
-function channelsTests(manifestUrl, channels, format) {
-  it('outputs ' + channels + ' channels ' + format, async () => {
+function channelsTests(manifestUrl, channel_layouts, expected_channel_count, format) {
+  it('outputs ' + channel_layouts + ' channels ' + format, async () => {
     const inputConfigDict = {
       // List of inputs. Each one is a dictionary.
       'inputs': [
@@ -1010,13 +1031,13 @@ function channelsTests(manifestUrl, channels, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': [],
-      'channels': channels,
+      'channel_layouts': channel_layouts,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
     const trackList = player.getVariantTracks();
     expect(trackList.length).toBe(1);
-    expect(trackList[0].channelsCount).toBe(channels);
+    expect(trackList[0].channelsCount).toBe(expected_channel_count);
   });
 }
 
@@ -1034,6 +1055,7 @@ function availabilityTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'live',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'availability_window': 500,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -1062,6 +1084,7 @@ function delayTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'live',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'presentation_delay': 100,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -1085,6 +1108,7 @@ function updateTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'live',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'update_period': 42,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
@@ -1115,6 +1139,7 @@ function durationTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -1150,6 +1175,7 @@ function mapTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -1193,6 +1219,7 @@ function filterTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -1219,6 +1246,7 @@ function customBitrateTests() {
     return {
       streaming_mode: 'vod',
       resolutions: resolutions,
+      channel_layouts: [],
     };
   }
 
@@ -1321,6 +1349,7 @@ function muxedTextTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
       'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };
@@ -1357,6 +1386,7 @@ function multiPeriodTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': [],
       'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };

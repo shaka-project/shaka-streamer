@@ -146,8 +146,9 @@ class Input(configuration.Base):
   Otherwise, it will default to 'und' (undetermined).
   """
 
-  channels = configuration.Field(int).cast()
-  """The number of audio channels to encode."""
+  channel_layout = configuration.Field(
+    bitrate_configuration.AudioChannelLayoutName).cast()
+  """The number of audio channels in the input."""
 
   start_time = configuration.Field(str).cast()
   """The start time of the slice of the input to use.
@@ -224,9 +225,9 @@ class Input(configuration.Base):
       if self.language is None:
         self.language = autodetect.get_language(self) or 'und'
 
-      if self.channels is None:
-        self.channels = autodetect.get_channel_count(self)
-      require_field('channels')
+      if self.channel_layout is None:
+        self.channel_layout = autodetect.get_channel_layout(self)
+      require_field('channel_layout')
 
     if self.media_type == MediaType.TEXT:
       if self.language is None:
@@ -321,6 +322,9 @@ class Input(configuration.Base):
 
   def get_resolution(self) -> bitrate_configuration.VideoResolution:
     return bitrate_configuration.VideoResolution.get_value(self.resolution)
+
+  def get_channel_layout(self) -> bitrate_configuration.AudioChannelLayout:
+    return bitrate_configuration.AudioChannelLayout.get_value(self.channel_layout)
 
 class SinglePeriod(configuration.Base):
   """An object repersenting one optional video stream and multiple audio and text streams"""

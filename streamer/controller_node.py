@@ -215,9 +215,16 @@ class ControllerNode(object):
 
       if input.media_type == MediaType.AUDIO:
         for audio_codec in self._pipeline_config.audio_codecs:
-          outputs.append(AudioOutputStream(self._create_pipe(),
-                                           input,
-                                           audio_codec))
+          for output_channel_layout in self._pipeline_config.get_channel_layouts():
+            # We won't upmix a lower channel count input to a higher one.
+            # Skip channel counts greater than the input channel count.
+            if input.get_channel_layout() < output_channel_layout:
+              continue
+
+            outputs.append(AudioOutputStream(self._create_pipe(),
+                                             input,
+                                             audio_codec,
+                                             output_channel_layout))
 
       elif input.media_type == MediaType.VIDEO:
         for video_codec in self._pipeline_config.video_codecs:

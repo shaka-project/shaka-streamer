@@ -242,6 +242,14 @@ class PipelineConfig(configuration.Base):
   multiple inputs.
   """
 
+  channel_layouts = configuration.Field(
+      List[bitrate_configuration.AudioChannelLayoutName],
+      required=True).cast()
+  """A list of channel layouts to encode.
+
+  Any channel count greater than the input channel count will be ignored.
+  """
+
   audio_codecs = configuration.Field(
       List[bitrate_configuration.AudioCodec],
       default=[bitrate_configuration.AudioCodec.AAC]).cast()
@@ -310,3 +318,7 @@ class PipelineConfig(configuration.Base):
   def get_resolutions(self) -> List[bitrate_configuration.VideoResolution]:
     VideoResolution = bitrate_configuration.VideoResolution  # alias
     return [VideoResolution.get_value(name) for name in self.resolutions]
+
+  def get_channel_layouts(self) -> List[bitrate_configuration.AudioChannelLayout]:
+    AudioChannelLayout = bitrate_configuration.AudioChannelLayout # alias
+    return [AudioChannelLayout.get_value(name) for name in self.channel_layouts]

@@ -58,34 +58,27 @@ class OutputStream(object):
 
   def is_dash_only(self) -> bool:
     """Returns True if the output format is restricted to DASH protocol"""
-    assert self.codec is not None
-    return self.codec.get_output_format() is 'webm'
+    if self.codec is not None:
+      return self.codec.get_output_format() == 'webm'
+    return False
 
 class AudioOutputStream(OutputStream):
 
   def __init__(self,
                pipe: str,
                input: Input,
-               codec: AudioCodec) -> None:
+               codec: AudioCodec,
+               channel_layout: AudioChannelLayout) -> None:
 
     super().__init__(MediaType.AUDIO, pipe, input, codec)
     # Override the codec type and specify that it's an audio codec
     self.codec: AudioCodec = codec
-    self.channels = input.channels
-
-    self.layout: Optional[AudioChannelLayout] = None
-    for layout in AudioChannelLayout.sorted_values():
-      if self.channels <= layout.max_channels:
-        self.layout = layout
-        break
-
-    assert self.layout, 'Unable to find audio layout for {} channels'.format(
-        self.channels)
+    self.layout = channel_layout
 
     # The features that will be used to generate the output filename.
     self._features = {
       'language': input.language,
-      'channels': str(self.channels),
+      'channels': str(self.layout.max_channels),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
       'codec': self.codec.value,
@@ -93,7 +86,6 @@ class AudioOutputStream(OutputStream):
 
   def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
-    assert self.layout is not None
     return self.layout.bitrates[self.codec]
 
 
