@@ -72,8 +72,8 @@ class MalformedField(ConfigError):
     self.reason = reason
 
   def __str__(self):
-    return 'In {}, {} field is malformed: {}, a {}'.format(
-        self.class_name, self.field_name, self.reason, self.field.get_type_name())
+    return 'In {}, {} field is malformed: {}'.format(
+        self.class_name, self.field_name, self.reason)
 
 class ConflictingFields(ConfigError):
   """An error raised when multiple fields are given and only one of them is allowed at a time."""
