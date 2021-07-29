@@ -80,10 +80,6 @@ class PeriodConcatNode(ThreadedNodeBase):
     them is errored, it raises a RuntimeError.
     """
     
-    if self._concat_will_fail:
-      self._status = ProcessStatus.Finished
-      return
-    
     for i, packager_node in enumerate(self._packager_nodes):
       status = packager_node.check_status()
       if status == ProcessStatus.Running:
@@ -93,9 +89,12 @@ class PeriodConcatNode(ThreadedNodeBase):
           'Concatenation is stopped due '
           'to an error in PackagerNode#{}.'.format(i + 1))
     
+    if self._concat_will_fail:
+      raise RuntimeError('Unable to concatenate the inputs.')
+    
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
       self._dash_concat()
-      
+    
     if ManifestFormat.HLS in self._pipeline_config.manifest_format:
       self._hls_concat()
     

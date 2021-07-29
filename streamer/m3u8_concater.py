@@ -23,7 +23,7 @@ from streamer.bitrate_configuration import VideoCodec, AudioCodec, VideoResoluti
 
 
 class MediaPlaylist:
-  """A class representing a media playlist, the information collected from the 
+  """A class representing a media playlist. The information collected from the 
   master playlist about a specific media playlist such as the bitrate, codec, etc...
   is also saved here."""
   
@@ -55,7 +55,7 @@ class MediaPlaylist:
     
     self.content = ''
     
-    # Either VideoCodec, AudioCodec, or None
+    # Either VideoCodec, AudioCodec, or None.
     self.codec: Optional[enum.Enum] = None
     
     if dir_name is None:
@@ -81,7 +81,7 @@ class MediaPlaylist:
           self.content += os.path.join(period_dir ,line)
         elif line.startswith('#EXT-X-MAP'):
           # An EXT-X-MAP must have a URI attribute and optionally a BYTERANGE attribute.
-          attribs = _search_attributes(line)
+          attribs = _extract_attributes(line)
           self.content += '#EXT-X-MAP:URI=' + _quote(
             os.path.join(period_dir, _unquote(attribs['URI'])))
           if attribs.get('BYTERANGE'):
@@ -100,8 +100,8 @@ class MediaPlaylist:
     self._set_codec_res_channels()
   
   def write(self, dir_name: str) -> None:
-    with open(os.path.join(
-      dir_name, _unquote(self.stream_info['URI'])), 'w') as media_playlist:
+    file_path = os.path.join(dir_name, _unquote(self.stream_info['URI']))
+    with open(file_path, 'w') as media_playlist:
       content = MediaPlaylist.header
       content += '#EXT-X-TARGETDURATION:' + str(self.target_duration) + '\n'
       content += self.content
@@ -109,7 +109,7 @@ class MediaPlaylist:
       media_playlist.write(content)
   
   @staticmethod
-  def save_header(file_path: str) -> None:
+  def extract_header(file_path: str) -> None:
     MediaPlaylist.header = ''
     with open(file_path, 'r') as media_playlist:
       line = media_playlist.readline()
@@ -138,7 +138,8 @@ class MediaPlaylist:
     for i in range(len(lines)):
       # Don't use #EXT-X-MAP to get the codec, because HLS specs says
       # it is an optional tag.
-      if lines[i].startswith('#EXTINF'):
+      line = lines[i]
+      if line.startswith('#EXTINF'):
         line = lines[i+1]
         if line.startswith('#EXT-X-BYTERANGE'):
           line = lines[i+2]
@@ -640,10 +641,10 @@ class MasterPlaylist:
       line = master_playlist.readline()
       while line:
         if line.startswith('#EXT-X-MEDIA'):
-          stream_info = _search_attributes(line)
+          stream_info = _extract_attributes(line)
           self.playlists.append(MediaPlaylist(stream_info, dir_name))
         elif line.startswith('#EXT-X-STREAM-INF'):
-          stream_info = _search_attributes(line)
+          stream_info = _extract_attributes(line)
           # Quote the URI to keep consistent, as the URIs in EXT-X-MEDIA are quoted too.
           stream_info['URI'] = _quote(master_playlist.readline().strip())
           self.playlists.append(MediaPlaylist(stream_info, dir_name))
@@ -680,9 +681,9 @@ class MasterPlaylist:
       master_playlist.write(content)
   
   @staticmethod
-  def save_header(file_path: str) -> None:
+  def extract_headers(file_path: str) -> None:
     """Store the common header for the master playlist in MasterPlaylist.header variable.
-    This also calles MediaPlaylist.save_header() if any media playlist was found."""
+    This also calles MediaPlaylist.extract_header() if any media playlist was found."""
     
     MasterPlaylist.header = ''
     with open(file_path, 'r') as master_playlist:
@@ -695,10 +696,10 @@ class MasterPlaylist:
       else:
         # Use this variant to also save the MediaPlaylist header.
         if line.startswith('#EXT-X-MEDIA'):
-          uri = _unquote(_search_attributes(line)['URI'])
+          uri = _unquote(_extract_attributes(line)['URI'])
         elif line.startswith('#EXT-X-STREAM-INF'):
           uri = master_playlist.readline().strip()
-        MediaPlaylist.save_header(os.path.join(
+        MediaPlaylist.extract_header(os.path.join(
           os.path.dirname(file_path), uri))
 
   @staticmethod
@@ -764,9 +765,9 @@ class HLSConcater:
                sample_master_playlist_path: str,
                output_dir: str):
     
-    # Save common master playlist header, this will call the MediaPlaylist.save_header
+    # Save common master playlist header, this will call the MediaPlaylist.extract_header
     # to save the common media playlist header as well.
-    MasterPlaylist.save_header(sample_master_playlist_path)
+    MasterPlaylist.extract_headers(sample_master_playlist_path)
     # Give the MediaPlaylist class the output directory so it can calculate the
     # relative direcoty to each media segment.
     MediaPlaylist.output_dir = output_dir
@@ -784,14 +785,14 @@ class HLSConcater:
     self._concated_hls = MasterPlaylist.concat_master_playlists(
       self._all_master_playlists)
   
-  def write(self,concated_file_name: str ,comment: str = ''):
+  def write(self, concated_file_name: str, comment: str = ''):
     
     if comment:
       comment = '## ' + comment + '\n\n'
     self._concated_hls.write(os.path.join(self._output_dir,
                                           concated_file_name), comment)
 
-def _search_attributes(line: str) -> Dict[str, str]:
+def _extract_attributes(line: str) -> Dict[str, str]:
   """Extracts attributes from an m3u8 #EXT-X tag to a python dictionary."""
   
   attributes: Dict[str, str] = {}
@@ -799,24 +800,19 @@ def _search_attributes(line: str) -> Dict[str, str]:
   # For a tighter search, append ',' and search for it in the regex.
   line += ','
   # Search for all KEY=VALUE,
-  matches: List[str] = re.findall(
-    r'[-A-Z]+=(?:[-A-Z]+|[\d\.]+|\d+x\d+|\"[^\"]*\"),',
-    line)
-  # NOTE: This regex r'[-A-Z0-9]+=(?:[-A-Z0-9]+|\d*\.?\d*|\d+x[0-9A-F]+|\"[^\"]*\"),'
-  # better follows the attribute rules in
-  # https://datatracker.ietf.org/doc/html/draft-pantos-http-live-streaming-23#section-4.2
-  for match in matches:
-    key, value = match[:-1].split('=', 1)
+  matches: List[Tuple[str, str]] = re.findall(
+    r'([-A-Z]+)=("[^"]*"|[^",]*),', line)
+  for key, value in matches:
     attributes[key] = value
   return attributes
 
 def _quote(string: str) -> str:
-  """Puts a string in double quotes, opposite of _unquote()."""
+  """Puts a string in double quotes."""
   
   return '"' + string + '"'
 
 def _unquote(string: str) -> str:
-  """Removes the double quotes that surround a string."""
+  """Removes the double quotes surrounding a string."""
   
   return string[1:-1]
 
