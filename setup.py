@@ -13,12 +13,17 @@
 # limitations under the License.
 
 import base64
+import os
 import setuptools
 
 import streamer
 
 with open('README.md', 'r') as f:
   long_description = f.read()
+
+install_prerequisites = ['PyYAML']
+if os.name == 'nt':
+  install_prerequisites.append('pypiwin32')
 
 setuptools.setup(
   name='shaka-streamer',
@@ -29,9 +34,7 @@ setuptools.setup(
   long_description_content_type='text/markdown',
   url='https://github.com/google/shaka-streamer',
   packages=setuptools.find_packages(),
-  install_requires=[
-      'PyYAML',
-  ],
+  install_requires=install_prerequisites,
   scripts=['shaka-streamer'],
   classifiers=[
       'Programming Language :: Python :: 3',
