@@ -54,8 +54,10 @@ class WinFIFO(Thread):
     None)
 
   def run(self):
-    """The FIFO thread. This method serves as a server that connects a writer
-    client to a reader client."""
+    """This method serves as a server that connects a writer client
+    to a reader client.
+    
+    This methods will run as a thread."""
 
     try:
       # Connect to both ends of the pipe before starting the transfer.
