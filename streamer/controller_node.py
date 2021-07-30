@@ -92,7 +92,7 @@ class ControllerNode(object):
     # New Technology, aka WindowsNT.
     elif os.name == 'nt':
       from streamer.winfifo import WinFIFO
-      path = '-shaka-' + unique_name
+      path = '-nt-shaka-' + unique_name
       WinFIFO(path).start()
     else:
       raise RuntimeError('Platform not supported.')

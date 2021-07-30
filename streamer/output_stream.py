@@ -14,8 +14,11 @@
 
 """Contains information about each output stream."""
 
+import os
+
 from streamer.bitrate_configuration import AudioCodec, AudioChannelLayout, VideoCodec, VideoResolution
 from streamer.input_configuration import Input, MediaType
+from streamer.winfifo import WinFIFO
 from typing import Dict, Optional, Union
 
 
@@ -29,7 +32,12 @@ class OutputStream(object):
                codec: Union[AudioCodec, VideoCodec, None]) -> None:
     self.type: MediaType = type
     # If "pipe" is None, then this will not be transcoded.
-    self.pipe: Optional[str] = pipe
+    self.read_pipe: Optional[str] = pipe
+    self.writ_pipe: Optional[str] = pipe
+    if os.name == 'nt':
+      if pipe:
+        self.read_pipe = WinFIFO.READER_PREFIX + self.read_pipe
+        self.writ_pipe = WinFIFO.WRITER_PREFIX + self.writ_pipe
     self.input: Input = input
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
     self._features: Dict[str, str] = {}
