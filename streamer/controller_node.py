@@ -41,6 +41,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
+from streamer.winfifo import WinFIFO
 
 
 class ControllerNode(object):
@@ -91,7 +92,6 @@ class ControllerNode(object):
     
     # New Technology, aka WindowsNT.
     elif os.name == 'nt':
-      from streamer.winfifo import WinFIFO
       path = '-nt-shaka-' + unique_name
       WinFIFO(path).start()
     else:
@@ -212,9 +212,14 @@ class ControllerNode(object):
       # read from that pipe for this input.
       if input.input_type == InputType.EXTERNAL_COMMAND:
         command_output = self._create_pipe()
+        writer_command_output = command_output
+        reader_command_output = command_output
+        if os.name == 'nt':
+          writer_command_output = WinFIFO.WRITER_PREFIX + command_output
+          reader_command_output = WinFIFO.READER_PREFIX + command_output
         self._nodes.append(ExternalCommandNode(
-            input.name, command_output))
-        input.set_pipe(command_output)
+            input.name, writer_command_output))
+        input.set_pipe(reader_command_output)
 
       if input.media_type == MediaType.AUDIO:
         for audio_codec in self._pipeline_config.audio_codecs:

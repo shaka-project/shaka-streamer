@@ -124,7 +124,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
         if output_stream.input != input:
           # Skip outputs that don't match this exact input object.
           continue
-        if output_stream.pipe is None:
+        if output_stream.writ_pipe is None:
           # This input won't be transcoded.  This is common for VTT text input.
           continue
 
@@ -141,12 +141,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           assert(isinstance(output_stream, TextOutputStream))
           args += self._encode_text(output_stream, input)
 
-        # The output pipe.
-        pipe = output_stream.pipe
-        if os.name == 'nt':
-          from streamer.winfifo import WinFIFO
-          pipe = WinFIFO.WRITER_PREFIX + pipe
-        args += [pipe]
+        args += [output_stream.writ_pipe]
 
     env = {}
     if self._pipeline_config.debug_logs:

@@ -59,7 +59,8 @@ class WinFIFO(Thread):
 
     try:
       # Connect to both ends of the pipe before starting the transfer.
-      # This funciton is blocking. If no process is connected, it will wait indefinitely.
+      # This funciton is blocking. If no process is connected yet, it will wait
+      # indefinitely.
       win32pipe.ConnectNamedPipe(self.read_side)
       win32pipe.ConnectNamedPipe(self.writ_side)
       while True:

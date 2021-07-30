@@ -255,10 +255,6 @@ class Input(configuration.Base):
     """
 
     self._pipe = pipe
-    if os.name == 'nt':
-      from streamer.winfifo import WinFIFO
-      # The TranscoderNode will read from this pipe.
-      self._pipe = WinFIFO.READER_PREFIX + self._pipe
 
   def get_path_for_transcode(self) -> str:
     """Get the path which the transcoder will use to read the input.

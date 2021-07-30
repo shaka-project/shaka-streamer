@@ -34,10 +34,12 @@ class OutputStream(object):
     # If "pipe" is None, then this will not be transcoded.
     self.read_pipe: Optional[str] = pipe
     self.writ_pipe: Optional[str] = pipe
-    if os.name == 'nt':
-      if pipe:
-        self.read_pipe = WinFIFO.READER_PREFIX + self.read_pipe
-        self.writ_pipe = WinFIFO.WRITER_PREFIX + self.writ_pipe
+    # On posix systems, the read and write pipes will be the same.
+    # But on Windows, we will have different read and write pipe names.
+    if os.name == 'nt' and self.read_pipe and self.writ_pipe:
+      # Prefix the pipe names on Windows platforms.
+      self.read_pipe = WinFIFO.READER_PREFIX + self.read_pipe
+      self.writ_pipe = WinFIFO.WRITER_PREFIX + self.writ_pipe
     self.input: Input = input
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
     self._features: Dict[str, str] = {}
