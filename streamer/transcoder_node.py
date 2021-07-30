@@ -14,15 +14,14 @@
 
 """A module that pushes input to ffmpeg to transcode into various formats."""
 
-import os
 import shlex
-from typing import List, Union
 
 from streamer.bitrate_configuration import AudioCodec, VideoCodec
 from streamer.input_configuration import Input, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
+from typing import List, Union
 
 class TranscoderNode(PolitelyWaitOnFinish):
 
