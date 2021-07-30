@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import enum
-import os
 import platform
 
 from . import bitrate_configuration

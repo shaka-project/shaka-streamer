@@ -14,7 +14,6 @@
 
 """A module that runs an external command to generate media."""
 
-import os
 from . import node_base
 
 class ExternalCommandNode(node_base.NodeBase):
