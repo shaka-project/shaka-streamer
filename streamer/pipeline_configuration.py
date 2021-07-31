@@ -233,8 +233,7 @@ class PipelineConfig(configuration.Base):
   """
 
   resolutions = configuration.Field(
-      List[bitrate_configuration.VideoResolutionName],
-      required=True).cast()
+      List[bitrate_configuration.VideoResolutionName]).cast()
   """A list of resolution names to encode.
 
   Any resolution greater than the input resolution will be ignored, to avoid
@@ -243,8 +242,7 @@ class PipelineConfig(configuration.Base):
   """
 
   channel_layouts = configuration.Field(
-      List[bitrate_configuration.AudioChannelLayoutName],
-      required=True).cast()
+      List[bitrate_configuration.AudioChannelLayoutName]).cast()
   """A list of channel layouts to encode.
 
   Any channel count greater than the input channel count will be ignored.
@@ -307,6 +305,10 @@ class PipelineConfig(configuration.Base):
 
 
   def __init__(self, *args) -> None:
+    self.__class__.resolutions.default=[ # type: ignore
+        bitrate_configuration.VideoResolution.sorted_values()[0].get_key()]
+    self.__class__.channel_layouts.default=[ # type: ignore
+        bitrate_configuration.AudioChannelLayout.sorted_values()[0].get_key()]
     super().__init__(*args)
 
     if self.streaming_mode == StreamingMode.LIVE and not self.segment_per_file:

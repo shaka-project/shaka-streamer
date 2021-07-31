@@ -561,5 +561,5 @@ class RuntimeMapKeyValidator(ValidatingType, str):
 
     if key not in cls.map_class.keys():
       raise ValueError(
-          '{} is not a valid {}, {}'.format(key, cls.map_class.__name__, cls.name()))
+          '{} is not a valid {}'.format(key, cls.name()))
 
