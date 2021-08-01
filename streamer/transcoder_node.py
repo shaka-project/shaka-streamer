@@ -106,7 +106,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
       # The input name always comes after the applicable input arguments.
       args += [
           # The input itself.
-          '-i', input.get_path_for_transcode(),
+          '-i', input.name,
       ]
 
     for i, input in enumerate(self._inputs):
@@ -123,7 +123,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
         if output_stream.input != input:
           # Skip outputs that don't match this exact input object.
           continue
-        if output_stream.writ_pipe is None:
+        if output_stream.skip_transcoding:
           # This input won't be transcoded.  This is common for VTT text input.
           continue
 
@@ -140,7 +140,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           assert(isinstance(output_stream, TextOutputStream))
           args += self._encode_text(output_stream, input)
 
-        args += [output_stream.writ_pipe]
+        args += [output_stream.ipc_pipe.write_end()]
 
     env = {}
     if self._pipeline_config.debug_logs:

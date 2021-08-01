@@ -24,11 +24,9 @@ also want to look at the source code to the command-line front end script
 import os
 import re
 import shutil
-import string
 import subprocess
 import sys
 import tempfile
-import uuid
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer.cloud_node import CloudNode
@@ -41,7 +39,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
-from streamer.winfifo import WinFIFO
+from streamer.pipe import Pipe
 
 
 class ControllerNode(object):
@@ -67,37 +65,6 @@ class ControllerNode(object):
 
   def __exit__(self, *unused_args) -> None:
     self.stop()
-
-  def _create_pipe(self, suffix = '') -> str:
-    """Create a uniquely-named named pipe in the node's temp directory.
-
-    Args:
-      suffix (str): An optional suffix added to the pipe's name.  Used to
-                    indicate to the packager when it's getting a certain text
-                    format in a pipe.
-    Raises:
-      RuntimeError: If the platform doesn't have mkfifo.
-    Returns:
-      The path to the named pipe, as a string.
-    """
-    # Since the tempfile module creates actual files, use uuid to generate a
-    # filename, then call mkfifo to create the named pipe.
-    unique_name = str(uuid.uuid4()) + suffix
-    
-    # For POSIX systems.
-    if os.name == 'posix':
-      path = os.path.join(self._temp_dir, unique_name)
-      readable_by_owner_only = 0o600  # Unix permission bits
-      os.mkfifo(path, mode=readable_by_owner_only) # type: ignore
-    
-    # New Technology, aka WindowsNT.
-    elif os.name == 'nt':
-      path = '-nt-shaka-' + unique_name
-      WinFIFO(path).start()
-    else:
-      raise RuntimeError('Platform not supported.')
-    
-    return path
 
   def start(self, output_dir: str,
             input_config_dict: Dict[str, Any],
@@ -211,20 +178,17 @@ class ControllerNode(object):
       # that node to write to.  TranscoderNode will then instruct FFmpeg to
       # read from that pipe for this input.
       if input.input_type == InputType.EXTERNAL_COMMAND:
-        command_output = self._create_pipe()
-        writer_command_output = command_output
-        reader_command_output = command_output
-        if os.name == 'nt':
-          writer_command_output = WinFIFO.WRITER_PREFIX + command_output
-          reader_command_output = WinFIFO.READER_PREFIX + command_output
+        command_output = Pipe.create_ipc_pipe(self._temp_dir)
         self._nodes.append(ExternalCommandNode(
-            input.name, writer_command_output))
-        input.set_pipe(reader_command_output)
+            input.name, command_output.write_end()))
+        # reset the name of the input to be the output pipe path - which the 
+        # transcoder node will read from - instead of a shell command.
+        input.reset_name(command_output.read_end())
 
       if input.media_type == MediaType.AUDIO:
         for audio_codec in self._pipeline_config.audio_codecs:
-          outputs.append(AudioOutputStream(self._create_pipe(),
-                                           input,
+          outputs.append(AudioOutputStream(input,
+                                           self._temp_dir,
                                            audio_codec,
                                            self._pipeline_config.channels))
 
@@ -236,8 +200,8 @@ class ControllerNode(object):
             if input.get_resolution() < output_resolution:
               continue
 
-            outputs.append(VideoOutputStream(self._create_pipe(),
-                                             input,
+            outputs.append(VideoOutputStream(input,
+                                             self._temp_dir,
                                              video_codec,
                                              output_resolution))
 
@@ -246,14 +210,16 @@ class ControllerNode(object):
           # If the input is a VTT or TTML file, pass it directly to the packager
           # without any intermediate processing or any named pipe.
           # TODO: Test TTML inputs
-          text_pipe = None  # Bypass transcoder
+          skip_transcoding = True  # Bypass transcoder
         else:
           # Otherwise, the input is something like an mkv file with text tracks
           # in it.  These will be extracted by the transcoder and passed in a
           # pipe to the packager.
-          text_pipe = self._create_pipe('.vtt')
+          skip_transcoding = False
 
-        outputs.append(TextOutputStream(text_pipe, input))
+        outputs.append(TextOutputStream(input,
+                                        self._temp_dir,
+                                        skip_transcoding))
 
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,

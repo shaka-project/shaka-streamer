@@ -14,12 +14,10 @@
 
 """Contains information about each output stream."""
 
-import os
-
 from streamer.bitrate_configuration import AudioCodec, AudioChannelLayout, VideoCodec, VideoResolution
 from streamer.input_configuration import Input, MediaType
-from streamer.winfifo import WinFIFO
-from typing import Dict, Optional, Union
+from streamer.pipe import Pipe
+from typing import Dict, Union
 
 
 class OutputStream(object):
@@ -27,19 +25,15 @@ class OutputStream(object):
 
   def __init__(self,
                type: MediaType,
-               pipe: Optional[str],
                input: Input,
-               codec: Union[AudioCodec, VideoCodec, None]) -> None:
+               codec: Union[AudioCodec, VideoCodec, None],
+               pipe_dir: str,
+               skip_transcoding: bool = False,
+               pipe_suffix: str = '') -> None:
     self.type: MediaType = type
-    # If "pipe" is None, then this will not be transcoded.
-    self.read_pipe: Optional[str] = pipe
-    self.writ_pipe: Optional[str] = pipe
-    # On posix systems, the read and write pipes will be the same.
-    # But on Windows, we will have different read and write pipe names.
-    if os.name == 'nt' and self.read_pipe and self.writ_pipe:
-      # Prefix the pipe names on Windows platforms.
-      self.read_pipe = WinFIFO.READER_PREFIX + self.read_pipe
-      self.writ_pipe = WinFIFO.WRITER_PREFIX + self.writ_pipe
+    self.skip_transcoding = skip_transcoding
+    if not self.skip_transcoding:
+      self.ipc_pipe = Pipe.create_ipc_pipe(pipe_dir, pipe_suffix)
     self.input: Input = input
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
     self._features: Dict[str, str] = {}
@@ -70,16 +64,43 @@ class OutputStream(object):
     """Returns True if the output format is restricted to DASH protocol"""
     assert self.codec is not None
     return self.codec.get_output_format() is 'webm'
+  
+  def get_init_seg_file(self, **kwargs) -> Pipe:
+    INIT_SEGMENT = {
+      MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
+      MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_init.{format}',
+      MediaType.TEXT: '{dir}/text_{language}_init.{format}',
+    }
+    path_templ = INIT_SEGMENT[self.type].format(**self._features, **kwargs)
+    return Pipe.create_file_pipe(path_templ)
+
+  def get_media_seg_file(self, **kwargs) -> Pipe:
+    MEDIA_SEGMENT = {
+      MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
+      MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
+      MediaType.TEXT: '{dir}/text_{language}_$Number$.{format}',
+    }
+    path_templ = MEDIA_SEGMENT[self.type].format(**self._features, **kwargs)
+    return Pipe.create_file_pipe(path_templ)
+
+  def get_single_seg_file(self, **kwargs) -> Pipe:
+    SINGLE_SEGMENT = {
+      MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
+      MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}.{format}',
+      MediaType.TEXT: '{dir}/text_{language}.{format}',
+    }
+    path_templ = SINGLE_SEGMENT[self.type].format(**self._features, **kwargs)
+    return Pipe.create_file_pipe(path_templ)
 
 class AudioOutputStream(OutputStream):
 
   def __init__(self,
-               pipe: str,
                input: Input,
+               pipe_dir: str,
                codec: AudioCodec,
                channels: int) -> None:
 
-    super().__init__(MediaType.AUDIO, pipe, input, codec)
+    super().__init__(MediaType.AUDIO, input, codec, pipe_dir)
     # Override the codec type and specify that it's an audio codec
     self.codec: AudioCodec = codec
 
@@ -115,11 +136,11 @@ class AudioOutputStream(OutputStream):
 class VideoOutputStream(OutputStream):
 
   def __init__(self,
-               pipe: str,
                input: Input,
+               pipe_dir: str,
                codec: VideoCodec,
                resolution: VideoResolution) -> None:
-    super().__init__(MediaType.VIDEO, pipe, input, codec)
+    super().__init__(MediaType.VIDEO, input, codec, pipe_dir)
     # Override the codec type and specify that it's an audio codec
     self.codec: VideoCodec = codec
     self.resolution = resolution
@@ -140,14 +161,16 @@ class VideoOutputStream(OutputStream):
 class TextOutputStream(OutputStream):
 
   def __init__(self,
-               pipe: Optional[str],
-               input: Input):
+               input: Input,
+               pipe_dir: str,
+               skip_transcoding: bool):
     # We don't have a codec per se for text, but we'd like to generically
     # process OutputStream objects in ways that are easier with this attribute
     # set, so set it to None.
     codec = None
 
-    super().__init__(MediaType.TEXT, pipe, input, codec)
+    super().__init__(MediaType.TEXT, input, codec, pipe_dir,
+                     skip_transcoding, pipe_suffix='.vtt')
 
     # The features that will be used to generate the output filename.
     self._features = {

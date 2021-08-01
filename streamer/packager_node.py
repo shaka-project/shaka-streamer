@@ -31,25 +31,6 @@ MediaType = input_configuration.MediaType
 ManifestFormat = pipeline_configuration.ManifestFormat
 StreamingMode = pipeline_configuration.StreamingMode
 
-
-INIT_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_init.{format}',
-  MediaType.TEXT: '{dir}/text_{language}_init.{format}',
-}
-
-MEDIA_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
-  MediaType.TEXT: '{dir}/text_{language}_$Number$.{format}',
-}
-
-SINGLE_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}.{format}',
-  MediaType.TEXT: '{dir}/text_{language}.{format}',
-}
-
 class SegmentError(Exception):
   """Raise when segment is incompatible with format."""
   pass
@@ -122,9 +103,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
   def _setup_stream(self, stream: OutputStream) -> str:
 
     dict = {
-        # If pipe is None, this wasn't transcoded, so we take the input path
-        # directly.
-        'in': stream.read_pipe or stream.input.name,
+        'in': stream.ipc_pipe.read_end(),
         'stream': stream.type.value,
     }
 
@@ -141,16 +120,13 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       dict['language'] = stream.input.language
 
     if self._pipeline_config.segment_per_file:
-      dict['init_segment'] = stream.fill_template(
-          INIT_SEGMENT[stream.type],
-          dir=self._segment_dir)
-      dict['segment_template'] = stream.fill_template(
-          MEDIA_SEGMENT[stream.type],
-          dir=self._segment_dir)
+      dict['init_segment'] = stream.get_init_seg_file(
+        dir=self._segment_dir).write_end()
+      dict['segment_template'] = stream.get_media_seg_file(
+        dir=self._segment_dir).write_end()
     else:
-      dict['output'] = stream.fill_template(
-          SINGLE_SEGMENT[stream.type],
-          dir=self._segment_dir)
+      dict['output'] = stream.get_single_seg_file(
+        dir=self._segment_dir).write_end()
 
     if stream.is_dash_only():
       dict['dash_only'] = '1'
