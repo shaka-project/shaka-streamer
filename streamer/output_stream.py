@@ -30,24 +30,19 @@ class OutputStream(object):
                pipe_dir: str,
                skip_transcoding: bool = False,
                pipe_suffix: str = '') -> None:
+
     self.type: MediaType = type
     self.skip_transcoding = skip_transcoding
-    if not self.skip_transcoding:
-      self.ipc_pipe = Pipe.create_ipc_pipe(pipe_dir, pipe_suffix)
     self.input: Input = input
-    self.codec: Union[AudioCodec, VideoCodec, None] = codec
     self._features: Dict[str, str] = {}
+    self.codec: Union[AudioCodec, VideoCodec, None] = codec
 
-  def fill_template(self, template: str, **kwargs) -> str:
-    """Fill in a template string using **kwargs and features of the output."""
-
-    value_map: Dict[str, str] = {}
-    # First take any feature values from this object.
-    value_map.update(self._features)
-    # Then fill in any values from kwargs.
-    value_map.update(kwargs)
-    # Now fill in the template with these values.
-    return template.format(**value_map)
+    if self.skip_transcoding:
+      # If skip_transcoding is specified, let the Packager read from a plain
+      # file instead of an IPC pipe.
+      self.ipc_pipe = Pipe.create_file_pipe(self.input.name, mode='r')
+    else:
+      self.ipc_pipe = Pipe.create_ipc_pipe(pipe_dir, pipe_suffix)
 
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this output stream uses hardware acceleration."""
@@ -72,7 +67,7 @@ class OutputStream(object):
       MediaType.TEXT: '{dir}/text_{language}_init.{format}',
     }
     path_templ = INIT_SEGMENT[self.type].format(**self._features, **kwargs)
-    return Pipe.create_file_pipe(path_templ)
+    return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_media_seg_file(self, **kwargs) -> Pipe:
     MEDIA_SEGMENT = {
@@ -81,7 +76,7 @@ class OutputStream(object):
       MediaType.TEXT: '{dir}/text_{language}_$Number$.{format}',
     }
     path_templ = MEDIA_SEGMENT[self.type].format(**self._features, **kwargs)
-    return Pipe.create_file_pipe(path_templ)
+    return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_single_seg_file(self, **kwargs) -> Pipe:
     SINGLE_SEGMENT = {
@@ -90,7 +85,7 @@ class OutputStream(object):
       MediaType.TEXT: '{dir}/text_{language}.{format}',
     }
     path_templ = SINGLE_SEGMENT[self.type].format(**self._features, **kwargs)
-    return Pipe.create_file_pipe(path_templ)
+    return Pipe.create_file_pipe(path_templ, mode='w')
 
 class AudioOutputStream(OutputStream):
 

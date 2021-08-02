@@ -95,12 +95,18 @@ class Pipe(Thread):
     return pipe
 
   @staticmethod
-  def create_file_pipe(path: str) -> 'Pipe':
-    """Returns a Pipe object whose write end is a path to a file."""
+  def create_file_pipe(path: str, mode: str) -> 'Pipe':
+    """Returns a Pipe object whose read or write end is a path to a file."""
 
     pipe = Pipe()
-    # A process will write on this pipe(file).
-    pipe._read_pipe_name = path
+    # A process will write on the read pipe(file).
+    if mode == 'w':
+      pipe._read_pipe_name = path
+    # A process will read from the write pipe(file).
+    elif mode == 'r':
+      pipe._write_pipe_name = path
+    else:
+      raise RuntimeError('{} is not a valid file mode'.format(mode))
     return pipe
 
   def run(self):
@@ -132,11 +138,11 @@ class Pipe(Thread):
       raise ex
 
   def read_end(self) -> str:
-    """Returns a pipe path that a reader process can read from."""
+    """Returns a pipe/file path that a reader process can read from."""
     assert self._write_pipe_name
     return self._write_pipe_name
 
   def write_end(self) -> str:
-    """Returns a pipe path that a writer process can write to."""
+    """Returns a pipe/file path that a writer process can write to."""
     assert self._read_pipe_name
     return self._read_pipe_name
