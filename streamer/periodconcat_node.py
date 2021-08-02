@@ -26,17 +26,17 @@ from streamer.pipeline_configuration import PipelineConfig, ManifestFormat, Stre
 
 class PeriodConcatNode(ThreadedNodeBase):
   """A node that concatenates multiple DASH manifests and/or HLS playlists
-  when the input is a multiperiod_inputs_list.
+  when the input is a multiperiod_inputs_list and the output is to the local the system.
   """
   
   def __init__(self,
                pipeline_config: PipelineConfig,
                packager_nodes: List[PackagerNode],
-               output_dir: str) -> None:
+               output_location: str) -> None:
     """Stores all relevant information needed for the period concatenation."""
     super().__init__(thread_name='periodconcat', continue_on_exception=False, sleep_time=3)
     self._pipeline_config = pipeline_config
-    self._output_dir = output_dir
+    self._output_location = output_location
     self._packager_nodes: List[PackagerNode] = packager_nodes
   
   def _thread_single_pass(self) -> None:
@@ -81,7 +81,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     
     # Get the root of an MPD file that we will concatenate periods into.
     concat_mpd = ElementTree.ElementTree(file=os.path.join(
-      self._packager_nodes[0].output_dir,
+      self._packager_nodes[0].output_location,
       self._pipeline_config.dash_output)).getroot()
     
     # Get the default namespace.
@@ -97,14 +97,14 @@ class PeriodConcatNode(ThreadedNodeBase):
     for packager_node in self._packager_nodes:
       
       mpd = ElementTree.ElementTree(file=os.path.join(
-        packager_node.output_dir,
+        packager_node.output_location,
         self._pipeline_config.dash_output)).getroot()
       period = find(mpd, 'Period')
       period.attrib['duration'] = mpd.attrib['mediaPresentationDuration']
       
       # A BaseURL that will have the relative path to media file.
       base_url = ElementTree.Element('BaseURL')
-      base_url.text = os.path.relpath(packager_node.output_dir, self._output_dir) + '/'
+      base_url.text = os.path.relpath(packager_node.output_location, self._output_location) + '/'
       period.insert(0, base_url)
         
       periods.append(period)
@@ -112,9 +112,9 @@ class PeriodConcatNode(ThreadedNodeBase):
     # Add the periods collected from all the files.
     concat_mpd.extend(periods)
     
-    # Write the period concat to the output_dir.
+    # Write the period concat to the output_location.
     with open(os.path.join(
-        self._output_dir,
+        self._output_location,
         self._pipeline_config.dash_output), 'w') as master_dash:
       
       contents = "<?xml version='1.0' encoding='UTF-8'?>\n"

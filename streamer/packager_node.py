@@ -23,6 +23,7 @@ from . import pipeline_configuration
 
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import EncryptionMode, PipelineConfig
+from streamer.util import is_url
 from typing import List, Optional, Union
 
 # Alias a few classes to avoid repeating namespaces later.
@@ -33,38 +34,58 @@ StreamingMode = pipeline_configuration.StreamingMode
 
 
 INIT_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_init.{format}',
-  MediaType.TEXT: '{dir}/text_{language}_init.{format}',
+  MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
+  MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_init.{format}',
+  MediaType.TEXT: 'text_{language}_init.{format}',
 }
 
 MEDIA_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
-  MediaType.TEXT: '{dir}/text_{language}_$Number$.{format}',
+  MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
+  MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
+  MediaType.TEXT: 'text_{language}_$Number$.{format}',
 }
 
 SINGLE_SEGMENT = {
-  MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
-  MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}.{format}',
-  MediaType.TEXT: '{dir}/text_{language}.{format}',
+  MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
+  MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}.{format}',
+  MediaType.TEXT: 'text_{language}.{format}',
 }
 
 class SegmentError(Exception):
   """Raise when segment is incompatible with format."""
   pass
 
+def build_path(output_location, sub_path):
+  """Handle annoying edge cases with paths for cloud upload.
+  If a path has two slashes, GCS will create an intermediate directory named "".
+  So we have to be careful in how we construct paths to avoid this.
+  """
+  # ControllerNode should have already stripped trailing slashes from the output
+  # location.
+
+  # Sometimes the segment dir is empty.  This handles that special case.
+  if not sub_path:
+    return output_location
+
+  if is_url(output_location):
+    # Don't use os.path.join, since URLs must use forward slashes and Streamer
+    # could be used on Windows.
+    return output_location + '/' + sub_path
+
+  return os.path.join(output_location, sub_path)
+
 
 class PackagerNode(node_base.PolitelyWaitOnFinish):
 
   def __init__(self,
                pipeline_config: PipelineConfig,
-               output_dir: str,
+               output_location: str,
                output_streams: List[OutputStream]) -> None:
     super().__init__()
     self._pipeline_config: PipelineConfig = pipeline_config
-    self.output_dir: str = output_dir
-    self._segment_dir: str = os.path.join(output_dir, pipeline_config.segment_folder)
+    self.output_location: str = output_location
+    self._segment_dir: str = build_path(
+        output_location, pipeline_config.segment_folder)
     self._output_streams: List[OutputStream] = output_streams
 
   def start(self) -> None:
@@ -140,16 +161,13 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       dict['language'] = stream.input.language
 
     if self._pipeline_config.segment_per_file:
-      dict['init_segment'] = stream.fill_template(
-          INIT_SEGMENT[stream.type],
-          dir=self._segment_dir)
-      dict['segment_template'] = stream.fill_template(
-          MEDIA_SEGMENT[stream.type],
-          dir=self._segment_dir)
+      dict['init_segment'] = build_path(
+          self._segment_dir, stream.fill_template(INIT_SEGMENT[stream.type]))
+      dict['segment_template'] = build_path(
+          self._segment_dir, stream.fill_template(MEDIA_SEGMENT[stream.type]))
     else:
-      dict['output'] = stream.fill_template(
-          SINGLE_SEGMENT[stream.type],
-          dir=self._segment_dir)
+      dict['output'] = build_path(
+          self._segment_dir, stream.fill_template(SINGLE_SEGMENT[stream.type]))
 
     if stream.is_dash_only():
       dict['dash_only'] = '1'
@@ -168,7 +186,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       args += [
           # Generate DASH manifest file.
           '--mpd_output',
-          os.path.join(self.output_dir, self._pipeline_config.dash_output),
+          os.path.join(self.output_location, self._pipeline_config.dash_output),
       ]
     if ManifestFormat.HLS in self._pipeline_config.manifest_format:
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
@@ -182,7 +200,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       args += [
           # Generate HLS playlist file(s).
           '--hls_master_playlist_output',
-          os.path.join(self.output_dir, self._pipeline_config.hls_output),
+          os.path.join(self.output_location, self._pipeline_config.hls_output),
       ]
     return args
 

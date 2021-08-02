@@ -13,13 +13,15 @@
 // limitations under the License.
 
 const flaskServerUrl = 'http://localhost:5000/';
+const outputHttpUrl = 'http://localhost:80/';
 const dashManifestUrl = flaskServerUrl + 'output_files/dash.mpd';
 const hlsManifestUrl = flaskServerUrl + 'output_files/hls.m3u8';
+const OUTPUT_DIR = 'output_files/'
 const TEST_DIR = 'test_assets/';
 let player;
 let video;
 
-async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}) {
+async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}, outputLocation=OUTPUT_DIR) {
   // Send a request to flask server to start Shaka Streamer.
   const response = await fetch(flaskServerUrl + 'start', {
     method: 'POST',
@@ -30,6 +32,7 @@ async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}) {
       'input_config': inputConfig,
       'pipeline_config': pipelineConfig,
       'bitrate_config': bitrateConfig,
+      'output_location': outputLocation
     }),
   });
 
@@ -349,6 +352,33 @@ function errorTests() {
         .toBeRejectedWith(jasmine.objectContaining({
           error_type: 'MissingRequiredExclusiveFields',
           field_name: 'inputs',
+        }));
+  });
+
+  it('fails when segment_per_file is false with a HTTP url output', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      streaming_mode: 'vod',
+      resolutions: [],
+      segment_per_file: false,
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig, {}, outputHttpUrl))
+    .toBeRejectedWith(jasmine.objectContaining({
+      error_type: 'RuntimeError',
+    }));
+  });
+
+  it('fails when multiperiod_inputs_list is used with a HTTP url output', async () => {
+    const inputConfig = {
+      'multiperiod_inputs_list': [
+        getBasicInputConfig(),
+      ],
+    };
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig, {}, outputHttpUrl))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'RuntimeError',
         }));
   });
 }
