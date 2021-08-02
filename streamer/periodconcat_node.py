@@ -166,7 +166,7 @@ class PeriodConcatNode(ThreadedNodeBase):
       # Register the DASH namespace back as the defualt namespace before converting to string.
       ElementTree.register_namespace('', default_dash_namespace)
       
-      # xml.etree.ElementTree already have an ElementTree().write() method,
+      # xml.etree.ElementTree already has an ElementTree().write() method,
       # but it won't allow putting comments at the begining of the file.
       contents += ElementTree.tostring(element=concat_mpd, encoding='unicode')
       master_dash.write(contents)
