@@ -309,8 +309,8 @@ def main():
     if args.reporters:
       converted_string = ','.join(args.reporters)
       karma_args += [
-        ' --reporters',
-        converted_string,
+          '--reporters',
+          converted_string,
       ]
 
     # If the exit code was not 0, the tests in karma failed or crashed.
