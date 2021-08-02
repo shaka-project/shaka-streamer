@@ -87,6 +87,7 @@ class OutputStream(object):
     path_templ = SINGLE_SEGMENT[self.type].format(**self._features, **kwargs)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
+
 class AudioOutputStream(OutputStream):
 
   def __init__(self,
