@@ -17,7 +17,7 @@ import math
 import re
 
 from . import configuration
-from typing import Any, Dict, Tuple
+from typing import Dict, Tuple
 
 
 class BitrateString(configuration.ValidatingType, str):
@@ -76,14 +76,8 @@ class VideoCodec(enum.Enum):
   H264 = 'h264'
   """H264, also known as AVC."""
 
-  HARDWARE_H264 = 'hw:h264'
-  """H264 with hardware encoding."""
-
   VP9 = 'vp9'
   """VP9."""
-
-  HARDWARE_VP9 = 'hw:vp9'
-  """VP9 with hardware encoding."""
 
   AV1 = 'av1'
   """AV1."""
@@ -91,26 +85,28 @@ class VideoCodec(enum.Enum):
   HEVC = 'hevc'
   """HEVC, also known as h.265"""
 
-  HARDWARE_HEVC = 'hw:hevc'
-  """HEVC, with hardware encoding"""
+  def __init__(self, value):
+    # Set all the codecs not to be hardware accelerated at the begining.
+    self._hw_acc = False
+
+  @classmethod
+  def _missing_(cls, value: object) -> 'VideoCodec':
+    if isinstance(value, str) and value.startswith('hw:'):
+      obj = cls(value[3:])
+      # Overwrite the _hw_acc variable for this codec.
+      obj._hw_acc = True
+      return obj
+    return super()._missing_(value)
 
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
-    return self.value.startswith('hw:')
-
-  def get_base_codec(self) -> 'VideoCodec':
-    """Returns an instance of the same codec without hardware acceleration."""
-    if self.is_hardware_accelerated():
-      value_without_prefix = self.value.split(':')[1]
-      return VideoCodec(value_without_prefix)
-
-    return self
+    return self._hw_acc
 
   def get_ffmpeg_codec_string(self, hwaccel_api: str) -> str:
     """Returns a codec string accepted by FFmpeg for this codec."""
-    if self.is_hardware_accelerated():
+    if self._hw_acc:
       assert hwaccel_api, 'No hardware encoding support on this platform!'
-      return self.get_base_codec().value + '_' + hwaccel_api
+      return self.value + '_' + hwaccel_api
 
     return self.value
 
@@ -118,11 +114,11 @@ class VideoCodec(enum.Enum):
     """Returns an FFmpeg output format suitable for this codec."""
     # TODO: consider VP9 in mp4 by default
     # TODO(#31): add support for configurable output format per-codec
-    if self.get_base_codec() == VideoCodec.VP9:
+    if self == VideoCodec.VP9:
       return 'webm'
-    elif self.get_base_codec() in {VideoCodec.H264, VideoCodec.HEVC}:
+    elif self in {VideoCodec.H264, VideoCodec.HEVC}:
       return 'mp4'
-    elif self.get_base_codec() == VideoCodec.AV1:
+    elif self == VideoCodec.AV1:
       return 'mp4'
     else:
       assert False, 'No mapping for output format for codec {}'.format(

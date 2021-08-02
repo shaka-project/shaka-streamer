@@ -242,7 +242,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
             '-flags', '+loop',
         ]
 
-    if stream.codec.get_base_codec() == VideoCodec.H264:  # Software or hardware
+    if stream.codec == VideoCodec.H264:  # Software or hardware
       # Use the "high" profile for HD and up, and "main" for everything else.
       # https://en.wikipedia.org/wiki/Advanced_Video_Coding#Profiles
       if stream.resolution.max_height >= 720:
@@ -258,7 +258,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           '-profile:v', profile,
       ]
       
-    if stream.codec.get_base_codec() in {VideoCodec.H264, VideoCodec.HEVC}:
+    if stream.codec in {VideoCodec.H264, VideoCodec.HEVC}:
       args += [
           # The only format supported by QT/Apple.
           '-pix_fmt', 'yuv420p',
@@ -267,7 +267,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
          
       ]
 
-    elif stream.codec.get_base_codec() == VideoCodec.VP9:
+    elif stream.codec == VideoCodec.VP9:
       # TODO: Does -preset apply here?
       args += [
           # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/VP9),
