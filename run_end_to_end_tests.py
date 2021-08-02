@@ -271,8 +271,11 @@ def main():
     return 1
 
   # Install test dependencies.
-  npm_command = ' '.join(['npm', 'install'])
-  subprocess.check_call(npm_command, shell=True)
+  if os.name == 'nt':
+    install_deps_command = ['npm.cmd', 'install']
+  else:
+    install_deps_command = ['npm', 'install']
+  subprocess.check_call(install_deps_command)
 
   # Fetch streams used in tests.
   if not os.path.exists(TEST_DIR):
@@ -292,7 +295,7 @@ def main():
 
   for i in range(trials):
     # Start up karma.
-    karma_command = ' '.join([
+    karma_args = [
         'node',
         'node_modules/karma/bin/karma',
         'start',
@@ -301,14 +304,17 @@ def main():
         # Linux: If you want to run tests as "headless", wrap it with "xvfb-run -a".
         '--browsers', 'Chrome',
         '--single-run',
-      ])
+      ]
 
     if args.reporters:
       converted_string = ','.join(args.reporters)
-      karma_command += ' --reporters {}'.format(converted_string)
-    
+      karma_args += [
+        ' --reporters',
+        converted_string,
+      ]
+
     # If the exit code was not 0, the tests in karma failed or crashed.
-    if subprocess.call(karma_command, shell=True) != 0:
+    if subprocess.call(karma_args) != 0:
       fails += 1
 
   print('\n\nNumber of failures:', fails, '\nNumber of trials:', trials)
