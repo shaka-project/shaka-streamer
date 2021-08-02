@@ -312,7 +312,6 @@ def main():
           '--reporters',
           converted_string,
       ]
-
     # If the exit code was not 0, the tests in karma failed or crashed.
     if subprocess.call(karma_args) != 0:
       fails += 1
