@@ -53,7 +53,6 @@ class Pipe(Thread):
       # Initialize the pipe object as a thread with `daemon` attribute set
       # to True so that the thread shuts down when the caller thread exits.
       Thread.__init__(pipe, daemon=True)
-      # Initializing the thread.
       pipe_name = '-nt-shaka-' + unique_name
       # The read pipe is connected to a writer process.
       pipe._read_pipe_name = r'\\.\pipe\W' + pipe_name
@@ -91,7 +90,6 @@ class Pipe(Thread):
       os.mkfifo(pipe_name, mode=readable_by_owner_only) # type: ignore
     else:
       raise RuntimeError('Platform not supported.')
-    
     return pipe
 
   @staticmethod
