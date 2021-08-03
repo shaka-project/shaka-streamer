@@ -163,7 +163,7 @@ function errorTests() {
   const minimalPipelineConfig = {
     streaming_mode: 'vod',
     resolutions: ['144p'],
-    channel_layouts: ['stereo']
+    channel_layouts: ['stereo'],
   };
 
   it('fails when extra fields are present', async () => {

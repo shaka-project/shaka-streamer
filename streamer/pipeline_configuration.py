@@ -239,6 +239,9 @@ class PipelineConfig(configuration.Base):
   Any resolution greater than the input resolution will be ignored, to avoid
   upscaling the content.  This also allows you to reuse a pipeline config for
   multiple inputs.
+
+  If not set, it will default to a list of all the (VideoResolutionName)s
+  defined in the bitrate configuration.
   """
 
   channel_layouts = configuration.Field(
@@ -246,6 +249,9 @@ class PipelineConfig(configuration.Base):
   """A list of channel layouts to encode.
 
   Any channel count greater than the input channel count will be ignored.
+
+  If not set, it will default to a list of all the (AudioChannelLayoutName)s
+  defined in the bitrate configuration.
   """
 
   audio_codecs = configuration.Field(
@@ -305,10 +311,16 @@ class PipelineConfig(configuration.Base):
 
 
   def __init__(self, *args) -> None:
-    self.__class__.resolutions.default=[ # type: ignore
-        bitrate_configuration.VideoResolution.sorted_values()[0].get_key()]
-    self.__class__.channel_layouts.default=[ # type: ignore
-        bitrate_configuration.AudioChannelLayout.sorted_values()[0].get_key()]
+
+    # Set the default values of the resolutions and channel_layouts
+    # to the values we have in the bitrate configuration.
+    # We need the 'type: ignore' here because mypy thinks these variables are lists
+    # of VideoResolutionName and AudioChannelLayoutName and not Field variables.
+    self.__class__.resolutions.default = list(  # type: ignore
+      bitrate_configuration.VideoResolution.keys())
+    self.__class__.channel_layouts.default = list(  # type: ignore
+      bitrate_configuration.AudioChannelLayout.keys())
+
     super().__init__(*args)
 
     if self.streaming_mode == StreamingMode.LIVE and not self.segment_per_file:
