@@ -57,8 +57,9 @@ class OutputStream(object):
 
   def is_dash_only(self) -> bool:
     """Returns True if the output format is restricted to DASH protocol"""
-    assert self.codec is not None
-    return self.codec.get_output_format() is 'webm'
+    if self.codec is not None:
+      return self.codec.get_output_format() == 'webm'
+    return False
   
   def get_init_seg_file(self, **kwargs) -> Pipe:
     INIT_SEGMENT = {

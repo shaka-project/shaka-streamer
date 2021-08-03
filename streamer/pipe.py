@@ -18,9 +18,9 @@ named pipes."""
 import os
 import uuid
 from threading import Thread
-from typing import Any
+from typing import Optional
 
-class Pipe(Thread):
+class Pipe:
   """A class that represents a pipe."""
 
   def __init__(self):
@@ -28,17 +28,13 @@ class Pipe(Thread):
     
     self._read_pipe_name = ''
     self._write_pipe_name = ''
-
-    # Windows specific declarations.
-    self.buf_size = 0
-    self._read_side: Any = None
-    self._write_side: Any = None
+    self._thread: Optional[Thread] = None
 
   @staticmethod
   def create_ipc_pipe(temp_dir: str, suffix: str = '') -> 'Pipe':
     """A static method used to create a pipe between two processes. 
     
-    On POXIS systems, it creates a named pipe using `os.mkfifo`.
+    On POSIX systems, it creates a named pipe using `os.mkfifo`.
     
     On Windows platforms, it starts a backgroud thread that transfars data from the
     writer to the reader process it is connected to.
@@ -50,38 +46,39 @@ class Pipe(Thread):
     # New Technology, aka WindowsNT.
     if os.name == 'nt':
       import win32pipe # type: ignore
-      # Initialize the pipe object as a thread with `daemon` attribute set
-      # to True so that the thread shuts down when the caller thread exits.
-      Thread.__init__(pipe, daemon=True)
       pipe_name = '-nt-shaka-' + unique_name
       # The read pipe is connected to a writer process.
       pipe._read_pipe_name = r'\\.\pipe\W' + pipe_name
       # The write pipe is connected to a reader process.
       pipe._write_pipe_name = r'\\.\pipe\R' + pipe_name
-      pipe.buf_size = 64 * 1024
+      buf_size = 64 * 1024
 
-      pipe._read_side = win32pipe.CreateNamedPipe(
+      read_side = win32pipe.CreateNamedPipe(
           pipe._read_pipe_name,
           win32pipe.PIPE_ACCESS_INBOUND,
           win32pipe.PIPE_WAIT | win32pipe.PIPE_TYPE_BYTE | win32pipe.PIPE_READMODE_BYTE,
           1,
-          pipe.buf_size,
-          pipe.buf_size,
+          buf_size,
+          buf_size,
           0,
           None)
 
-      pipe._write_side = win32pipe.CreateNamedPipe(
+      write_side = win32pipe.CreateNamedPipe(
           pipe._write_pipe_name,
           win32pipe.PIPE_ACCESS_OUTBOUND,
           win32pipe.PIPE_WAIT | win32pipe.PIPE_TYPE_BYTE | win32pipe.PIPE_READMODE_BYTE,
           1,
-          pipe.buf_size,
-          pipe.buf_size,
+          buf_size,
+          buf_size,
           0,
           None)
 
+      pipe._thread = Thread(
+        target=Pipe._win_thread_fn,
+        args=(read_side, write_side, buf_size),
+        daemon=True)
       # Start the thread.
-      pipe.start()
+      pipe._thread.start()
     elif hasattr(os, 'mkfifo'):
       pipe_name = os.path.join(temp_dir, unique_name)
       pipe._read_pipe_name = pipe_name
@@ -104,10 +101,11 @@ class Pipe(Thread):
     elif mode == 'r':
       pipe._write_pipe_name = path
     else:
-      raise RuntimeError('{} is not a valid file mode'.format(mode))
+      raise RuntimeError("'{}' is not a valid mode for a Pipe.".format(mode))
     return pipe
 
-  def run(self):
+  @staticmethod
+  def _win_thread_fn(read_side, write_side, buf_size):
     """This method serves as a server that connects a writer client
     to a reader client.
     
@@ -119,16 +117,16 @@ class Pipe(Thread):
       # Connect to both ends of the pipe before starting the transfer.
       # This funciton is blocking. If no process is connected yet, it will wait
       # indefinitely.
-      win32pipe.ConnectNamedPipe(self._read_side)
-      win32pipe.ConnectNamedPipe(self._write_side)
+      win32pipe.ConnectNamedPipe(read_side)
+      win32pipe.ConnectNamedPipe(write_side)
       while True:
-        # Writer -> _read_side -> _write_side -> Reader
-        _, data = win32file.ReadFile(self._read_side, self.buf_size)
-        win32file.WriteFile(self._write_side, data)
+        # Writer -> read_side -> write_side -> Reader
+        _, data = win32file.ReadFile(read_side, buf_size)
+        win32file.WriteFile(write_side, data)
     except Exception as ex:
       # Remove the pipes from the system.
-      win32file.CloseHandle(self._read_side)
-      win32file.CloseHandle(self._write_side)
+      win32file.CloseHandle(read_side)
+      win32file.CloseHandle(write_side)
       # If the error was due to one of the processes shutting down, just exit normally.
       if isinstance(ex, pywintypes.error) and ex.args[0] in [109, 232]:
         return 0
