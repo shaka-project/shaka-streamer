@@ -244,11 +244,11 @@ class Input(configuration.Base):
       disallow_field('end_time', reason)
 
 
-  def reset_name(self, pipe: str) -> None:
-    """Set the name to a pipe into which this input's contents are fed.
+  def reset_name(self, pipe_path: str) -> None:
+    """Set the name to a pipe path into which this input's contents are fed.
     """
 
-    self.name = pipe
+    self.name = pipe_path
 
   def get_stream_specifier(self) -> str:
     """Get an FFmpeg stream specifier for this input.
