@@ -31,6 +31,7 @@ setuptools.setup(
   packages=setuptools.find_packages(),
   install_requires=[
       'PyYAML',
+      'pywin32;platform_system=="Windows"',
   ],
   scripts=['shaka-streamer'],
   classifiers=[
@@ -38,6 +39,7 @@ setuptools.setup(
       'License :: OSI Approved :: Apache Software License',
       'Operating System :: POSIX :: Linux',
       'Operating System :: MacOS :: MacOS X',
+      'Operating System :: Microsoft :: Windows',
   ],
   # Python 3.5 tested in Ubuntu 16.04 LTS (Xenial Xerus).
   python_requires='>=3.5',
