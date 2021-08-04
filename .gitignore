@@ -12,3 +12,4 @@ shaka_streamer.egg-info/
 venv/
 dev/
 .vscode/
+packager.exe
