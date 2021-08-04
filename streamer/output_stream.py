@@ -61,31 +61,31 @@ class OutputStream(object):
       return self.codec.get_output_format() == 'webm'
     return False
   
-  def get_init_seg_file(self, **kwargs) -> Pipe:
+  def get_init_seg_file(self) -> Pipe:
     INIT_SEGMENT = {
-      MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
-      MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_init.{format}',
-      MediaType.TEXT: '{dir}/text_{language}_init.{format}',
+      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
+      MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_init.{format}',
+      MediaType.TEXT: 'text_{language}_init.{format}',
     }
-    path_templ = INIT_SEGMENT[self.type].format(**self._features, **kwargs)
+    path_templ = INIT_SEGMENT[self.type].format(**self._features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
-  def get_media_seg_file(self, **kwargs) -> Pipe:
+  def get_media_seg_file(self) -> Pipe:
     MEDIA_SEGMENT = {
-      MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
-      MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
-      MediaType.TEXT: '{dir}/text_{language}_$Number$.{format}',
+      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
+      MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
+      MediaType.TEXT: 'text_{language}_$Number$.{format}',
     }
-    path_templ = MEDIA_SEGMENT[self.type].format(**self._features, **kwargs)
+    path_templ = MEDIA_SEGMENT[self.type].format(**self._features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
-  def get_single_seg_file(self, **kwargs) -> Pipe:
+  def get_single_seg_file(self) -> Pipe:
     SINGLE_SEGMENT = {
-      MediaType.AUDIO: '{dir}/audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
-      MediaType.VIDEO: '{dir}/video_{resolution_name}_{bitrate}_{codec}.{format}',
-      MediaType.TEXT: '{dir}/text_{language}.{format}',
+      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
+      MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}.{format}',
+      MediaType.TEXT: 'text_{language}.{format}',
     }
-    path_templ = SINGLE_SEGMENT[self.type].format(**self._features, **kwargs)
+    path_templ = SINGLE_SEGMENT[self.type].format(**self._features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
 
@@ -147,12 +147,12 @@ class VideoOutputStream(OutputStream):
       'resolution_name': self.resolution.get_key(),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
-      'codec': self.codec.get_base_codec().value,
+      'codec': self.codec.value,
     }
 
   def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
-    return self.resolution.bitrates[self.codec.get_base_codec()]
+    return self.resolution.bitrates[self.codec]
 
 
 class TextOutputStream(OutputStream):

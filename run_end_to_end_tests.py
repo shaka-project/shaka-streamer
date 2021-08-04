@@ -157,7 +157,7 @@ def start():
 
   controller = ControllerNode()
   try:
-    controller.start(OUTPUT_DIR,
+    controller.start(configs['output_location'],
                      configs['input_config'],
                      configs['pipeline_config'],
                      configs['bitrate_config'],
@@ -175,6 +175,13 @@ def start():
         'class_name': e.class_name,
         'field_name': e.field_name,
         'field_type': e.field.get_type_name(),
+        'message': str(e),
+      })
+      return createCrossOriginResponse(
+          status=418, mimetype='application/json', body=body)
+    elif isinstance(e, RuntimeError):
+      body = json.dumps({
+        'error_type': 'RuntimeError',
         'message': str(e),
       })
       return createCrossOriginResponse(
