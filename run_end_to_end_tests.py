@@ -182,6 +182,7 @@ def start():
     elif isinstance(e, RuntimeError):
       body = json.dumps({
         'error_type': 'RuntimeError',
+        'message': str(e),
       })
       return createCrossOriginResponse(
           status=418, mimetype='application/json', body=body)
