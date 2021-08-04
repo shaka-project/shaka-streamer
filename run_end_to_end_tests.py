@@ -296,6 +296,7 @@ def main():
   for i in range(trials):
     # Start up karma.
     karma_args = [
+        'node',
         'node_modules/karma/bin/karma',
         'start',
         'tests/karma.conf.js',
