@@ -226,7 +226,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
     # https://github.com/google/shaka-streamer/issues/36
     filters.append('setsar=1:1')
 
-    if stream.codec in {VideoCodec.H264, VideoCodec.HEVC}:
+    if (stream.codec in {VideoCodec.H264, VideoCodec.HEVC} 
+        and not stream.is_hardware_accelerated()):
       # These presets are specifically recognized by the software encoder.
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
