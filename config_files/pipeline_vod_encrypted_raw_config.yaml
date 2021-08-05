@@ -30,6 +30,7 @@ resolutions:
 
 # A list of channel layouts to encode.
 channel_layouts:
+  - stereo
   - surround
 
 # Manifest format (dash, hls or both)
