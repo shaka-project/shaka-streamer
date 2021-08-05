@@ -251,25 +251,12 @@ class Input(configuration.Base):
       disallow_field('start_time', reason)
       disallow_field('end_time', reason)
 
-    # A path to a pipe into which this input's contents are fed.
-    # None for most input types.
-    self._pipe: Optional[str] = None
 
-  def set_pipe(self, pipe: str) -> None:
-    """Set the path to a pipe into which this input's contents are fed.
-
-    If set, this is what TranscoderNode will read from instead of .name.
+  def reset_name(self, pipe_path: str) -> None:
+    """Set the name to a pipe path into which this input's contents are fed.
     """
 
-    self._pipe = pipe
-
-  def get_path_for_transcode(self) -> str:
-    """Get the path which the transcoder will use to read the input.
-
-    For some input types, this is a named pipe.  For others, this is .name.
-    """
-
-    return self._pipe or self.name
+    self.name = pipe_path
 
   def get_stream_specifier(self) -> str:
     """Get an FFmpeg stream specifier for this input.

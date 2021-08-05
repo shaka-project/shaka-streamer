@@ -125,7 +125,9 @@ def hlsStreamsReady(master_playlist_path):
     return False
 
   for playlist_path in playlist_list:
-    if playlist_path == master_playlist_path:
+    # Use os.path.samefile method instead of the == operator because
+    # this might be a windows machine.
+    if os.path.samefile(playlist_path, master_playlist_path):
       # Skip the master playlist
       continue
 
@@ -155,7 +157,7 @@ def start():
 
   controller = ControllerNode()
   try:
-    controller.start(OUTPUT_DIR,
+    controller.start(configs['output_location'],
                      configs['input_config'],
                      configs['pipeline_config'],
                      configs['bitrate_config'],
@@ -173,6 +175,13 @@ def start():
         'class_name': e.class_name,
         'field_name': e.field_name,
         'field_type': e.field.get_type_name(),
+        'message': str(e),
+      })
+      return createCrossOriginResponse(
+          status=418, mimetype='application/json', body=body)
+    elif isinstance(e, RuntimeError):
+      body = json.dumps({
+        'error_type': 'RuntimeError',
         'message': str(e),
       })
       return createCrossOriginResponse(
@@ -269,7 +278,11 @@ def main():
     return 1
 
   # Install test dependencies.
-  subprocess.check_call(['npm', 'install'])
+  if os.name == 'nt':
+    install_deps_command = ['npm.cmd', 'install']
+  else:
+    install_deps_command = ['npm', 'install']
+  subprocess.check_call(install_deps_command)
 
   # Fetch streams used in tests.
   if not os.path.exists(TEST_DIR):
@@ -290,6 +303,7 @@ def main():
   for i in range(trials):
     # Start up karma.
     karma_args = [
+        'node',
         'node_modules/karma/bin/karma',
         'start',
         'tests/karma.conf.js',
