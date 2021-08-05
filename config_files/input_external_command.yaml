@@ -43,3 +43,5 @@ inputs:
     frame_rate: 25
     # Resolution of the input.
     resolution: 720p
+    # Channel layout of the input.
+    channel_layout: stereo

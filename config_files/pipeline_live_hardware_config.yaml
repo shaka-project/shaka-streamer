@@ -23,8 +23,9 @@ resolutions:
   - 720p
   - 480p
 
-# The number of audio channels to output.
-channels: 2
+# A list of channel layouts to encode.
+channel_layouts:
+ - stereo
 
 # The codecs to encode with.
 audio_codecs:
