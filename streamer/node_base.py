@@ -91,12 +91,8 @@ class NodeBase(object):
     # This makes it easy to see the arguments and easy to copy/paste them for
     # debugging in a shell.
     if shell:
-      assert type(args) is str
-      # The type checker doesn't seem to be able to determine from the assert
-      # that the type of args is str in this case. The explicit cast is a
-      # workaround for that.
-      # TODO: Look for a better way to do it.
-      print('+ ' + str(args))
+      assert isinstance(args, str)
+      print('+ ' + args)
     else:
       assert type(args) is list
       print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
