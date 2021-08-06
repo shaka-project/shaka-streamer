@@ -278,10 +278,7 @@ def main():
     return 1
 
   # Install test dependencies.
-  if os.name == 'nt':
-    install_deps_command = ['npm.cmd', 'install']
-  else:
-    install_deps_command = ['npm', 'install']
+  install_deps_command = ['npm', 'install']
   subprocess.check_call(install_deps_command)
 
   # Fetch streams used in tests.
