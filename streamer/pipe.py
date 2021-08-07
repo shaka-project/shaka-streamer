@@ -16,6 +16,7 @@
 named pipes."""
 
 import os
+import sys
 import uuid
 from threading import Thread
 from typing import Optional
@@ -43,8 +44,8 @@ class Pipe:
     unique_name = str(uuid.uuid4()) + suffix
     pipe = Pipe()
 
-    # New Technology, aka WindowsNT.
-    if os.name == 'nt':
+    # For Windows platforms.
+    if sys.platform == 'win32':
       import win32pipe # type: ignore
       pipe_name = '-nt-shaka-' + unique_name
       # The read pipe is connected to a writer process.
@@ -84,7 +85,7 @@ class Pipe:
       pipe._read_pipe_name = pipe_name
       pipe._write_pipe_name = pipe_name
       readable_by_owner_only = 0o600  # Unix permission bits
-      os.mkfifo(pipe_name, mode=readable_by_owner_only) # type: ignore
+      os.mkfifo(pipe_name, mode=readable_by_owner_only)
     else:
       raise RuntimeError('Platform not supported.')
     return pipe
