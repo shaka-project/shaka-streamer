@@ -233,18 +233,26 @@ class PipelineConfig(configuration.Base):
   """
 
   resolutions = configuration.Field(
-      List[bitrate_configuration.VideoResolutionName],
-      required=True).cast()
+      List[bitrate_configuration.VideoResolutionName]).cast()
   """A list of resolution names to encode.
 
   Any resolution greater than the input resolution will be ignored, to avoid
   upscaling the content.  This also allows you to reuse a pipeline config for
   multiple inputs.
+
+  If not set, it will default to a list of all the (VideoResolutionName)s
+  defined in the bitrate configuration.
   """
 
-  # TODO(joeyparrish): Default to whatever is in the input.
-  channels = configuration.Field(int, default=2).cast()
-  """The number of audio channels to encode."""
+  channel_layouts = configuration.Field(
+      List[bitrate_configuration.AudioChannelLayoutName]).cast()
+  """A list of channel layouts to encode.
+
+  Any channel count greater than the input channel count will be ignored.
+
+  If not set, it will default to a list of all the (AudioChannelLayoutName)s
+  defined in the bitrate configuration.
+  """
 
   audio_codecs = configuration.Field(
       List[bitrate_configuration.AudioCodec],
@@ -303,6 +311,16 @@ class PipelineConfig(configuration.Base):
 
 
   def __init__(self, *args) -> None:
+
+    # Set the default values of the resolutions and channel_layouts
+    # to the values we have in the bitrate configuration.
+    # We need the 'type: ignore' here because mypy thinks these variables are lists
+    # of VideoResolutionName and AudioChannelLayoutName and not Field variables.
+    self.__class__.resolutions.default = list(  # type: ignore
+      bitrate_configuration.VideoResolution.keys())
+    self.__class__.channel_layouts.default = list(  # type: ignore
+      bitrate_configuration.AudioChannelLayout.keys())
+
     super().__init__(*args)
 
     if self.streaming_mode == StreamingMode.LIVE and not self.segment_per_file:
@@ -314,3 +332,7 @@ class PipelineConfig(configuration.Base):
   def get_resolutions(self) -> List[bitrate_configuration.VideoResolution]:
     VideoResolution = bitrate_configuration.VideoResolution  # alias
     return [VideoResolution.get_value(name) for name in self.resolutions]
+
+  def get_channel_layouts(self) -> List[bitrate_configuration.AudioChannelLayout]:
+    AudioChannelLayout = bitrate_configuration.AudioChannelLayout # alias
+    return [AudioChannelLayout.get_value(name) for name in self.channel_layouts]

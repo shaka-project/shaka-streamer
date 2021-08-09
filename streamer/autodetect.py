@@ -18,7 +18,8 @@ import shlex
 import subprocess
 import time
 
-from streamer.bitrate_configuration import VideoResolution, VideoResolutionName
+from streamer.bitrate_configuration import (AudioChannelLayout, AudioChannelLayoutName,
+                                            VideoResolution, VideoResolutionName)
 from streamer.input_configuration import Input, InputType
 from typing import Optional, List
 
@@ -143,3 +144,16 @@ def get_resolution(input: Input) -> Optional[VideoResolutionName]:
 
   return None
 
+def get_channel_layout(input: Input) -> Optional[AudioChannelLayoutName]:
+  """Returns the autodetected channel count of the input."""
+
+  channel_count_string = _probe(input, 'stream=channels')
+  if channel_count_string is None:
+    return None
+
+  channel_count = int(channel_count_string)
+  for bucket in AudioChannelLayout.sorted_values():
+    if channel_count <= bucket.max_channels:
+      return bucket.get_key()
+
+  return None

@@ -116,6 +116,10 @@ class Input(configuration.Base):
   For example, required for input_type of 'external_command'.
   """
 
+  channel_layout = configuration.Field(
+      bitrate_configuration.AudioChannelLayoutName).cast()
+  """The name of the input channel layout (stereo, surround, etc)."""
+
   track_num = configuration.Field(int, default=0).cast()
   """The track number of the input.
 
@@ -217,13 +221,17 @@ class Input(configuration.Base):
         self.resolution = autodetect.get_resolution(self)
       require_field('resolution')
 
-    if self.media_type == MediaType.AUDIO or self.media_type == MediaType.TEXT:
-      # Language is required for audio and text inputs.
-      # We will attempt to auto-detect this.
+    if self.media_type == MediaType.AUDIO:
       if self.language is None:
         self.language = autodetect.get_language(self) or 'und'
 
+      if self.channel_layout is None:
+        self.channel_layout = autodetect.get_channel_layout(self)
+      require_field('channel_layout')
+
     if self.media_type == MediaType.TEXT:
+      if self.language is None:
+        self.language = autodetect.get_language(self) or 'und'
       # Text streams are only supported in plain file inputs.
       if self.input_type != InputType.FILE:
         reason = 'text streams are not supported in input_type "{}"'.format(
@@ -243,25 +251,12 @@ class Input(configuration.Base):
       disallow_field('start_time', reason)
       disallow_field('end_time', reason)
 
-    # A path to a pipe into which this input's contents are fed.
-    # None for most input types.
-    self._pipe: Optional[str] = None
 
-  def set_pipe(self, pipe: str) -> None:
-    """Set the path to a pipe into which this input's contents are fed.
-
-    If set, this is what TranscoderNode will read from instead of .name.
+  def reset_name(self, pipe_path: str) -> None:
+    """Set the name to a pipe path into which this input's contents are fed.
     """
 
-    self._pipe = pipe
-
-  def get_path_for_transcode(self) -> str:
-    """Get the path which the transcoder will use to read the input.
-
-    For some input types, this is a named pipe.  For others, this is .name.
-    """
-
-    return self._pipe or self.name
+    self.name = pipe_path
 
   def get_stream_specifier(self) -> str:
     """Get an FFmpeg stream specifier for this input.
@@ -314,6 +309,9 @@ class Input(configuration.Base):
 
   def get_resolution(self) -> bitrate_configuration.VideoResolution:
     return bitrate_configuration.VideoResolution.get_value(self.resolution)
+
+  def get_channel_layout(self) -> bitrate_configuration.AudioChannelLayout:
+    return bitrate_configuration.AudioChannelLayout.get_value(self.channel_layout)
 
 class SinglePeriod(configuration.Base):
   """An object repersenting one optional video stream and multiple audio and text streams"""

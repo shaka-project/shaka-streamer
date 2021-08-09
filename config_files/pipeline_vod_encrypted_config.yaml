@@ -28,8 +28,10 @@ resolutions:
   - 480p
   - 360p
 
-# The number of audio channels to output.
-channels: 6
+# A list of channel layouts to encode.
+channel_layouts:
+  - stereo
+  - surround
 
 # Manifest format (dash, hls or both)
 manifest_format:

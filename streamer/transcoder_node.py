@@ -106,7 +106,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
       # The input name always comes after the applicable input arguments.
       args += [
           # The input itself.
-          '-i', input.get_path_for_transcode(),
+          '-i', input.name,
       ]
 
     for i, input in enumerate(self._inputs):
@@ -123,7 +123,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
         if output_stream.input != input:
           # Skip outputs that don't match this exact input object.
           continue
-        if output_stream.pipe is None:
+        if output_stream.skip_transcoding:
           # This input won't be transcoded.  This is common for VTT text input.
           continue
 
@@ -140,8 +140,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           assert(isinstance(output_stream, TextOutputStream))
           args += self._encode_text(output_stream, input)
 
-        # The output pipe.
-        args += [output_stream.pipe]
+        args += [output_stream.ipc_pipe.write_end()]
 
     env = {}
     if self._pipeline_config.debug_logs:
@@ -158,10 +157,10 @@ class TranscoderNode(PolitelyWaitOnFinish):
         '-vn',
         # TODO: This implied downmixing is not ideal.
         # Set the number of channels to the one specified in the config.
-        '-ac', str(stream.channels),
+        '-ac', str(stream.layout.max_channels),
     ]
 
-    if stream.channels == 6:
+    if stream.layout.max_channels == 6:
       filters += [
         # Work around for https://github.com/google/shaka-packager/issues/598,
         # as seen on https://trac.ffmpeg.org/ticket/6974
@@ -227,7 +226,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
     # https://github.com/google/shaka-streamer/issues/36
     filters.append('setsar=1:1')
 
-    if stream.codec in {VideoCodec.H264, VideoCodec.HEVC}:
+    if (stream.codec in {VideoCodec.H264, VideoCodec.HEVC} 
+        and not stream.is_hardware_accelerated()):
       # These presets are specifically recognized by the software encoder.
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
@@ -242,7 +242,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
             '-flags', '+loop',
         ]
 
-    if stream.codec.get_base_codec() == VideoCodec.H264:  # Software or hardware
+    if stream.codec == VideoCodec.H264:  # Software or hardware
       # Use the "high" profile for HD and up, and "main" for everything else.
       # https://en.wikipedia.org/wiki/Advanced_Video_Coding#Profiles
       if stream.resolution.max_height >= 720:
@@ -258,7 +258,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           '-profile:v', profile,
       ]
       
-    if stream.codec.get_base_codec() in {VideoCodec.H264, VideoCodec.HEVC}:
+    if stream.codec in {VideoCodec.H264, VideoCodec.HEVC}:
       args += [
           # The only format supported by QT/Apple.
           '-pix_fmt', 'yuv420p',
@@ -267,7 +267,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
          
       ]
 
-    elif stream.codec.get_base_codec() == VideoCodec.VP9:
+    elif stream.codec == VideoCodec.VP9:
       # TODO: Does -preset apply here?
       args += [
           # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/VP9),

@@ -24,11 +24,9 @@ also want to look at the source code to the command-line front end script
 import os
 import re
 import shutil
-import string
 import subprocess
 import sys
 import tempfile
-import uuid
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer.cloud_node import CloudNode
@@ -41,6 +39,9 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
+import streamer.subprocessWindowsPatch  # side-effects only
+from streamer.util import is_url
+from streamer.pipe import Pipe
 
 
 class ControllerNode(object):
@@ -67,36 +68,7 @@ class ControllerNode(object):
   def __exit__(self, *unused_args) -> None:
     self.stop()
 
-  def _create_pipe(self, suffix = '') -> str:
-    """Create a uniquely-named named pipe in the node's temp directory.
-
-    Args:
-      suffix (str): An optional suffix added to the pipe's name.  Used to
-                    indicate to the packager when it's getting a certain text
-                    format in a pipe.
-    Raises:
-      RuntimeError: If the platform doesn't have mkfifo.
-    Returns:
-      The path to the named pipe, as a string.
-    """
-
-    # TODO(#8): mkfifo only works on Unix.  We would need a special case for a
-    # Windows port some day.
-
-    if not hasattr(os, 'mkfifo'):
-      raise RuntimeError('Platform not supported due to lack of mkfifo')
-
-    # Since the tempfile module creates actual files, use uuid to generate a
-    # filename, then call mkfifo to create the named pipe.
-    unique_name = str(uuid.uuid4()) + suffix
-    path = os.path.join(self._temp_dir, unique_name)
-
-    readable_by_owner_only = 0o600  # Unix permission bits
-    os.mkfifo(path, mode=readable_by_owner_only)
-
-    return path
-
-  def start(self, output_dir: str,
+  def start(self, output_location: str,
             input_config_dict: Dict[str, Any],
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
@@ -137,14 +109,6 @@ class ControllerNode(object):
       # the destination, independent of the version check above.
       CloudNode.check_access(bucket_url)
 
-
-    self._output_dir = output_dir
-    # Check if the directory for outputted Packager files exists, and if it
-    # does, delete it and remake a new one.
-    if os.path.exists(self._output_dir):
-      shutil.rmtree(self._output_dir)
-    os.mkdir(self._output_dir)
-
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
 
@@ -157,29 +121,55 @@ class ControllerNode(object):
     self._input_config = InputConfig(input_config_dict)
     self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
+    if not is_url(output_location):
+      # Check if the directory for outputted Packager files exists, and if it
+      # does, delete it and remake a new one.
+      if os.path.exists(output_location):
+        shutil.rmtree(output_location)
+      os.mkdir(output_location)
+    else:
+      # Check some restrictions and other details on HTTP output.
+      if not self._pipeline_config.segment_per_file:
+        raise RuntimeError(
+            'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
+            'must be set to True!')
+
+      if bucket_url:
+        raise RuntimeError(
+            'Cloud bucket upload is incompatible with HTTP PUT support.')
+      
+      if self._input_config.multiperiod_inputs_list:
+        # TODO: Edit Multiperiod input list implementation to support HTTP outputs
+        raise RuntimeError(
+            'Multiperiod input list support is incompatible with HTTP outputs.')
+
+    # Note that we remove the trailing slash from the output location, because
+    # otherwise GCS would create a subdirectory whose name is "".
+    output_location = output_location.rstrip('/')
+
     if self._input_config.inputs:
       # InputConfig contains inputs only.
-      self._append_nodes_for_inputs_list(self._input_config.inputs)
+      self._append_nodes_for_inputs_list(self._input_config.inputs, output_location)
     else:
       # InputConfig contains multiperiod_inputs_list only.
       # Create one Transcoder node and one Packager node for each period.
       for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
         sub_dir_name = 'period_' + str(i)
-        self._append_nodes_for_inputs_list(singleperiod.inputs, sub_dir_name)
+        self._append_nodes_for_inputs_list(singleperiod.inputs, output_location, sub_dir_name)
 
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
         self._nodes.append(PeriodConcatNode(
           self._pipeline_config,
           packager_nodes,
-          self._output_dir))
+          output_location))
 
     if bucket_url:
       cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
       os.mkdir(cloud_temp_dir)
 
       packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
-      self._nodes.append(CloudNode(self._output_dir,
+      self._nodes.append(CloudNode(output_location,
                                    bucket_url,
                                    cloud_temp_dir,
                                    packager_nodes,
@@ -190,7 +180,7 @@ class ControllerNode(object):
       
     return self
 
-  def _append_nodes_for_inputs_list(self, inputs: List[Input],
+  def _append_nodes_for_inputs_list(self, inputs: List[Input], output_location: str,
                period_dir: Optional[str] = None) -> None:
     """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
     
@@ -208,17 +198,25 @@ class ControllerNode(object):
       # that node to write to.  TranscoderNode will then instruct FFmpeg to
       # read from that pipe for this input.
       if input.input_type == InputType.EXTERNAL_COMMAND:
-        command_output = self._create_pipe()
+        command_output = Pipe.create_ipc_pipe(self._temp_dir)
         self._nodes.append(ExternalCommandNode(
-            input.name, command_output))
-        input.set_pipe(command_output)
+            input.name, command_output.write_end()))
+        # reset the name of the input to be the output pipe path - which the 
+        # transcoder node will read from - instead of a shell command.
+        input.reset_name(command_output.read_end())
 
       if input.media_type == MediaType.AUDIO:
         for audio_codec in self._pipeline_config.audio_codecs:
-          outputs.append(AudioOutputStream(self._create_pipe(),
-                                           input,
-                                           audio_codec,
-                                           self._pipeline_config.channels))
+          for output_channel_layout in self._pipeline_config.get_channel_layouts():
+            # We won't upmix a lower channel count input to a higher one.
+            # Skip channel counts greater than the input channel count.
+            if input.get_channel_layout() < output_channel_layout:
+              continue
+
+            outputs.append(AudioOutputStream(input,
+                                             self._temp_dir,
+                                             audio_codec,
+                                             output_channel_layout))
 
       elif input.media_type == MediaType.VIDEO:
         for video_codec in self._pipeline_config.video_codecs:
@@ -228,8 +226,8 @@ class ControllerNode(object):
             if input.get_resolution() < output_resolution:
               continue
 
-            outputs.append(VideoOutputStream(self._create_pipe(),
-                                             input,
+            outputs.append(VideoOutputStream(input,
+                                             self._temp_dir,
                                              video_codec,
                                              output_resolution))
 
@@ -238,29 +236,29 @@ class ControllerNode(object):
           # If the input is a VTT or TTML file, pass it directly to the packager
           # without any intermediate processing or any named pipe.
           # TODO: Test TTML inputs
-          text_pipe = None  # Bypass transcoder
+          skip_transcoding = True  # Bypass transcoder
         else:
           # Otherwise, the input is something like an mkv file with text tracks
           # in it.  These will be extracted by the transcoder and passed in a
           # pipe to the packager.
-          text_pipe = self._create_pipe('.vtt')
+          skip_transcoding = False
 
-        outputs.append(TextOutputStream(text_pipe, input))
+        outputs.append(TextOutputStream(input,
+                                        self._temp_dir,
+                                        skip_transcoding))
 
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,
                                       outputs))
-
-    output_dir = self._output_dir
     
     # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
     # and put that period in it.
     if period_dir:
-      output_dir = os.path.join(output_dir, period_dir)
-      os.mkdir(output_dir)
+      output_location = os.path.join(output_location, period_dir)
+      os.mkdir(output_location)
 
     self._nodes.append(PackagerNode(self._pipeline_config,
-                                    output_dir,
+                                    output_location,
                                     outputs))
 
   def check_status(self) -> ProcessStatus:

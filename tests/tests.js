@@ -13,13 +13,15 @@
 // limitations under the License.
 
 const flaskServerUrl = 'http://localhost:5000/';
+const outputHttpUrl = 'http://localhost:80/';
 const dashManifestUrl = flaskServerUrl + 'output_files/dash.mpd';
 const hlsManifestUrl = flaskServerUrl + 'output_files/hls.m3u8';
+const OUTPUT_DIR = 'output_files/'
 const TEST_DIR = 'test_assets/';
 let player;
 let video;
 
-async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}) {
+async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}, outputLocation=OUTPUT_DIR) {
   // Send a request to flask server to start Shaka Streamer.
   const response = await fetch(flaskServerUrl + 'start', {
     method: 'POST',
@@ -30,6 +32,7 @@ async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}) {
       'input_config': inputConfig,
       'pipeline_config': pipelineConfig,
       'bitrate_config': bitrateConfig,
+      'output_location': outputLocation
     }),
   });
 
@@ -106,10 +109,10 @@ describe('Shaka Streamer', () => {
   vodTests(hlsManifestUrl, '(hls)');
   vodTests(dashManifestUrl, '(dash)');
 
-  channelsTests(hlsManifestUrl, 2, '(hls)');
-  channelsTests(dashManifestUrl, 2, '(dash)');
-  channelsTests(hlsManifestUrl, 6, '(hls)');
-  channelsTests(dashManifestUrl, 6, '(dash)');
+  channelsTests(hlsManifestUrl, ['stereo'], 2, '(hls)');
+  channelsTests(dashManifestUrl, ['stereo'], 2, '(dash)');
+  channelsTests(hlsManifestUrl, ['surround'], 6, '(hls)');
+  channelsTests(dashManifestUrl, ['surround'], 6, '(dash)');
 
   // The HLS manifest does not indicate the availability window, so only test
   // this in DASH.
@@ -163,6 +166,7 @@ function errorTests() {
   const minimalPipelineConfig = {
     streaming_mode: 'vod',
     resolutions: ['144p'],
+    channel_layouts: ['stereo'],
   };
 
   it('fails when extra fields are present', async () => {
@@ -291,7 +295,6 @@ function errorTests() {
     const inputConfig = getBasicInputConfig();
     const pipelineConfig = {
       streaming_mode: 'live',
-      resolutions: [],
       segment_per_file: false,
     };
 
@@ -306,7 +309,6 @@ function errorTests() {
     const inputConfig = getBasicInputConfig();
     const pipelineConfig = {
       streaming_mode: 'vod',
-      resolutions: [],
       encryption: {
         enable: true,
         content_id: 'foo',
@@ -328,7 +330,6 @@ function errorTests() {
     ];
     const pipeline_config = {
       streaming_mode: 'vod',
-      resolutions: [],
     };
 
     await expectAsync(startStreamer(inputConfig, pipeline_config))
@@ -342,13 +343,39 @@ function errorTests() {
     const inputConfig = {};
     const pipeline_config = {
       streaming_mode: 'vod',
-      resolutions: [],
     };
 
     await expectAsync(startStreamer(inputConfig, pipeline_config))
         .toBeRejectedWith(jasmine.objectContaining({
           error_type: 'MissingRequiredExclusiveFields',
           field_name: 'inputs',
+        }));
+  });
+
+  it('fails when segment_per_file is false with a HTTP url output', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      streaming_mode: 'vod',
+      resolutions: [],
+      segment_per_file: false,
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig, {}, outputHttpUrl))
+    .toBeRejectedWith(jasmine.objectContaining({
+      error_type: 'RuntimeError',
+    }));
+  });
+
+  it('fails when multiperiod_inputs_list is used with a HTTP url output', async () => {
+    const inputConfig = {
+      'multiperiod_inputs_list': [
+        getBasicInputConfig(),
+      ],
+    };
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig, {}, outputHttpUrl))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'RuntimeError',
         }));
   });
 }
@@ -421,7 +448,7 @@ function outputFramerateTests(manifestUrl, format) {
       'streaming_mode': 'vod',
       'resolutions': [
         'very_small'
-      ]
+      ],
     };
 
     await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
@@ -657,6 +684,7 @@ function codecTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
       'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };
@@ -725,18 +753,16 @@ function codecTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'resolutions': [],
+      'channel_layouts': ['stereo'],
       'audio_codecs': ['aac', 'opus'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
-    await player.load(manifestUrl);
 
-    const trackList = player.getVariantTracks();
-    const audioCodecList = trackList.map(track => track.audioCodec);
+    let codecList = await getAudioAndVideoCodecs(manifestUrl);
     if (manifestUrl == hlsManifestUrl) {
-      expect(audioCodecList).not.toContain('opus');
+      expect(codecList).not.toContain('opus');
     } else if (manifestUrl == dashManifestUrl) {
-      expect(audioCodecList).toContain('opus');
+      expect(codecList).toContain('opus');
     } 
   })
 }
@@ -757,7 +783,7 @@ function autoDetectionTests(manifestUrl) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'resolutions': [],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -909,7 +935,7 @@ function languageTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'resolutions': [],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -993,8 +1019,8 @@ function vodTests(manifestUrl, format) {
   });
 }
 
-function channelsTests(manifestUrl, channels, format) {
-  it('outputs ' + channels + ' channels ' + format, async () => {
+function channelsTests(manifestUrl, channel_layouts, expected_channel_count, format) {
+  it('outputs ' + channel_layouts + ' channels ' + format, async () => {
     const inputConfigDict = {
       // List of inputs. Each one is a dictionary.
       'inputs': [
@@ -1009,14 +1035,13 @@ function channelsTests(manifestUrl, channels, format) {
 
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'resolutions': [],
-      'channels': channels,
+      'channel_layouts': channel_layouts,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
     const trackList = player.getVariantTracks();
     expect(trackList.length).toBe(1);
-    expect(trackList[0].channelsCount).toBe(channels);
+    expect(trackList[0].channelsCount).toBe(expected_channel_count);
   });
 }
 
@@ -1150,6 +1175,7 @@ function mapTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -1193,6 +1219,7 @@ function filterTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     await player.load(manifestUrl);
@@ -1321,6 +1348,7 @@ function muxedTextTests(manifestUrl, format) {
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
+      'channel_layouts': ['stereo'],
       'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };
