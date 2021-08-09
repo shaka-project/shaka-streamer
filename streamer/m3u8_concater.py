@@ -19,7 +19,7 @@ import re
 import math
 import enum
 from typing import List, Optional, Dict, Set, Tuple, cast
-from streamer.bitrate_configuration import VideoCodec, AudioCodec, VideoResolution
+from streamer.bitrate_configuration import VideoCodec, AudioCodec, VideoResolution, AudioChannelLayout
 
 
 class MediaPlaylist:
@@ -147,7 +147,7 @@ class MediaPlaylist:
           os.path.basename(line))
         if codec in [codec.value for codec in AudioCodec]:
           self.codec = AudioCodec(codec)
-          self.channels = int(other)
+          self.channels = AudioChannelLayout.get_value(other)
         if codec in [codec.value for codec in VideoCodec]:
           self.codec = VideoCodec(codec)
           self.resolution = VideoResolution.get_value(other)
@@ -369,7 +369,7 @@ class MediaPlaylist:
     # Extract all the codecs, languages, and channel counts.
     codecs: Set[AudioCodec] = set()
     langs: Set[str] = set()
-    channels: Set[int] = set()
+    channels: Set[AudioChannelLayout] = set()
     for aud_playlists in all_aud_playlists:
       for aud_playlist in aud_playlists:
         assert isinstance(aud_playlist.codec, AudioCodec)
