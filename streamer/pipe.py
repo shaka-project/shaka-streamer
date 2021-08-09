@@ -44,7 +44,6 @@ class Pipe:
     unique_name = str(uuid.uuid4()) + suffix
     pipe = Pipe()
 
-    # For Windows platforms.
     if sys.platform == 'win32':
       import win32pipe # type: ignore
       pipe_name = '-nt-shaka-' + unique_name
