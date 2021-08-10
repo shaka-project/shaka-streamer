@@ -134,5 +134,5 @@ class PeriodConcatNode(ThreadedNodeBase):
   def _hls_concat(self) -> None:
     """Concatenates multiple HLS playlists with #EXT-X-DISCONTINUITY."""
     
-    import m3u8 # type: ignore
+    pass
     

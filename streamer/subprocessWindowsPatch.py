@@ -97,7 +97,7 @@ def Popen(args, *more_args, **kwargs):
 # Only patch win32, but not cygwin.  Cygwin works correctly already.
 if sys.platform == 'win32':
   # Patch over Popen.
-  subprocess.Popen = Popen
+  subprocess.Popen = Popen # type: ignore
   # Copy the docstring from the real Popen into the patch, so that
   # help(subprocess.Popen) is still relatively sane with this patch installed.
   Popen.__doc__ = real_Popen.__doc__

@@ -157,10 +157,10 @@ class TranscoderNode(PolitelyWaitOnFinish):
         '-vn',
         # TODO: This implied downmixing is not ideal.
         # Set the number of channels to the one specified in the config.
-        '-ac', str(stream.channels),
+        '-ac', str(stream.layout.max_channels),
     ]
 
-    if stream.channels == 6:
+    if stream.layout.max_channels == 6:
       filters += [
         # Work around for https://github.com/google/shaka-packager/issues/598,
         # as seen on https://trac.ffmpeg.org/ticket/6974

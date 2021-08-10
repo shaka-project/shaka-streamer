@@ -39,7 +39,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
-from streamer.subprocessWindowsPatch  # side-effects only
+import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
 
@@ -207,10 +207,16 @@ class ControllerNode(object):
 
       if input.media_type == MediaType.AUDIO:
         for audio_codec in self._pipeline_config.audio_codecs:
-          outputs.append(AudioOutputStream(input,
-                                           self._temp_dir,
-                                           audio_codec,
-                                           self._pipeline_config.channels))
+          for output_channel_layout in self._pipeline_config.get_channel_layouts():
+            # We won't upmix a lower channel count input to a higher one.
+            # Skip channel counts greater than the input channel count.
+            if input.get_channel_layout() < output_channel_layout:
+              continue
+
+            outputs.append(AudioOutputStream(input,
+                                             self._temp_dir,
+                                             audio_codec,
+                                             output_channel_layout))
 
       elif input.media_type == MediaType.VIDEO:
         for video_codec in self._pipeline_config.video_codecs:

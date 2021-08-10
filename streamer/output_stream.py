@@ -60,7 +60,7 @@ class OutputStream(object):
     if self.codec is not None:
       return self.codec.get_output_format() == 'webm'
     return False
-  
+
   def get_init_seg_file(self) -> Pipe:
     INIT_SEGMENT = {
       MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
@@ -95,30 +95,17 @@ class AudioOutputStream(OutputStream):
                input: Input,
                pipe_dir: str,
                codec: AudioCodec,
-               channels: int) -> None:
+               channel_layout: AudioChannelLayout) -> None:
 
     super().__init__(MediaType.AUDIO, input, codec, pipe_dir)
     # Override the codec type and specify that it's an audio codec
     self.codec: AudioCodec = codec
-
-    # TODO: Make channels an input feature instead of an output feature
-    self.channels = channels
-
-    # Until we make channels an input feature, match this output feature to a
-    # specific channel layout.  Use the first one the output channels fit into.
-    self.layout = None
-    for layout in AudioChannelLayout.sorted_values():
-      if self.channels <= layout.max_channels:
-        self.layout = layout
-        break
-
-    assert self.layout, 'Unable to find audio layout for {} channels'.format(
-        self.channels)
+    self.layout = channel_layout
 
     # The features that will be used to generate the output filename.
     self._features = {
       'language': input.language,
-      'channels': str(self.channels),
+      'channels': str(self.layout.max_channels),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
       'codec': self.codec.value,
@@ -126,7 +113,6 @@ class AudioOutputStream(OutputStream):
 
   def get_bitrate(self) -> str:
     """Returns the bitrate for this stream."""
-    assert self.layout is not None
     return self.layout.bitrates[self.codec]
 
 

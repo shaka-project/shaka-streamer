@@ -171,6 +171,11 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
   }),
 }
 
+class AudioChannelLayoutName(configuration.RuntimeMapKeyValidator):
+  """A type which will only allow valid AudioChannelLayout names at runtime."""
+
+  map_class = AudioChannelLayout
+
 
 class VideoResolution(configuration.RuntimeMap):
 
