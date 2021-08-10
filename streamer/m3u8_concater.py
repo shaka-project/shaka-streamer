@@ -145,12 +145,16 @@ class MediaPlaylist:
           line = lines[i+2]
         other, codec = _codec_resolution_channels_regex(
           os.path.basename(line))
-        if codec in [codec.value for codec in AudioCodec]:
-          self.codec = AudioCodec(codec)
-          self.channels = AudioChannelLayout.get_value(other)
         if codec in [codec.value for codec in VideoCodec]:
           self.codec = VideoCodec(codec)
           self.resolution = VideoResolution.get_value(other)
+        else:
+          # It is either an audio playlist or a text playlist.
+          if codec in [codec.value for codec in AudioCodec]:
+            self.codec = AudioCodec(codec)
+            self.channel_layout = AudioChannelLayout.get_value(other)
+          # Set the language variable for audio and text playlists.
+          self.language = self.stream_info.get('LANGUAGE', '"und"')
         break
   
   @staticmethod
@@ -229,7 +233,7 @@ class MediaPlaylist:
                     ) -> str:
     """Returns the maximum channel count found in one of the given playlists."""
     
-    return _quote(str(max(media_playlist.channels
+    return _quote(str(max(media_playlist.channel_layout.max_channels
                           for media_playlist in media_playlists)))
   
   @staticmethod
@@ -359,7 +363,7 @@ class MediaPlaylist:
   def concat_aud_common(all_aud_playlists: List[List['MediaPlaylist']]
                         ) -> Dict[AudioCodec,
                                   Dict[str,
-                                       Dict[int,
+                                       Dict[AudioChannelLayout,
                                             List['MediaPlaylist']]]]:
     """A common method that is used to divide the audio playlists into a structure
     that is easy to process.
@@ -374,77 +378,58 @@ class MediaPlaylist:
       for aud_playlist in aud_playlists:
         assert isinstance(aud_playlist.codec, AudioCodec)
         codecs.add(aud_playlist.codec)
-        channels.add(aud_playlist.channels)
+        channels.add(aud_playlist.channel_layout)
         langs.add(aud_playlist.stream_info.get('LANGUAGE', '"und"'))
     
     # Create and initialize a division map.
     division: Dict[AudioCodec,
                    Dict[str,
-                        Dict[int,
-                             List[Optional['MediaPlaylist']]]]] = {}
+                        Dict[AudioChannelLayout,
+                             List['MediaPlaylist']]]] = {}
+    
     for codec in codecs:
       division[codec] = {}
       for lang in langs:
         division[codec][lang] = {}
         for channel in channels:
           division[codec][lang][channel] = []
-          for _ in range(len(all_aud_playlists)):
-            division[codec][lang][channel].append(None)
     
     # Fill the division map.
-    for i, aud_playlists in enumerate(all_aud_playlists):
+    for aud_playlists in all_aud_playlists:
+      # Initialize a mapping between audio-codecs and language to a list of 
+      # channel layouts available.
+      codec_lang_division: Dict[AudioCodec, Dict[str, List[MediaPlaylist]]] = {}
+      for codec in codecs:
+        codec_lang_division[codec] = {}
+        for lang in langs:
+          codec_lang_division[codec][lang] = []
+      # For every audio playlist in this period, append it to the mathcing codec/language.
       for aud_playlist in aud_playlists:
         assert isinstance(aud_playlist.codec, AudioCodec)
-        division[aud_playlist.codec][aud_playlist.stream_info.get(
-          'LANGUAGE', '"und"')][aud_playlist.channels][i] = aud_playlist
-    
-    # Substitute for any missing languages in the divison map.
-    for i in range(len(all_aud_playlists)):
+        codec_lang_division[aud_playlist.codec][aud_playlist.stream_info.get(
+          'LANGUAGE', '"und"')].append(aud_playlist)
+      # Sort and replace the missing languages in the codec_lang_division map.
       for codec in codecs:
         for lang in langs:
-          # If all the channels are None for this language in period i,
-          # then we are missing the language.
-          if all(division[codec][lang][channel][i] is None for channel in channels):
-            # Get a substitute language.
-            sub_lang = MediaPlaylist._fit_missing_lang(
-              _non_nones([division[codec][lg][ch][i]
-                          for lg in langs for ch in channels]), lang)
-            for channel in channels:
-              # Replace the missing language with the substitute.
-              division[codec][lang][channel][i] = division[codec][sub_lang][channel][i]
-    
-    sorted_channels = sorted(channels)
-    # Substitute for the lowest missing channel in the division map.
-    for i in range(len(all_aud_playlists)):
-      for codec in codecs:
-        for lang in langs:
-          # If None was found for the lowest channel, get the nearest higher one.
-          if division[codec][lang][sorted_channels[0]][i] is None:
-            for sub_channel in sorted_channels:
-              if division[codec][lang][sub_channel][i]:
-                division[codec][lang][sorted_channels[0]][i] = division[
-                  codec][lang][sub_channel][i]
-                break
-          # This assertion verifies the cast done below, if we are sure that all the
-          # lower channels are not None, so the higher channels won't be None too.
-          assert division[codec][lang][sorted_channels[0]][i] is not None
-    
-    # Substitute for the rest of the missing channels in the divsion map.
-    for i in range(len(all_aud_playlists)):
-      for codec in codecs:
-        for lang in langs:
-          for ch_ind in range(1, len(sorted_channels)):
-            # If None was found for this channel count, use the one just before it.
-            if division[codec][lang][sorted_channels[ch_ind]][i] is None:
-              division[codec][lang][sorted_channels[ch_ind]][i] = division[
-                codec][lang][sorted_channels[ch_ind - 1]][i]
-  
-    # This cast is safe, since we made the needed assertions while mapping the
-    # lowest channel for every codec-language division.
-    return cast(Dict[AudioCodec,
-                     Dict[str,
-                          Dict[int,
-                               List[MediaPlaylist]]]], division)
+          # If this language for this codec in this period has no channel_layout, this
+          # means that the language it self is missing.
+          # We will try to substitue for it.
+          if not len(codec_lang_division[codec][lang]):
+            playlist_options = [codec_lang_division[codec][lg][0] for lg in langs
+                                if len(codec_lang_division[codec][lg])]
+            sub_lang = MediaPlaylist._fit_missing_lang(playlist_options, lang)
+            # Replace the empty codec_lang_division[codec][lang] with the substitution 
+            # language with the same codec.
+            codec_lang_division[codec][lang] = codec_lang_division[codec][sub_lang]
+          # Sort the channel layouts ascendingly.
+          codec_lang_division[codec][lang].sort(key=lambda pl: pl.channel_layout)
+          # Fill the division map for the current period from the codec_lang_division map.
+          for i, channel in enumerate(sorted(channels)):
+            division[codec][lang][channel].append(
+              codec_lang_division[codec][lang][min(
+                i, len(codec_lang_division[codec][lang]) - 1)])
+
+    return division
   
   @staticmethod
   def concat_aud(all_aud_playlists: List[List['MediaPlaylist']]
@@ -574,8 +559,7 @@ class MediaPlaylist:
       codec_division: Dict[VideoCodec, List[MediaPlaylist]] = {}
       for codec in codecs:
         codec_division[codec] = []
-      # For every video playlist in this period, append it to the matching
-      # codec.
+      # For every video playlist in this period, append it to the matching codec.
       for inf_playlist in inf_playlists:
         assert isinstance(inf_playlist.codec, VideoCodec)
         codec_division[inf_playlist.codec].append(inf_playlist)
