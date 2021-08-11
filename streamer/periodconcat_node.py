@@ -183,7 +183,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     for packager_node in self._packager_nodes:
       hls_playlist = os.path.join(packager_node.output_location,
                                   self._pipeline_config.hls_output)
-      hls_concater.add(hls_playlist)
+      hls_concater.add(hls_playlist, packager_node)
     
     # Start the period concatenation.
     hls_concater.concat()

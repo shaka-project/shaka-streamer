@@ -147,6 +147,7 @@ describe('Shaka Streamer', () => {
   muxedTextTests(dashManifestUrl, '(dash)');
 
   multiPeriodTests(dashManifestUrl, '(dash)');
+  multiPeriodTests(hlsManifestUrl, '(hls)');
 });
 
 function errorTests() {
@@ -1393,7 +1394,8 @@ function multiPeriodTests(manifestUrl, format) {
     await player.load(manifestUrl);
 
     // Since we processed only 0:01s, the total duration shoud be 2s.
-    // Be more tolerant with float comparison, (D > 1.9 * length) instead of (D == 2 * length).
+    // Be more tolerant with float comparison.
+    // Use (D > 1.9 * length) instead of (D == 2 * length).
     expect(video.duration).toBeGreaterThan(1.9);
   });
 }
