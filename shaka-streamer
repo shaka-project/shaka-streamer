@@ -49,18 +49,18 @@ def main():
   parser = argparse.ArgumentParser(description=description,
                                    formatter_class=CustomArgParseFormatter)
 
-  parser.add_argument('-i', '--input_config',
+  parser.add_argument('-i', '--input-config',
                       required=True,
                       help='The path to the input config file (required).')
-  parser.add_argument('-p', '--pipeline_config',
+  parser.add_argument('-p', '--pipeline-config',
                       required=True,
                       help='The path to the pipeline config file (required).')
-  parser.add_argument('-b', '--bitrate_config',
+  parser.add_argument('-b', '--bitrate-config',
                       help='The path to a config file which defines custom ' +
                            'bitrates and resolutions for transcoding. ' +
                            '(optional, see example in ' +
                            'config_files/bitrate_config.yaml)')
-  parser.add_argument('-c', '--cloud_url',
+  parser.add_argument('-c', '--cloud-url',
                       default=None,
                       help='The Google Cloud Storage or Amazon S3 URL to ' +
                            'upload to.  (Starts with gs:// or s3://)')
