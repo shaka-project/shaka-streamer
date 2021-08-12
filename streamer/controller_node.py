@@ -28,10 +28,17 @@ import subprocess
 import sys
 import tempfile
 
+try:
+  import streamer_binaries # type: ignore
+  binaries_are_installed = True
+except ImportError:
+  binaries_are_installed = False
 from typing import Any, Dict, List, Optional, Tuple, Union
+import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
+from streamer import autodetect
 from streamer.input_configuration import InputConfig, InputType, MediaType, Input
 from streamer.node_base import NodeBase, ProcessStatus
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
@@ -39,7 +46,6 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
-import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
 
@@ -73,7 +79,8 @@ class ControllerNode(object):
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
             bucket_url: Union[str, None] = None,
-            check_deps: bool = True) -> 'ControllerNode':
+            check_deps: bool = True,
+            use_hermetic: bool = True) -> 'ControllerNode':
     """Create and start all other nodes.
 
     :raises: `RuntimeError` if the controller has already started.
@@ -81,19 +88,29 @@ class ControllerNode(object):
              invalid.
     """
 
+    if not binaries_are_installed and use_hermetic:
+      raise RuntimeError(
+      'shaka-streamer-binaries couldn\'t be found.\n'
+      '              Install it with `pip install shaka-streamer-binaries`.\n'
+      '              Alternatively, use the `--use-system-binaries` option if'
+      ' you want to use the system wide binaries of ffmpeg/ffprobe/packager.')
+
     if self._nodes:
       raise RuntimeError('Controller already started!')
 
     if check_deps:
-      # Check that ffmpeg version is 4.1 or above.
-      _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
+      if not use_hermetic:
+        # Check that ffmpeg version is 4.1 or above.
+        _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
 
-      # Check that ffprobe version (used for autodetect features) is 4.1 or
-      # above.
-      _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
+        # Check that ffprobe version (used for autodetect features) is 4.1 or
+        # above.
+        _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
 
-      # Check that Shaka Packager version is 2.4.2 or above.
-      _check_version('Shaka Packager', ['packager', '-version'], (2, 4, 2))
+        # Check that Shaka Packager version is 2.4.2 or above.
+        _check_version('Shaka Packager', ['packager', '-version'], (2, 4, 2))
+      else:
+        assert streamer_binaries.__version__ >= streamer.__version__
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
@@ -108,6 +125,13 @@ class ControllerNode(object):
       # If using cloud storage, make sure the user is logged in and can access
       # the destination, independent of the version check above.
       CloudNode.check_access(bucket_url)
+
+    self.hermetic_ffmpeg: Optional[str] = None
+    self.hermetic_pacakger: Optional[str] = None
+    if use_hermetic:
+      self.hermetic_ffmpeg = streamer_binaries.FFMPEG
+      autodetect.hermetic_ffprobe = streamer_binaries.FFPROBE
+      self.hermetic_pacakger = streamer_binaries.PACKAGER
 
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
@@ -137,7 +161,7 @@ class ControllerNode(object):
       if bucket_url:
         raise RuntimeError(
             'Cloud bucket upload is incompatible with HTTP PUT support.')
-      
+
       if self._input_config.multiperiod_inputs_list:
         # TODO: Edit Multiperiod input list implementation to support HTTP outputs
         raise RuntimeError(
@@ -149,13 +173,16 @@ class ControllerNode(object):
 
     if self._input_config.inputs:
       # InputConfig contains inputs only.
-      self._append_nodes_for_inputs_list(self._input_config.inputs, output_location)
+      self._append_nodes_for_inputs_list(self._input_config.inputs,
+                                         output_location)
     else:
       # InputConfig contains multiperiod_inputs_list only.
       # Create one Transcoder node and one Packager node for each period.
       for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
         sub_dir_name = 'period_' + str(i)
-        self._append_nodes_for_inputs_list(singleperiod.inputs, output_location, sub_dir_name)
+        self._append_nodes_for_inputs_list(singleperiod.inputs,
+                                           output_location,
+                                           sub_dir_name)
 
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
@@ -180,16 +207,17 @@ class ControllerNode(object):
       
     return self
 
-  def _append_nodes_for_inputs_list(self, inputs: List[Input], output_location: str,
-               period_dir: Optional[str] = None) -> None:
+  def _append_nodes_for_inputs_list(self, inputs: List[Input],
+                                    output_location: str,
+                                    period_dir: Optional[str] = None) -> None:
     """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
-    
+
     Args:
       inputs (List[Input]): A list of Input streams.
       period_dir (Optional[str]): A subdirectory name where a single period will be outputted to.
       If passed, this indicates that inputs argument is one period in a list of periods.
     """
-    
+
     outputs: List[OutputStream] = []
     for input in inputs:
       # External command inputs need to be processed by an additional node
@@ -249,8 +277,9 @@ class ControllerNode(object):
 
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,
-                                      outputs))
-    
+                                      outputs,
+                                      self.hermetic_ffmpeg))
+
     # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
     # and put that period in it.
     if period_dir:
@@ -259,7 +288,8 @@ class ControllerNode(object):
 
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
-                                    outputs))
+                                    outputs,
+                                    self.hermetic_pacakger))
 
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
