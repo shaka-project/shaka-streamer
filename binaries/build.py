@@ -21,6 +21,8 @@ import shutil
 import os
 import yaml
 
+# os.chmod() is called for every binary at import time,
+# before we put them in wheels.
 import streamer_binaries
 
 
@@ -30,6 +32,9 @@ def clean_dir(dir):
   os.mkdir(dir)
 
 def build_wheel(platform_name, platform_binaries):
+  """Builds a wheel distribution for `platform_name` adding the files
+  in `platform_binaries` to it."""
+
   sys.argv = [
       'setup.py',
       # Build binary as a wheel.
@@ -75,7 +80,7 @@ def main():
     print(
       'Error: The first and only argument should be a yaml file name.\n'
       'Usage: python build.py filename.yaml')
-    exit(1)
+    return 1
 
   with open(yaml_file) as platform_data_file:
     platform_data_dict = yaml.safe_load(platform_data_file)
@@ -89,13 +94,13 @@ def main():
       assert isinstance(item, str), 'A file name should be a string.'
 
   # For each platform(OS+CPU), create a binary wheel distribution
-  # that contains the executables specific for this platform.
+  # that contains the executables specific to this platform.
   for platform_name, platform_binaries in platform_data_dict.items():
     # We will build the package multiple times, each time with differnt
     # command line arguments for a differnt platform.
     build_wheel(platform_name, platform_binaries)
     # Clean the build directory so the binaries that were just added
-    # doesn't remain in the package for the next platform to build for.
+    # doesn't remain in the package for the next platform we build for.
     # This is because setuptools doesn't delete it after a build has
     # completed and doesn't also re-create it in the next `build` call,
     # that's why we can't delete it either, so let's just clean it.
@@ -103,5 +108,6 @@ def main():
 
   clean_dir('build')
   os.rmdir('build')
+  return 0
 
-main()
+exit(main())

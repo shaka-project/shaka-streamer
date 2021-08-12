@@ -28,11 +28,7 @@ import subprocess
 import sys
 import tempfile
 
-try:
-  import streamer_binaries # type: ignore
-  binaries_are_installed = True
-except ImportError:
-  binaries_are_installed = False
+
 from typing import Any, Dict, List, Optional, Tuple, Union
 import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.cloud_node import CloudNode
@@ -88,12 +84,23 @@ class ControllerNode(object):
              invalid.
     """
 
-    if not binaries_are_installed and use_hermetic:
-      raise RuntimeError(
-      'shaka-streamer-binaries couldn\'t be found.\n'
-      '              Install it with `pip install shaka-streamer-binaries`.\n'
-      '              Alternatively, use the `--use-system-binaries` option if'
-      ' you want to use the system wide binaries of ffmpeg/ffprobe/packager.')
+    if use_hermetic:
+      try:
+        import streamer_binaries # type: ignore
+      except (ImportError, PermissionError) as ex:
+        # If the package couldn't be imported.
+        if isinstance(ex, ImportError):
+          raise RuntimeError(
+              'shaka-streamer-binaries was not found.\n'
+              '  Install it with `pip install shaka-streamer-binaries`.\n'
+              '  Alternatively, use the `--use-system-binaries` option if you '
+              'want to use the system wide binaries of ffmpeg/ffprobe/packager.')
+        # If we can't set the permissions for the bundled executables,
+        # we may not be able to run it as a subprocess.
+        if isinstance(ex, PermissionError):
+          raise RuntimeError(
+              'Couldn\'t set the permissions for the bundled '
+              '`shaka-streamer-binaries` executables.\n  Please run as a root.')
 
     if self._nodes:
       raise RuntimeError('Controller already started!')
@@ -130,8 +137,8 @@ class ControllerNode(object):
     self.hermetic_pacakger: Optional[str] = None
     if use_hermetic:
       self.hermetic_ffmpeg = streamer_binaries.ffmpeg
-      autodetect.hermetic_ffprobe = streamer_binaries.ffprobe
       self.hermetic_pacakger = streamer_binaries.packager
+      autodetect.hermetic_ffprobe = streamer_binaries.ffprobe
 
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
