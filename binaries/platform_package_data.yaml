@@ -18,24 +18,24 @@
 
 # 64-bit Windows
 win_amd64:
-  - packager
-  - ffmpeg
-  - ffprobe
+  - ffmpeg-win-x64.exe
+  - ffprobe-win-x64.exe
+  - packager-win.exe
 
 # 64-bit Linux
 manylinux1_x86_64:
-  - packager
-  - ffmpeg
-  - ffprobe
+  - ffmpeg-linux-x64
+  - ffprobe-linux-x64
+  - packager-linux
 
 # Linux on ARM
 manylinux2014_aarch64:
+  - ffmpeg-linux-arm64
+  - ffprobe-linux-arm64
   - packager
-  - ffmpeg
-  - ffprobe
 
 # 64-bit OS X Mavericks
 macosx_10_9_x86_64:
-  - packager
-  - ffmpeg
-  - ffprobe
+  - ffmpeg-osx-x64
+  - ffprobe-osx-x64
+  - packager-osx

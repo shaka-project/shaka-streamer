@@ -13,4 +13,6 @@ shaka_streamer_binaries.egg-info/
 venv/
 dev/
 .vscode/
-packager.exe
+ffmpeg*
+ffprobe*
+packager*

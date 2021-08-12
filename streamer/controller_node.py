@@ -129,9 +129,9 @@ class ControllerNode(object):
     self.hermetic_ffmpeg: Optional[str] = None
     self.hermetic_pacakger: Optional[str] = None
     if use_hermetic:
-      self.hermetic_ffmpeg = streamer_binaries.FFMPEG
-      autodetect.hermetic_ffprobe = streamer_binaries.FFPROBE
-      self.hermetic_pacakger = streamer_binaries.PACKAGER
+      self.hermetic_ffmpeg = streamer_binaries.ffmpeg
+      autodetect.hermetic_ffprobe = streamer_binaries.ffprobe
+      self.hermetic_pacakger = streamer_binaries.packager
 
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
