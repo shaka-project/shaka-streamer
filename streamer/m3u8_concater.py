@@ -165,16 +165,15 @@ class MediaPlaylist:
   
   @staticmethod
   def inf_is_vid(inf_playlists: List['MediaPlaylist']) -> bool:
-    """This is useful to detect whether the stream-inf playlists are video playlists.
-    They could be audio playlists as #EXT-X-STREAM-INF because there were no video stream
-    associated with this input."""
+    """This is useful to detect whether the stream-inf playlists in some
+    master playlist are video playlists.  They could be audio playlists
+    as #EXT-X-STREAM-INF because there were no video stream associated
+    with this input."""
     
     # NOTE: Ideally, this check should be performed on all the STREAM-INF playlists
     # for this input, but Shaka-Packager's output guarantees for us that all the 
     # STREAM-INFs will be videos or all will be audios in a master playlist.
-    if isinstance(inf_playlists[0].codec, VideoCodec):
-      return True
-    return False
+    return inf_playlists[0].type == MediaType.VIDEO
   
   @staticmethod
   def _keep_similar_stream_info(media_playlists: List['MediaPlaylist']
@@ -328,12 +327,14 @@ class MediaPlaylist:
     for i in range(len(all_txt_playlists)):
       for lang in langs:
         if not division[lang][i]:
-          division[lang][i] = division[MediaPlaylist._fit_missing_lang(
-            non_nones([division[lg][i] for lg in langs]), lang)][i]
+          sub_lang = MediaPlaylist._fit_missing_lang(
+            non_nones([division[lg][i] for lg in langs]), lang)
+          division[lang][i] = division[sub_lang][i]
     
     concat_txt_playlists: List[MediaPlaylist] = []
     for lang, opt_txt_playlists in division.items():
       stream_info: Dict[str, str] = MediaPlaylist._keep_similar_stream_info(
+        # There must be at least one that isn't None.
         non_nones(opt_txt_playlists))
       # Put the language in case it was removed.
       if lang != 'und':
