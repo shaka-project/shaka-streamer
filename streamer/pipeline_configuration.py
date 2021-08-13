@@ -76,6 +76,16 @@ class EncryptionMode(enum.Enum):
   RAW = 'raw'
   """Raw key mode"""
 
+class UtcTimingPair(configuration.Base):
+  """An object containing the attributes for a DASH MPD UTCTiming 
+  element"""
+
+  scheme_id_uri = configuration.Field(str).cast()
+  """SchemeIdUri attribute to be used for the UTCTiming element"""
+
+  value = configuration.Field(str).cast()
+  """Value attribute to be used for the UTCTiming element"""
+
 class RawKeyConfig(configuration.Base):
   """An object representing a list of keys for Raw key encryption"""
 
@@ -312,8 +322,12 @@ class PipelineConfig(configuration.Base):
   is_low_latency_dash = configuration.Field(bool, default=False).cast()
   """If true, stream in low latency mode for DASH."""
 
-  utc_timings = configuration.Field(List[str], default=['']).cast()
+  utc_timings = configuration.Field(List[UtcTimingPair]).cast()
   """UTCTiming schemeIdUri and value pairs for the DASH MPD.
+
+  If multiple UTCTiming pairs are provided for redundancy,
+  
+  list them the order of preference.
 
   Must be set for LL-DASH streaming.
   """
