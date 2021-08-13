@@ -378,6 +378,19 @@ function errorTests() {
           error_type: 'RuntimeError',
         }));
   });
+
+  it('fails when utc_timing is not set for low latency DASH', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      is_low_latency_dash: true,
+      streaming_mode: 'live',
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'RuntimeError',
+        }));
+  });
 }
 
 function resolutionTests(manifestUrl, format) {
