@@ -31,6 +31,7 @@ import tempfile
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 import streamer.subprocessWindowsPatch  # side-effects only
+from streamer import __version__
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
@@ -94,19 +95,27 @@ class ControllerNode(object):
               'shaka-streamer-binaries was not found.\n'
               '  Install it with `pip install shaka-streamer-binaries`.\n'
               '  Alternatively, use the `--use-system-binaries` option if you '
-              'want to use the system wide binaries of ffmpeg/ffprobe/packager.')
+              'want to use the system wide binaries of ffmpeg/ffprobe/packager.'
+              ) from None
         # If we can't set the permissions for the bundled executables,
         # we may not be able to run it as a subprocess.
         if isinstance(ex, PermissionError):
           raise RuntimeError(
               'Couldn\'t set the permissions for the bundled '
-              '`shaka-streamer-binaries` executables.\n  Please run as a root.')
+              '`shaka-streamer-binaries` executables.\n  Please run as a root.'
+              ) from None
 
     if self._nodes:
       raise RuntimeError('Controller already started!')
 
     if check_deps:
-      if not use_hermetic:
+      if use_hermetic:
+        if streamer_binaries.__version__ < __version__:
+          raise VersionError(
+              'An outdated `shaka-streamer-binareis` is installed.\n'
+              '  Update it with `pip install --upgrade shaka-streamer-binaries`.'
+              )
+      else:
         # Check that ffmpeg version is 4.1 or above.
         _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
 
@@ -116,8 +125,6 @@ class ControllerNode(object):
 
         # Check that Shaka Packager version is 2.4.2 or above.
         _check_version('Shaka Packager', ['packager', '-version'], (2, 4, 2))
-      else:
-        assert streamer_binaries.__version__ >= streamer.__version__
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
