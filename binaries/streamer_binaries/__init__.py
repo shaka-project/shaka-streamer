@@ -27,7 +27,7 @@ def _change_permissions_if_needed(file):
   executable_by_all = 0o111
   perms = os.stat(file).st_mode
   # If it already has executable permssions, we don't chmod.
-  # As chmod may require sudo permssions.
+  # As chmod may require root permssions.
   if (perms | executable_by_all) == perms:
     return
   # Else we will change the permissions to 0o755.
