@@ -166,7 +166,6 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
             ','.join(timing.scheme_id_uri + '=' +
                      timing.value for timing in self._pipeline_config.utc_timings)
         ]
-
       if self._pipeline_config.is_low_latency_dash:
         args += [
             '--is_low_latency_dash=true',
