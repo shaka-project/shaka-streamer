@@ -56,7 +56,7 @@ def build_wheel(platform_name, platform_binaries):
     description='A package containing FFmpeg, FFprobe, and Shaka Packager static builds.',
     long_description=('An auxiliary package that provides platform-specific'
                       ' binaries used by Shaka Streamer.'),
-    url='https://github.com/google/shaka-streamer',
+    url='https://github.com/google/shaka-streamer/tree/master/binaries',
     packages=['streamer_binaries'],
     classifiers=[
         'Programming Language :: Python :: 3',
@@ -106,8 +106,7 @@ def main():
     # that's why we can't delete it either, so let's just clean it.
     clean_dir('build/lib/streamer_binaries')
 
-  clean_dir('build')
-  os.rmdir('build')
+  shutil.rmtree('build')
   return 0
 
 exit(main())
