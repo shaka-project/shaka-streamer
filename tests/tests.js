@@ -398,6 +398,12 @@ function errorTests() {
       is_low_latency_dash: true,
       manifest_format: ['hls'],
       streaming_mode: 'live',
+      utc_timings: [
+        {
+          scheme_id_uri:'urn:mpeg:dash:utc:http-xsdate:2014',
+          value:'https://time.akamai.com/?.iso'
+        },
+      ],
     };
 
     await expectAsync(startStreamer(inputConfig, pipelineConfig))
@@ -1450,7 +1456,6 @@ function lowLatencyDashTests(manifestUrl, format) {
           'value':'https://time.akamai.com/?.iso'
         },
       ],
-      'debug_logs': true,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
     // TODO(CaitlinO'Callaghan): fix so player loads and test passes

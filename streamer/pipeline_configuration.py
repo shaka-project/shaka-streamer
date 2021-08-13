@@ -327,7 +327,7 @@ class PipelineConfig(configuration.Base):
 
   If multiple UTCTiming pairs are provided for redundancy,
   
-  list them the order of preference.
+  list the pairs in the order of preference.
 
   Must be set for LL-DASH streaming.
   """
