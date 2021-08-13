@@ -391,6 +391,20 @@ function errorTests() {
           error_type: 'RuntimeError',
         }));
   });
+
+  it('fails when is_low_latency_dash is set without a DASH manifest', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      is_low_latency_dash: true,
+      manifest_format: ['hls'],
+      streaming_mode: 'live',
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'RuntimeError',
+        }));
+  });
 }
 
 function resolutionTests(manifestUrl, format) {
