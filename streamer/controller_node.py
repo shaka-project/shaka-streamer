@@ -36,7 +36,7 @@ from streamer.input_configuration import InputConfig, InputType, MediaType, Inpu
 from streamer.node_base import NodeBase, ProcessStatus
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.packager_node import PackagerNode
-from streamer.pipeline_configuration import PipelineConfig, StreamingMode
+from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
 import streamer.subprocessWindowsPatch  # side-effects only
@@ -142,6 +142,17 @@ class ControllerNode(object):
         # TODO: Edit Multiperiod input list implementation to support HTTP outputs
         raise RuntimeError(
             'Multiperiod input list support is incompatible with HTTP outputs.')
+
+    if (self._pipeline_config.is_low_latency_dash):
+      # Check some restrictions on LL-DASH ouput.
+      if ManifestFormat.DASH not in self._pipeline_config.manifest_format:
+        raise RuntimeError(
+            'is_low_latency_dash is only compatible with DASH ouputs. ' +
+            'manifest_format must include DASH')
+
+      if not self._pipeline_config.utc_timings:
+        raise RuntimeError(
+            'For is_low_latency_dash, the utc_timings must be set.')
 
     # Note that we remove the trailing slash from the output location, because
     # otherwise GCS would create a subdirectory whose name is "".
