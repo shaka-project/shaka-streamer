@@ -24,16 +24,16 @@ def _change_permissions_if_needed(file):
   as a subprocess.
   """
 
-  executable_by_all = 0o111
+  executable_by_owner = 0o100
   perms = os.stat(file).st_mode
   # If it already has executable permssions, we don't chmod.
   # As chmod may require root permssions.
-  if (perms | executable_by_all) == perms:
+  if (perms | executable_by_owner) == perms:
     return
   # Else we will change the permissions to 0o755.
-  # Readable and executable by all + full permissions to root.
+  # Readable and executable by all + full permissions to owner.
   default_permissions = 0o755 # rwxr-xr-x
-  # This might raise PermissionError
+  # This might raise PermissionError.
   os.chmod(file, default_permissions)
 
 
