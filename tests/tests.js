@@ -146,6 +146,8 @@ describe('Shaka Streamer', () => {
   // muxedTextTests(hlsManifestUrl, '(hls)');
   muxedTextTests(dashManifestUrl, '(dash)');
 
+  multiPeriodTests(dashManifestUrl, '(dash)');
+
   lowLatencyDashTests(dashManifestUrl, '(dash)');
 });
 
