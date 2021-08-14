@@ -109,6 +109,8 @@ class ControllerNode(object):
       raise RuntimeError('Controller already started!')
 
     if check_deps:
+      # If we are using the hermetic binaries, just check
+      # for the package's version.
       if use_hermetic:
         if streamer_binaries.__version__ < __version__:
           raise VersionError(
