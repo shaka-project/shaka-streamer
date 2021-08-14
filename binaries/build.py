@@ -77,10 +77,9 @@ def main():
     # A path to a yaml file should be provided as the first argument.
     yaml_file = sys.argv[1]
   except IndexError:
-    print(
-      'Error: The first and only argument should be a yaml file name.\n'
-      'Usage: python build.py filename.yaml')
-    return 1
+    raise RuntimeError(
+      'The first and only argument should be a yaml file name.\n'
+      'Usage: python build.py filename.yaml') from None
 
   with open(yaml_file) as platform_data_file:
     platform_data_dict = yaml.safe_load(platform_data_file)
@@ -107,6 +106,5 @@ def main():
     clean_dir('build/lib/streamer_binaries')
 
   shutil.rmtree('build')
-  return 0
 
 exit(main())
