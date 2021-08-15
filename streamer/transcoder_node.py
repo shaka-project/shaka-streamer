@@ -142,13 +142,13 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
         args += [output_stream.ipc_pipe.write_end()]
 
-    env = {}
+    stderr = None
     if self._pipeline_config.debug_logs:
-      # Use this environment variable to turn on ffmpeg's logging.  This is
-      # independent of the -loglevel switch above.
-      env['FFREPORT'] = 'file=TranscoderNode.log:level=32'
+      # FFmpeg logs to the stderr.  If the debug_log is set, redirect the stderr
+      # to a log file.
+      stderr = open('TranscoderNode.log', 'a')
 
-    self._process = self._create_process(args, env)
+    self._process = self._create_process(args, stderr=stderr)
 
   def _encode_audio(self, stream: AudioOutputStream, input: Input) -> List[str]:
     filters: List[str] = []

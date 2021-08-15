@@ -112,7 +112,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       # Log by writing all Packager output to a file.  Unlike the logging
       # system in ffmpeg, this will stop any Packager output from getting to
       # the screen.
-      stdout = open('PackagerNode.log', 'w')
+      stdout = open('PackagerNode.log', 'a')
 
     self._process: subprocess.Popen = self._create_process(
         args,
