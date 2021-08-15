@@ -16,6 +16,7 @@
 and packaging process for different platforms."""
 
 import setuptools
+from setuptools.command.build_py import build_py
 import sys
 import shutil
 import os
@@ -26,14 +27,32 @@ import yaml
 import streamer_binaries
 
 
-def clean_dir(dir):
-  # To clean the directory, we can remove it and re-create it.
-  shutil.rmtree(dir)
-  os.mkdir(dir)
+class custom_build_py(build_py):
+  """A custom class to override the default behavior of `build_py` command."""
+
+  def run(self):
+    # Clean the build directory so the binaries that were added at the previous
+    # build don't remain in the package for the current platform we build for.
+    # This is because setuptools doesn't delete it after a build has
+    # completed and doesn't also re-create it in the next `build` call,
+    # that's why we can't delete it either, so let's just clean it.
+    build_dir = os.path.join(self.build_lib, streamer_binaries.__name__)
+    self._clean_build_dir(build_dir)
+    return super().run()
+
+  def _clean_build_dir(self, build_dir):
+    try:
+      # To clean the directory, we can remove it and re-create it.
+      shutil.rmtree(build_dir)
+      os.mkdir(build_dir)
+    except FileNotFoundError:
+      # At the first run, the directory might not be on the system yet.
+      return
+
 
 def build_wheel(platform_name, platform_binaries):
   """Builds a wheel distribution for `platform_name` adding the files
-  in `platform_binaries` to it."""
+  in `platform_binaries` to it using the `package_data` parameter."""
 
   sys.argv = [
       'setup.py',
@@ -48,6 +67,7 @@ def build_wheel(platform_name, platform_binaries):
       # Run quietly.
       '--quiet',
   ]
+
   # This setup() call will ingest the sys.argv command line arguments.
   setuptools.setup(
     name='shaka-streamer-binaries',
@@ -70,7 +90,11 @@ def build_wheel(platform_name, platform_binaries):
         # to the package for the current platform_name.
         'streamer_binaries': platform_binaries,
     },
+    # Use our custom builder.  All it does is cleaning the build directory
+    # before using it for building, as it might contain old unwated binaries.
+    cmdclass={'build_py': custom_build_py},
   )
+
 
 def main():
   try:
@@ -98,13 +122,6 @@ def main():
     # We will build the package multiple times, each time with differnt
     # command line arguments for a differnt platform.
     build_wheel(platform_name, platform_binaries)
-    # Clean the build directory so the binaries that were just added
-    # doesn't remain in the package for the next platform we build for.
-    # This is because setuptools doesn't delete it after a build has
-    # completed and doesn't also re-create it in the next `build` call,
-    # that's why we can't delete it either, so let's just clean it.
-    clean_dir('build/lib/streamer_binaries')
 
-  shutil.rmtree('build')
 
-exit(main())
+main()

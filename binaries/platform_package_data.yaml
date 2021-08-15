@@ -32,7 +32,7 @@ manylinux1_x86_64:
 manylinux2014_aarch64:
   - ffmpeg-linux-arm64
   - ffprobe-linux-arm64
-  - packager
+  - packager-arm64
 
 # 64-bit OS X Mavericks
 macosx_10_9_x86_64:
