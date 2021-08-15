@@ -127,20 +127,20 @@ class MediaPlaylist:
           line = lines[i+2]
         file_name = os.path.basename(line)
         # Index the file_name and don't use dict().get(), there MUST be a match.
-        self.output_stream = streams_map[file_name]
+        output_stream = streams_map[file_name]
         break
     
-    self.type = self.output_stream.type
-    self.codec = self.output_stream.codec
-    if isinstance(self.output_stream, VideoOutputStream):
-      self.resolution = self.output_stream.resolution
-    elif isinstance(self.output_stream, AudioOutputStream):
-      self.channel_layout = self.output_stream.layout
+    self.type = output_stream.type
+    self.codec = output_stream.codec
+    if isinstance(output_stream, VideoOutputStream):
+      self.resolution = output_stream.resolution
+    elif isinstance(output_stream, AudioOutputStream):
+      self.channel_layout = output_stream.layout
       # We will get the language from the stream_info because the stream information
       # is provided by Packager.  We might have mixed 3-letter and 2-letter format
       # from the Streamer, but Packager reduces them all to 2-letter language tag.
       self.language = _unquote(self.stream_info.get('LANGUAGE', '"und"'))
-    elif isinstance(self.output_stream, TextOutputStream):
+    elif isinstance(output_stream, TextOutputStream):
       self.language = _unquote(self.stream_info.get('LANGUAGE', '"und"'))
   
   def write(self, dir_name: str) -> None:
