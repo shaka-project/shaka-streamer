@@ -300,6 +300,14 @@ class ControllerNode(object):
 
     return self._pipeline_config.streaming_mode == StreamingMode.VOD
 
+  def is_low_latency_dash(self) -> bool:
+    """Returns True if the pipeline is running in LL-DASH mode.
+
+    :rtype: bool
+    """
+
+    return self._pipeline_config.is_low_latency_dash
+
 class VersionError(Exception):
   """A version error for one of Shaka Streamer's external dependencies.
 
