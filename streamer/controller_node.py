@@ -154,7 +154,7 @@ class ControllerNode(object):
       # InputConfig contains multiperiod_inputs_list only.
       # Create one Transcoder node and one Packager node for each period.
       for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
-        sub_dir_name = 'period_' + str(i)
+        sub_dir_name = 'period_' + str(i + 1)
         self._append_nodes_for_inputs_list(singleperiod.inputs, output_location, sub_dir_name)
 
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
