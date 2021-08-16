@@ -124,10 +124,10 @@ class MediaPlaylist:
     self._set_features(streams_map)
   
   def _set_features(self, streams_map: Dict[str, OutputStream]) -> None:
-    """Get the audio and video codecs and other relavent stream features
+    """Get the audio and video codecs and other relevant stream features
     from the matching OutputStream in the `streams_map`, this will be used
     in the codec matching process in the concat_xxx() methods, but the codecs
-    that will be written in the final concatenateded master playlist will be
+    that will be written in the final concatenated master playlist will be
     the codecs from stream_info dictionary(in HLS syntax).
     """
     
@@ -137,7 +137,7 @@ class MediaPlaylist:
     # #EXT-X-STREAM-INF tags we will have to match these codecs with each stream,
     # for example, a codec attribute might be CODECS="avc1,ac-3,mp4a,opus",
     # the video codec is put first then the audio codecs are put in 
-    # lexicographical order(by observation), which isn't nesseccary the same order of 
+    # lexicographical order(by observation), which isn't necessary the same order of 
     # #EXT-X-MEDIA in the master playlist, thus there is no solid baseground for 
     # matching the codecs using the information in the master playlist.
     
@@ -182,8 +182,8 @@ class MediaPlaylist:
   @staticmethod
   def extract_header(file_path: str) -> None:
     """Extracts the common media playlist header(parts we can't store
-    in `self.content`.  We then write this header once at the top of
-    the file when MediaPlaylist.wrtie() is called.
+    in `self.content`).  We then write this header once at the top of
+    the file when MediaPlaylist.write() is called.
     """
     
     MediaPlaylist.header = ''
@@ -323,7 +323,7 @@ class MediaPlaylist:
       candidate_is_reg= len(candidate_split) > 1
       # Only kick the previous best fit out when: The base of the candidate 
       # is the same as the base of the original language AND (the base of 
-      # the best fit is not the same as the base of the origianl language
+      # the best fit is not the same as the base of the original language
       # OR the candidate is a regional variant).
       if language_base == candidate_base:
         if language_base != best_fit_base or candidate_is_reg:
@@ -337,7 +337,7 @@ class MediaPlaylist:
   def concat_sub(all_txt_playlists: List[List['MediaPlaylist']],
                  durations: List[float]) -> List['MediaPlaylist']:
     """A method that concatenates subtitle streams based on the language of the subtitles
-    for each period, it will concatenate all the english subtitles, frensh subtitles, etc...
+    for each period, it will concatenate all the english subtitles, french subtitles, etc...
     and put them ordered in periods where a discontinuity is inserted between them.
     
     A `x=List['MediaPlaylists']` is returned, where `len(x)` is the total 
@@ -345,7 +345,7 @@ class MediaPlaylist:
     is `len(all_txt_playlists)`.
     
     When no subtitles are found for a specific langauge for a specific period, we
-    try to substitue for it with another language, when no substitution is possible, 
+    try to substitute for it with another language, when no substitution is possible, 
     we insert some text saying 'no subtitles' as a filler for this period's duration.
     
     All the language un-annotated streams for each period gets concatenated together.
@@ -474,7 +474,7 @@ class MediaPlaylist:
         codec_lang_division[codec] = {}
         for lang in langs:
           codec_lang_division[codec][lang] = []
-      # For every audio playlist in this period, append it to the mathcing 
+      # For every audio playlist in this period, append it to the matching 
       # codec/language.
       for aud_playlist in aud_playlists:
         assert isinstance(aud_playlist.codec, AudioCodec)
@@ -846,7 +846,7 @@ class MasterPlaylist:
           var_playlists.append(media_playlist)
         else:
           # TODO: We need a case for CLOSED-CAPTIONS(CC).
-          raise RuntimeError("TYPE={} is not regonized.".format(stream_type))  
+          raise RuntimeError("TYPE={} is not recognized.".format(stream_type))  
       
       all_txt_playlists.append(txt_playlists)
       all_aud_playlists.append(aud_playlists)
@@ -882,7 +882,7 @@ class HLSConcater:
   def __init__(self,
                sample_master_playlist_path: str,
                output_location: str):
-    """Calls MasterPlyalist.extract_headers() and MediaPlaylist.extract_header()
+    """Calls MasterPlaylist.extract_headers() and MediaPlaylist.extract_header()
     and store these headers in their classes respectively.
     
     We use the `output_location` to re-evaluate a media segment paths, and also write
