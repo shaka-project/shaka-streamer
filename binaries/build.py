@@ -91,7 +91,7 @@ def build_wheel(platform_name, platform_binaries):
         'streamer_binaries': platform_binaries,
     },
     # Use our custom builder.  All it does is cleaning the build directory
-    # before using it for building, as it might contain old unwated binaries.
+    # before using it for building, as it might contain old unwanted binaries.
     cmdclass={'build_py': custom_build_py},
   )
 
