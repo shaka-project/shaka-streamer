@@ -807,7 +807,7 @@ class MasterPlaylist:
         elif line.startswith('#EXT-X-STREAM-INF'):
           uri = master_playlist.readline().strip()
         else:
-          RuntimeError('No media playlist found in this master playlist')
+          raise RuntimeError('No media playlist found in this master playlist')
         master_playlist_dirname = os.path.dirname(file_path)
         media_playlist_path = os.path.join(master_playlist_dirname, uri)
         MediaPlaylist.extract_header(media_playlist_path)
