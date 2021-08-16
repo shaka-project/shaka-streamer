@@ -30,7 +30,6 @@ import tempfile
 
 
 from typing import Any, Dict, List, Optional, Tuple, Union
-import streamer.subprocessWindowsPatch  # side-effects only
 from streamer import __version__
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
@@ -43,6 +42,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
+import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
 
