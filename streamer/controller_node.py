@@ -143,8 +143,8 @@ class ControllerNode(object):
         raise RuntimeError(
             'Multiperiod input list support is incompatible with HTTP outputs.')
 
-    if (self._pipeline_config.is_low_latency_dash):
-      # Check some restrictions on LL-DASH packaing.
+    if self._pipeline_config.is_low_latency_dash:
+      # Check some restrictions on LL-DASH packaging.
       if ManifestFormat.DASH not in self._pipeline_config.manifest_format:
         raise RuntimeError(
             'is_low_latency_dash is only compatible with DASH ouputs. ' +

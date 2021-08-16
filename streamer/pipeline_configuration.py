@@ -326,7 +326,6 @@ class PipelineConfig(configuration.Base):
   """UTCTiming schemeIdUri and value pairs for the DASH MPD.
 
   If multiple UTCTiming pairs are provided for redundancy,
-  
   list the pairs in the order of preference.
 
   Must be set for LL-DASH streaming.
