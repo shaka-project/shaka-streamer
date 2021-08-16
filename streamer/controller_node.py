@@ -28,7 +28,6 @@ import subprocess
 import sys
 import tempfile
 
-
 from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer import __version__
 from streamer.cloud_node import CloudNode
@@ -116,7 +115,7 @@ class ControllerNode(object):
           raise VersionError(
               'An outdated `shaka-streamer-binareis` is installed.\n'
               '  Update it with `pip install --upgrade shaka-streamer-binaries`.'
-              )
+            )
       else:
         # Check that ffmpeg version is 4.1 or above.
         _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
@@ -227,13 +226,13 @@ class ControllerNode(object):
                                     output_location: str,
                                     period_dir: Optional[str] = None) -> None:
     """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
-
+    
     Args:
       inputs (List[Input]): A list of Input streams.
       period_dir (Optional[str]): A subdirectory name where a single period will be outputted to.
       If passed, this indicates that inputs argument is one period in a list of periods.
     """
-
+    
     outputs: List[OutputStream] = []
     for input in inputs:
       # External command inputs need to be processed by an additional node
