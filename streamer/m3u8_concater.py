@@ -196,7 +196,7 @@ class MediaPlaylist:
         line = media_playlist.readline()
   
   @staticmethod
-  def inf_is_vid(var_playlists: List['MediaPlaylist']) -> bool:
+  def var_is_vid(var_playlists: List['MediaPlaylist']) -> bool:
     """This is useful to detect whether the stream variant playlists in some
     master playlist are video playlists or not.  They could be audio playlists
     as #EXT-X-STREAM-INF because there were no video streams associated
@@ -721,16 +721,13 @@ class MasterPlaylist:
     
     # Add a mapping between single segment file names and their output stream.
     streams_map.update({
-        outstream
-        .get_single_seg_file()
-        .write_end(): outstream
+        outstream.get_single_seg_file().write_end(): outstream
         for outstream in packager.output_streams
       })
     # Add another mapping between the first segment in multi-segment file names
     # and their corresponding output streams.
     streams_map.update({
-        outstream
-        .get_media_seg_file()
+        outstream.get_media_seg_file()
         .write_end()
         .replace('$Number$', '1'): outstream
         for outstream in packager.output_streams
@@ -748,7 +745,8 @@ class MasterPlaylist:
                                               streams_map))
         elif line.startswith('#EXT-X-STREAM-INF'):
           stream_info = _extract_attributes(line)
-          # Quote the URI to keep consistent, as the URIs in EXT-X-MEDIA are quoted too.
+          # Quote the URI to keep consistent,
+          # as the URIs in EXT-X-MEDIA are quoted too.
           stream_info['URI'] = _quote(master_playlist.readline().strip())
           self.playlists.append(MediaPlaylist(stream_info, dir_name,
                                               output_dir,
@@ -857,7 +855,7 @@ class MasterPlaylist:
     master_hls.playlists.extend(
         MediaPlaylist.concat_sub(all_txt_playlists, durations))
     
-    if all(not MediaPlaylist.inf_is_vid(inf_pl) for inf_pl in all_var_playlists):
+    if all(not MediaPlaylist.var_is_vid(var_pl) for var_pl in all_var_playlists):
       # When the playlist is audio only, each audio is referenced two times,
       # once in an #EXT-X-MEDIA tag and another time in an #EXT-X-STREAM-INF tag.
       # If the user has an audio-only content, the concatenation will go a little
