@@ -102,8 +102,8 @@ def main():
     yaml_file = sys.argv[1]
   except IndexError:
     raise RuntimeError(
-      'The first and only argument should be a yaml file name.\n'
-      'Usage: python build.py filename.yaml') from None
+        'The first and only argument should be a yaml file name.\n'
+        'Usage: python build.py filename.yaml') from None
 
   with open(yaml_file) as platform_data_file:
     platform_data_dict = yaml.safe_load(platform_data_file)
@@ -119,8 +119,8 @@ def main():
   # For each platform(OS+CPU), create a binary wheel distribution
   # that contains the executables specific to this platform.
   for platform_name, platform_binaries in platform_data_dict.items():
-    # We will build the package multiple times, each time with differnt
-    # command line arguments for a differnt platform.
+    # We will build the package multiple times, each time with different
+    # command line arguments for a different platform.
     build_wheel(platform_name, platform_binaries)
 
 
