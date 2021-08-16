@@ -96,14 +96,14 @@ class ControllerNode(object):
               '  Install it with `pip install shaka-streamer-binaries`.\n'
               '  Alternatively, use the `--use-system-binaries` option if you '
               'want to use the system wide binaries of ffmpeg/ffprobe/packager.'
-              ) from None
+            ) from None
         # If we can't set the permissions for the bundled executables,
         # we may not be able to run it as a subprocess.
         if isinstance(ex, PermissionError):
           raise RuntimeError(
               'Couldn\'t set the permissions for the bundled '
               '`shaka-streamer-binaries` executables.\n  Please run as a root.'
-              ) from None
+            ) from None
 
     if self._nodes:
       raise RuntimeError('Controller already started!')
