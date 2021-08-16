@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -175,9 +175,11 @@ class PeriodConcatNode(ThreadedNodeBase):
     """Concatenates multiple HLS playlists using #EXT-X-DISCONTINUITY."""
     
     # Initialize the HLS concater with a sample Master HLS playlist and
-    # the output directory of the concatenated playlists.
+    # the output location of the concatenated playlists.
     first_hls_playlist = os.path.join(self._packager_nodes[0].output_location,
                                       self._pipeline_config.hls_output)
+    # NOTE: Media files' segments location will be relative to this
+    # self._output_locatioon we pass to the constructor.
     hls_concater = HLSConcater(first_hls_playlist, self._output_location)
     
     for packager_node in self._packager_nodes:
@@ -188,7 +190,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     # Start the period concatenation.
     hls_concater.concat()
     
-    # Write the concatenated playlists in the output directory passed while
+    # Write the concatenated playlists in the output location passed while
     # constructing a concater instance.
     hls_concater.write(self._pipeline_config.hls_output,
                        'Concatenated with https://github.com/google/shaka-streamer'
