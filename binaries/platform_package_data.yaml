@@ -34,7 +34,7 @@ manylinux2014_aarch64:
   - ffprobe-linux-arm64
   - packager-arm64
 
-# 64-bit OS X Mavericks
+# 64-bit with 10.9 SDK
 macosx_10_9_x86_64:
   - ffmpeg-osx-x64
   - ffprobe-osx-x64
