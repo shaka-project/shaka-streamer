@@ -101,7 +101,7 @@ class ControllerNode(object):
         if isinstance(ex, PermissionError):
           raise RuntimeError(
               'Couldn\'t set the permissions for the bundled '
-              '`shaka-streamer-binaries` executables.\n  Please run as a root.'
+              '`shaka-streamer-binaries` executables.'
             ) from None
 
     if self._nodes:
@@ -113,7 +113,7 @@ class ControllerNode(object):
       if use_hermetic:
         if streamer_binaries.__version__ < __version__:
           raise VersionError(
-              'An outdated `shaka-streamer-binareis` is installed.\n'
+              'An outdated `shaka-streamer-binaries` is installed.\n'
               '  Update it with `pip install --upgrade shaka-streamer-binaries`.'
             )
       else:
@@ -142,10 +142,10 @@ class ControllerNode(object):
       CloudNode.check_access(bucket_url)
 
     self.hermetic_ffmpeg: Optional[str] = None
-    self.hermetic_pacakger: Optional[str] = None
+    self.hermetic_packager: Optional[str] = None
     if use_hermetic:
       self.hermetic_ffmpeg = streamer_binaries.ffmpeg
-      self.hermetic_pacakger = streamer_binaries.packager
+      self.hermetic_packager = streamer_binaries.packager
       autodetect.hermetic_ffprobe = streamer_binaries.ffprobe
 
     # Define resolutions and bitrates before parsing other configs.
@@ -304,7 +304,7 @@ class ControllerNode(object):
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
                                     outputs,
-                                    self.hermetic_pacakger))
+                                    self.hermetic_packager))
 
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
