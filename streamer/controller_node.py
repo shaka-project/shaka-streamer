@@ -251,8 +251,7 @@ class ControllerNode(object):
 
         outputs.append(TextOutputStream(input,
                                         self._temp_dir,
-                                        skip_transcoding,
-                                        index))
+                                        skip_transcoding))
 
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,
@@ -267,7 +266,8 @@ class ControllerNode(object):
 
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
-                                    outputs))
+                                    outputs,
+                                    index))
 
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
