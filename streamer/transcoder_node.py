@@ -28,11 +28,13 @@ class TranscoderNode(PolitelyWaitOnFinish):
   def __init__(self,
                inputs: List[Input],
                pipeline_config: PipelineConfig,
-               outputs: List[OutputStream]) -> None:
+               outputs: List[OutputStream],
+               index: int) -> None:
     super().__init__()
     self._inputs = inputs
     self._pipeline_config = pipeline_config
     self._outputs = outputs
+    self._index = index
 
   def start(self) -> None:
     args = [
@@ -142,13 +144,14 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
         args += [output_stream.ipc_pipe.write_end()]
 
-    stderr = None
+    env = {}
     if self._pipeline_config.debug_logs:
-      # FFmpeg logs to the stderr.  If the debug_log is set, redirect the stderr
-      # to a log file.
-      stderr = open('TranscoderNode.log', 'a')
+      # Use this environment variable to turn on ffmpeg's logging.  This is
+      # independent of the -loglevel switch above.
+      ffmpeg_log_file = 'TranscoderNode-' + str(self._index) + '.log'
+      env['FFREPORT'] = 'file={}:level=32'.format(ffmpeg_log_file)
 
-    self._process = self._create_process(args, stderr=stderr)
+    self._process = self._create_process(args, env)
 
   def _encode_audio(self, stream: AudioOutputStream, input: Input) -> List[str]:
     filters: List[str] = []
