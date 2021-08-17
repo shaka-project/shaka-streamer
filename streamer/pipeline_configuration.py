@@ -319,7 +319,7 @@ class PipelineConfig(configuration.Base):
                                    default=EncryptionConfig({})).cast()
   """Encryption settings."""
 
-  is_low_latency_dash = configuration.Field(bool, default=False).cast()
+  low_latency_dash_mode = configuration.Field(bool, default=False).cast()
   """If true, stream in low latency mode for DASH."""
 
   utc_timings = configuration.Field(List[UtcTimingPair]).cast()

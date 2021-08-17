@@ -381,10 +381,10 @@ function errorTests() {
         }));
   });
 
-  it('fails when utc_timing is not set for low latency DASH', async () => {
+  it('fails when utc_timing is not set for low_latency_dash_mode', async () => {
     const inputConfig = getBasicInputConfig();
     const pipelineConfig = {
-      is_low_latency_dash: true,
+      low_latency_dash_mode: true,
       streaming_mode: 'live',
     };
 
@@ -394,10 +394,10 @@ function errorTests() {
         }));
   });
 
-  it('fails when is_low_latency_dash is set without a DASH manifest', async () => {
+  it('fails when low_latency_dash_mode is set without a DASH manifest', async () => {
     const inputConfig = getBasicInputConfig();
     const pipelineConfig = {
-      is_low_latency_dash: true,
+      low_latency_dash_mode: true,
       manifest_format: ['hls'],
       streaming_mode: 'live',
       utc_timings: [
@@ -1451,7 +1451,7 @@ function lowLatencyDashTests(manifestUrl, format) {
       'video_codecs': ['h264'],
       'manifest_format': ['dash'],
       'segment_size': 2,
-      'is_low_latency_dash': true,
+      'low_latency_dash_mode': true,
       'utc_timings': [
         {
           'scheme_id_uri':'urn:mpeg:dash:utc:http-xsdate:2014',

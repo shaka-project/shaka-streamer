@@ -143,16 +143,16 @@ class ControllerNode(object):
         raise RuntimeError(
             'Multiperiod input list support is incompatible with HTTP outputs.')
 
-    if self._pipeline_config.is_low_latency_dash:
+    if self._pipeline_config.low_latency_dash_mode:
       # Check some restrictions on LL-DASH packaging.
       if ManifestFormat.DASH not in self._pipeline_config.manifest_format:
         raise RuntimeError(
-            'is_low_latency_dash is only compatible with DASH ouputs. ' +
+            'low_latency_dash_mode is only compatible with DASH ouputs. ' +
             'manifest_format must include DASH')
 
       if not self._pipeline_config.utc_timings:
         raise RuntimeError(
-            'For is_low_latency_dash, the utc_timings must be set.')
+            'For low_latency_dash_mode, the utc_timings must be set.')
 
     # Note that we remove the trailing slash from the output location, because
     # otherwise GCS would create a subdirectory whose name is "".
@@ -300,13 +300,13 @@ class ControllerNode(object):
 
     return self._pipeline_config.streaming_mode == StreamingMode.VOD
 
-  def is_low_latency_dash(self) -> bool:
+  def is_low_latency_dash_mode(self) -> bool:
     """Returns True if the pipeline is running in LL-DASH mode.
 
     :rtype: bool
     """
 
-    return self._pipeline_config.is_low_latency_dash
+    return self._pipeline_config.low_latency_dash_mode
 
 class VersionError(Exception):
   """A version error for one of Shaka Streamer's external dependencies.
