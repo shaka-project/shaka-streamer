@@ -80,6 +80,7 @@ class UtcTimingPair(configuration.Base):
   """An object containing the attributes for a DASH MPD UTCTiming 
   element"""
 
+  # TODO: Use an enum for scheme_id_uri to simplify the config input
   scheme_id_uri = configuration.Field(str).cast()
   """SchemeIdUri attribute to be used for the UTCTiming element"""
 
@@ -319,6 +320,7 @@ class PipelineConfig(configuration.Base):
                                    default=EncryptionConfig({})).cast()
   """Encryption settings."""
 
+  # TODO: Generalize this to low_latency_mode once LL-HLS is supported by Packager
   low_latency_dash_mode = configuration.Field(bool, default=False).cast()
   """If true, stream in low latency mode for DASH."""
 
