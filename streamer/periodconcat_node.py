@@ -179,7 +179,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     first_hls_playlist = os.path.join(self._packager_nodes[0].output_location,
                                       self._pipeline_config.hls_output)
     # NOTE: Media files' segments location will be relative to this
-    # self._output_locatioon we pass to the constructor.
+    # self._output_location we pass to the constructor.
     hls_concater = HLSConcater(first_hls_playlist, self._output_location)
     
     for packager_node in self._packager_nodes:
@@ -187,11 +187,10 @@ class PeriodConcatNode(ThreadedNodeBase):
                                   self._pipeline_config.hls_output)
       hls_concater.add(hls_playlist, packager_node)
     
-    # Start the period concatenation.
-    hls_concater.concat()
-    
-    # Write the concatenated playlists in the output location passed while
-    # constructing a concater instance.
-    hls_concater.write(self._pipeline_config.hls_output,
-                       'Concatenated with https://github.com/google/shaka-streamer'
-                       ' version {}'.format(__version__))
+    # Start the period concatenation and write the output in the output location
+    # passed to the HLSConcater at the construction time.
+    hls_concater.concat_and_write(
+        self._pipeline_config.hls_output,
+        'Concatenated with https://github.com/google/shaka-streamer'
+        ' version {}'.format(__version__),
+      )
