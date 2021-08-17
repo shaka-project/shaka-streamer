@@ -170,7 +170,7 @@ class MediaPlaylist:
     elif isinstance(output_stream, TextOutputStream):
       self.language = _unquote(self.stream_info.get('LANGUAGE', '"und"'))
   
-  def write(self, dir_name: str, media_playlist_header):
+  def write(self, dir_name: str, media_playlist_header: str):
     """Writes a media playlist whose file name is `self.stream_info['URI']`
     in the directory `dir_name`.
     """
@@ -531,7 +531,7 @@ class MediaPlaylist:
             stream_info['LANGUAGE'] = _quote(lang)
           # Get a unique file name.
           stream_info.update(MediaPlaylist._next_unique_name())
-          # Get the max channels for this playlist.
+          # Set the max channels for this playlist.
           stream_info.update(MediaPlaylist._max_channels(aud_playlists))
           concat_aud_playlist = MediaPlaylist(stream_info)
           # Set the target duration.
@@ -672,8 +672,8 @@ class MediaPlaylist:
         stream_info: Dict[str, str] = MediaPlaylist._similar_stream_info(
         vid_playlists)
         # Get a unique URI.
-        # NOTE: stream variants don't have a NAME attribute.
         stream_info.update(MediaPlaylist._next_unique_name())
+        # NOTE: stream variants don't have a NAME attribute.
         stream_info.pop('NAME')
         # Get the peak and average bandwidth for this codec-resolution pair.
         stream_info.update(MediaPlaylist._get_bandwidth(vid_playlists,
@@ -796,22 +796,25 @@ class MasterPlaylist:
   
   @staticmethod
   def extract_headers(file_path: str) -> Tuple[str, str]:
-    """Returns the headers for the master and media playlists using."""
+    """Returns the headers for the master and media playlists using the
+    master playlist in `file_path` and any media playlist we find inside
+    this master playlist.
+    """
     
     header = ''
-    with open(file_path, 'r') as master_playlist:
-      line = master_playlist.readline()
+    with open(file_path, 'r') as master_playlist_file:
+      line = master_playlist_file.readline()
       # Store each line in header until one of these tags is encountered.
       while line and not line.startswith(('#EXT-X-MEDIA', '#EXT-X-STREAM-INF')):
         # lstrip() will convert empty lines -> '' but will keep non-empty lines unchanged.
         header += line.lstrip()
-        line = master_playlist.readline()
+        line = master_playlist_file.readline()
       else:
         # Use this media playlist to also extract the MediaPlaylist header.
         if line.startswith('#EXT-X-MEDIA'):
           uri = _unquote(_extract_attributes(line)['URI'])
         elif line.startswith('#EXT-X-STREAM-INF'):
-          uri = master_playlist.readline().strip()
+          uri = master_playlist_file.readline().strip()
         else:
           raise RuntimeError('No media playlist found in this master playlist')
         master_playlist_dirname = os.path.dirname(file_path)
@@ -905,12 +908,12 @@ class HLSConcater:
     """Calls MasterPlaylist.extract_headers() and MediaPlaylist.extract_header()
     and store these headers in their classes respectively.
     
-    We use the `output_location` to re-evaluate a media segment paths, and also write
-    the concatenation result to this `output_location`.
+    We use the `output_location` to re-evaluate a media segment paths, and also
+    write the concatenation result to this `output_location`.
     """
     
-    # Save common master playlist header, this will call
-    # MediaPlaylist.extract_header() to save the common
+    # Extract common master playlist header, this will call
+    # MediaPlaylist.extract_header() to extract the common
     # media playlist header as well.
     (self._master_playlist_header,
      self._media_playlist_header) = MasterPlaylist.extract_headers(
@@ -919,9 +922,9 @@ class HLSConcater:
     self._output_location = output_location
     self._all_master_playlists: List[MasterPlaylist] = []
     
-  def add(self, master_playlist_path: str, packager_node: PackagerNode) -> None:
-    """Adds a master playlist to the HLSConcater object, to be concatented in
-    order when HLSConcater.concat() is called.
+  def add(self, master_playlist_path: str, packager_node: PackagerNode):
+    """Adds a master playlist to the HLSConcater object, to be concatented
+    in order when HLSConcater.concat() is called.
     """
     
     self._all_master_playlists.append(

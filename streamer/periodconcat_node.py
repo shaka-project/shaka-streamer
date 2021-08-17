@@ -163,7 +163,7 @@ class PeriodConcatNode(ThreadedNodeBase):
       contents += "<!--Made Multi-Period with https://github.com/google/shaka-streamer version {} -->\n".format(__version__)
       
       # xml.ElementTree replaces the default namespace with 'ns0'.
-      # Register the DASH namespace back as the defualt namespace before converting to string.
+      # Register the DASH namespace back as the default namespace before converting to string.
       ElementTree.register_namespace('', default_dash_namespace)
       
       # xml.etree.ElementTree already has an ElementTree().write() method,
