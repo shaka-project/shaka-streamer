@@ -1,0 +1,6 @@
+macosx_10_9_x86_64:
+- packager-osx
+manylinux1_x86_64: []
+manylinux2014_aarch64: []
+win_amd64:
+- packager-win.exe

@@ -15,8 +15,8 @@
 """A python script to automate the Shaka-Streamer-Binaries building
 and packaging process for different platforms."""
 
-import setuptools
-from setuptools.command.build_py import build_py
+import setuptools # type: ignore
+from setuptools.command.build_py import build_py # type: ignore
 import sys
 import shutil
 import os
