@@ -168,7 +168,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         ]
       if self._pipeline_config.low_latency_dash_mode:
         args += [
-            '--is_low_latency_dash=true',
+            '--low_latency_dash_mode=true',
         ]
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         args += [
