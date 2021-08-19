@@ -1,6 +1,14 @@
 macosx_10_9_x86_64:
 - packager-osx
-manylinux1_x86_64: []
-manylinux2014_aarch64: []
+- ffprobe-osx-x64
+- ffmpeg-osx-x64
+manylinux1_x86_64:
+- ffmpeg-linux-x64
+- ffprobe-linux-x64
+manylinux2014_aarch64:
+- ffprobe-linux-arm64
+- ffmpeg-linux-arm64
 win_amd64:
 - packager-win.exe
+- ffprobe-win-x64.exe
+- ffmpeg-win-x64.exe

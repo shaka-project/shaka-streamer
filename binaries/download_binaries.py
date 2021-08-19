@@ -97,6 +97,8 @@ def download_github_release_binaries(
   # Wait until all the binaries are downloaded.
   while(any(download_thread.is_alive() for
             download_thread in download_threads)):
+    download_threads = [download_thread for download_thread in download_threads
+                        if download_thread.is_alive()]
     time.sleep(1)
 
   return downloaded_files
@@ -130,7 +132,7 @@ def main():
   package_data = {
       # 64-bit Windows
       'win_amd64': select_binaries(binaries_names,
-                                   name_contains=['win', 'exe',]),
+                                   name_contains=['win',]),
       # 64-bit Linux
       'manylinux1_x86_64': select_binaries(binaries_names,
                                            name_contains=['linux', 'x64',]),
