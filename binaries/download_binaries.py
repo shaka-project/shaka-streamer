@@ -34,15 +34,15 @@ def download_github_release_binaries(
     github_api_end_points: List[str],
     only_download_files_starting_with: List[str] = ['']):
   """Downloads the latest releases for a github repo.
+  `output_dir` is the directory that files will be downloaded in.
+  This function is blocking, it will wait until all the assets are downloaded.
+  
   `github_api_end_point` should be a releases end point for a github repo.
 
   Check the Releases API at https://docs.github.com/en/rest/reference/repos#releases
 
   `only_download_files_starting_with` is an optional argument, if passed, the function
   will try to only download files starting with one of this list elements.
-
-  `output_dir` is the directory that files will be downloaded in.
-  This function is blocking, it will wait until all the assets are downloaded.
   """
 
   def download_binary(download_url: str, downloaded_files: List[str]):
@@ -97,8 +97,6 @@ def download_github_release_binaries(
   # Wait until all the binaries are downloaded.
   while(any(download_thread.is_alive() for
             download_thread in download_threads)):
-    download_threads = [download_thread for download_thread in download_threads
-                        if download_thread.is_alive()]
     time.sleep(1)
 
   return downloaded_files
@@ -113,7 +111,8 @@ def select_binaries(binaries_names: List[str],
   selected_binaries: List[str] = []
   for binary_name in binaries_names:
     # If we have every substring the `binary_name` so we can select it safely.
-    if all(substring.lower() in binary_name.lower() for substring in name_contains):
+    if all(substring.lower() in binary_name.lower() for
+           substring in name_contains):
       selected_binaries.append(binary_name)
   return selected_binaries
 
