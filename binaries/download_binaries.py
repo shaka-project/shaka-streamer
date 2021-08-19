@@ -128,7 +128,7 @@ def main():
                                                     releases_urls,
                                                     starts_with)
 
-  # Sort the binaries based on platform.
+  # Sort out the binaries based on platform.
   package_data = {
       # 64-bit Windows
       'win_amd64': select_binaries(binaries_names,
