@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """A script that downloads the static builds for all the platforms we build
-for, output a yaml file for platform-binaries mapping, and run `build.py`.
+for and output a yaml file for platform<->binaries mapping.
 """
 
 import time
@@ -104,7 +104,8 @@ def download_github_release_binaries(
   return downloaded_files
 
 
-def select_binaries(binaries_names, name_contains: List[str]) -> List[str]:
+def select_binaries(binaries_names: List[str],
+                    name_contains: List[str]) -> List[str]:
   """A non-reliable method to automate selecting which binaries goes
   for which platform."""
 
@@ -112,7 +113,7 @@ def select_binaries(binaries_names, name_contains: List[str]) -> List[str]:
   selected_binaries: List[str] = []
   for binary_name in binaries_names:
     # If we have every substring the `binary_name` so we can select it safely.
-    if all((substring in binary_name) for substring in name_contains):
+    if all(substring.lower() in binary_name.lower() for substring in name_contains):
       selected_binaries.append(binary_name)
   return selected_binaries
 
