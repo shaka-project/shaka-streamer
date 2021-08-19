@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A script that downloads the static builds for all the platforms we build
-for and output a yaml file for platform<->binaries mapping.
+"""A script that downloads ffmpeg, ffprobe, and packager static builds for all
+the platforms we build for and output a yaml file for platform<->binaries mapping.
 """
 
 import time
