@@ -145,7 +145,8 @@ def main():
   }
 
   # Dump `package_data` into a yaml file.
-  yaml.dump(package_data, open(YAML_OUTPUT_FILE, 'w'))
+  with open(YAML_OUTPUT_FILE, 'w') as output_file:
+    yaml.dump(package_data, output_file)
 
 
 main()
