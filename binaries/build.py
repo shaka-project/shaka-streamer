@@ -77,7 +77,7 @@ def build_wheel(platform_name, platform_binaries):
     long_description=('An auxiliary package that provides platform-specific'
                       ' binaries used by Shaka Streamer.'),
     url='https://github.com/google/shaka-streamer/tree/master/binaries',
-    packages=['streamer_binaries'],
+    packages=[streamer_binaries.__name__,],
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: Apache Software License',
@@ -88,7 +88,7 @@ def build_wheel(platform_name, platform_binaries):
     package_data={
         # Only add the corresponding platform specific binaries
         # to the package for the current platform_name.
-        'streamer_binaries': platform_binaries,
+        streamer_binaries.__name__: platform_binaries,
     },
     # Use our custom builder.  All it does is cleaning the build directory
     # before using it for building, as it might contain old unwanted binaries.
