@@ -4,7 +4,7 @@ import sys
 # This import is blocking until all the binaries have been downloaded.
 import download_binaries
 
-# set the sys.argv[1] to the path of the yaml output file that
+# Set the sys.argv[1] to the path of the yaml output file that
 # the build script will use to build the wheels.
 sys.argv = [
     '',
