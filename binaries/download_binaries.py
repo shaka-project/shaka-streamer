@@ -60,7 +60,7 @@ def download_github_release_binaries(
       try:
         res.raise_for_status()
       except Exception as ex:
-        RuntimeError('\'{}\' couldn\'t be downloaded\nException: {}\n'.format(
+        raise RuntimeError('\'{}\' couldn\'t be downloaded\nException: {}\n'.format(
             download_url, ex))
       print('downloading', file_name)
       with open(file_path, 'wb') as binary:
