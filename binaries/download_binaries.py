@@ -142,7 +142,7 @@ def main():
       # 64-bit with 10.9 SDK
       'macosx_10_9_x86_64': select_binaries(binaries_names,
                                             name_contains=['osx',]),
-  }
+    }
 
   # Dump `package_data` into a yaml file.
   with open(YAML_OUTPUT_FILE, 'w') as output_file:
