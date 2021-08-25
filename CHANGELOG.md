@@ -1,4 +1,4 @@
-## 0.4.0 (???)
+## 0.4.0 (2021-08-26)
 
  - Fix shutdown of cloud upload
  - Improve the formatting of minimum version errors
