@@ -6,7 +6,7 @@
  - Add `--skip_deps_check` to bypass version checks on dependencies
  - Increase preserved segments outside of the availability window, improving HLS
    playback in Shaka Player
- - Require Shaka Packager v2.4+
+ - Require Shaka Packager v2.5+
  - Add AV1 support
    (https://github.com/google/shaka-streamer/issues/10)
  - Drop `raw_images` input type

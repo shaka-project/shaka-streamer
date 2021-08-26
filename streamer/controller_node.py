@@ -92,7 +92,7 @@ class ControllerNode(object):
       _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
 
       # Check that Shaka Packager version is 2.4.2 or above.
-      _check_version('Shaka Packager', ['packager', '-version'], (2, 4, 2))
+      _check_version('Shaka Packager', ['packager', '-version'], (2, 5, 1))
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
