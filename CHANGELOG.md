@@ -38,9 +38,6 @@
  - Restrict WebM formats to DASH, omit from HLS
    (https://github.com/google/shaka-streamer/issues/18)
    (https://github.com/google/shaka-streamer/pull/80)
- - Multi period support for DASH
-   (https://github.com/google/shaka-streamer/issues/43)
-   (https://github.com/google/shaka-streamer/pull/78)
  - Automatic frame rate reduction
    (https://github.com/google/shaka-streamer/pull/77)
  - Fix missing members in docs, auto-link to types in config docs

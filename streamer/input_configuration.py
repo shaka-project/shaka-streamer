@@ -313,42 +313,8 @@ class Input(configuration.Base):
   def get_channel_layout(self) -> bitrate_configuration.AudioChannelLayout:
     return bitrate_configuration.AudioChannelLayout.get_value(self.channel_layout)
 
-class SinglePeriod(configuration.Base):
-  """An object repersenting one optional video stream and multiple audio and text streams"""
-
-  inputs = configuration.Field(List[Input], required=True).cast()
-
 class InputConfig(configuration.Base):
   """An object representing the entire input config to Shaka Streamer."""
 
-  multiperiod_inputs_list = configuration.Field(List[SinglePeriod]).cast()
-  """A list of SinglePeriod objects"""
-
-  inputs = configuration.Field(List[Input]).cast()
+  inputs = configuration.Field(List[Input], required=True).cast()
   """A list of Input objects"""
-
-  def __init__(self, dictionary: Dict[str, Any]):
-    """A constructor to check that either inputs or mutliperiod_inputs_list is provided,
-    and produce a helpful error message in case both or none are provided.
-    
-    We need these checks before passing the input dictionary to the configuration.Base constructor,
-    because it does not check for this 'exclusive or-ing' relationship between fields.
-    """
-
-    assert isinstance(dictionary, dict), """Malformed Input Config File,
-    See some examples at https://github.com/google/shaka-streamer/tree/master/config_files.
-    """
-
-    if (dictionary.get('inputs') is not None 
-        and dictionary.get('multiperiod_inputs_list') is not None):
-      raise configuration.ConflictingFields(
-        InputConfig, 'inputs', 'multiperiod_inputs_list')
-    
-    # Because these fields are not marked as required at the class level
-    # , we need to check ourselves that one of them is provided.
-    if not dictionary.get('inputs') and not dictionary.get('multiperiod_inputs_list'):
-      raise configuration.MissingRequiredExclusiveFields(
-        InputConfig, 'inputs', 'multiperiod_inputs_list')
-      
-    super().__init__(dictionary)
-
