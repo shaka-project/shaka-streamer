@@ -1,0 +1,104 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is a sample input configuration file for Shaka Streamer for multi-period stream.
+
+multiperiod_inputs_list:
+
+  # List of inputs, this will be the first period in the final multi-period manifest.
+  - inputs:
+      # Name of the input file.
+      # This example can be downloaded from https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.4k.mkv
+    - name: Sintel.2010.4k.mkv
+      # The media type of the input. Can be audio or video.
+      media_type: video
+
+      # A second track (audio) from the same input file.
+    - name: Sintel.2010.4k.mkv
+      media_type: audio
+
+      # Several text tracks of different languages.
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Arabic.vtt
+    - name: Sintel.2010.Arabic.vtt
+      media_type: text
+      language: ar
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.English.vtt
+    - name: Sintel.2010.English.vtt
+      media_type: text
+      language: en
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Esperanto.vtt
+    - name: Sintel.2010.Esperanto.vtt
+      media_type: text
+      language: eo
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Spanish.vtt
+    - name: Sintel.2010.Spanish.vtt
+      media_type: text
+      language: es
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.French.vtt
+    - name: Sintel.2010.French.vtt
+      media_type: text
+      language: fr
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Chinese.vtt
+    - name: Sintel.2010.Chinese.vtt
+      media_type: text
+      language: zh
+
+  # List of inputs, this will be the second period in the final multi-period manifest.
+  - inputs:
+      # Name of the input file.
+      # This example can be downloaded from https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.4k.mkv
+    - name: Sintel.2010.4k.mkv
+      # The media type of the input. Can be audio or video.
+      media_type: video
+
+      # A second track (audio) from the same input file.
+    - name: Sintel.2010.4k.mkv
+      media_type: audio
+
+      # Several text tracks of different languages.
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Arabic.vtt
+    - name: Sintel.2010.Arabic.vtt
+      media_type: text
+      language: ar
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.English.vtt
+    - name: Sintel.2010.English.vtt
+      media_type: text
+      language: en
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Esperanto.vtt
+    - name: Sintel.2010.Esperanto.vtt
+      media_type: text
+      language: eo
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Spanish.vtt
+    - name: Sintel.2010.Spanish.vtt
+      media_type: text
+      language: es
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.French.vtt
+    - name: Sintel.2010.French.vtt
+      media_type: text
+      language: fr
+
+      # https://storage.googleapis.com/shaka-streamer-assets/sample-inputs/Sintel.2010.Chinese.vtt
+    - name: Sintel.2010.Chinese.vtt
+      media_type: text
+      language: zh
+

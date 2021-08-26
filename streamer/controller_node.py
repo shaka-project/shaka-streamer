@@ -38,6 +38,7 @@ from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputSt
 from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
+from streamer.periodconcat_node import PeriodConcatNode
 import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
@@ -137,12 +138,31 @@ class ControllerNode(object):
         raise RuntimeError(
             'Cloud bucket upload is incompatible with HTTP PUT support.')
 
+      if self._input_config.multiperiod_inputs_list:
+        # TODO: Edit Multiperiod input list implementation to support HTTP outputs
+        raise RuntimeError(
+            'Multiperiod input list support is incompatible with HTTP outputs.')
+
     # Note that we remove the trailing slash from the output location, because
     # otherwise GCS would create a subdirectory whose name is "".
     output_location = output_location.rstrip('/')
 
-    # InputConfig contains inputs only.
-    self._append_nodes_for_inputs_list(self._input_config.inputs, output_location)
+    if self._input_config.inputs:
+      # InputConfig contains inputs only.
+      self._append_nodes_for_inputs_list(self._input_config.inputs, output_location)
+    else:
+      # InputConfig contains multiperiod_inputs_list only.
+      # Create one Transcoder node and one Packager node for each period.
+      for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
+        sub_dir_name = 'period_' + str(i)
+        self._append_nodes_for_inputs_list(singleperiod.inputs, output_location, sub_dir_name)
+
+      if self._pipeline_config.streaming_mode == StreamingMode.VOD:
+        packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
+        self._nodes.append(PeriodConcatNode(
+          self._pipeline_config,
+          packager_nodes,
+          output_location))
 
     if bucket_url:
       cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
@@ -157,18 +177,19 @@ class ControllerNode(object):
 
     for node in self._nodes:
       node.start()
-      
+
     return self
 
-  def _append_nodes_for_inputs_list(self, inputs: List[Input],
-               output_location: str) -> None:
+  def _append_nodes_for_inputs_list(self, inputs: List[Input], output_location: str,
+               period_dir: Optional[str] = None) -> None:
     """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
-    
+
     Args:
       inputs (List[Input]): A list of Input streams.
+      period_dir (Optional[str]): A subdirectory name where a single period will be outputted to.
       If passed, this indicates that inputs argument is one period in a list of periods.
     """
-    
+
     outputs: List[OutputStream] = []
     for input in inputs:
       # External command inputs need to be processed by an additional node
@@ -180,7 +201,7 @@ class ControllerNode(object):
         command_output = Pipe.create_ipc_pipe(self._temp_dir)
         self._nodes.append(ExternalCommandNode(
             input.name, command_output.write_end()))
-        # reset the name of the input to be the output pipe path - which the 
+        # reset the name of the input to be the output pipe path - which the
         # transcoder node will read from - instead of a shell command.
         input.reset_name(command_output.read_end())
 
@@ -229,7 +250,13 @@ class ControllerNode(object):
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,
                                       outputs))
-    
+
+    # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
+    # and put that period in it.
+    if period_dir:
+      output_location = os.path.join(output_location, period_dir)
+      os.mkdir(output_location)
+
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
                                     outputs))

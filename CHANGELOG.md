@@ -1,3 +1,10 @@
+## 0.5.0 (???)
+
+ - Multi period support for DASH
+   (https://github.com/google/shaka-streamer/issues/43)
+   (https://github.com/google/shaka-streamer/pull/78)
+
+
 ## 0.4.0 (2021-08-26)
 
  - Fix shutdown of cloud upload

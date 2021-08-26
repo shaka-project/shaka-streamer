@@ -145,6 +145,8 @@ describe('Shaka Streamer', () => {
   // TODO: Test is commented out until Packager outputs codecs for vtt in mp4.
   // muxedTextTests(hlsManifestUrl, '(hls)');
   muxedTextTests(dashManifestUrl, '(dash)');
+
+  multiPeriodTests(dashManifestUrl, '(dash)');
 });
 
 function errorTests() {
@@ -320,6 +322,36 @@ function errorTests() {
         }));
   });
 
+  it('fails when both "inputs" and "multiperiod_inputs_list" are given', async() => {
+    const inputConfig = getBasicInputConfig();
+    inputConfig.multiperiod_inputs_list = [
+      getBasicInputConfig(),
+      getBasicInputConfig(),
+    ];
+    const pipeline_config = {
+      streaming_mode: 'vod',
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipeline_config))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'ConflictingFields',
+          field_name: 'inputs',
+        }));
+  });
+
+  it('fails when neither "inputs" nor "multiperiod_inputs_list" is given', async() => {
+    const inputConfig = {};
+    const pipeline_config = {
+      streaming_mode: 'vod',
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipeline_config))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MissingRequiredExclusiveFields',
+          field_name: 'inputs',
+        }));
+  });
+
   it('fails when segment_per_file is false with a HTTP url output', async () => {
     const inputConfig = getBasicInputConfig();
     const pipelineConfig = {
@@ -332,6 +364,19 @@ function errorTests() {
     .toBeRejectedWith(jasmine.objectContaining({
       error_type: 'RuntimeError',
     }));
+  });
+
+  it('fails when multiperiod_inputs_list is used with a HTTP url output', async () => {
+    const inputConfig = {
+      'multiperiod_inputs_list': [
+        getBasicInputConfig(),
+      ],
+    };
+
+    await expectAsync(startStreamer(inputConfig, minimalPipelineConfig, {}, outputHttpUrl))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'RuntimeError',
+        }));
   });
 }
 
@@ -718,7 +763,7 @@ function codecTests(manifestUrl, format) {
       expect(codecList).not.toContain('opus');
     } else if (manifestUrl == dashManifestUrl) {
       expect(codecList).toContain('opus');
-    } 
+    }
   })
 }
 
@@ -1316,5 +1361,39 @@ function muxedTextTests(manifestUrl, format) {
         'language': 'eo',  // Autodetected from the mkv input
       }),
     ]);
+  });
+}
+
+function multiPeriodTests(manifestUrl, format) {
+  it('can process multiperiod_inputs_list ' + format, async() => {
+    const singleInputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'Sintel.with.subs.mkv',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ],
+    };
+    const inputConfigDict = {
+      'multiperiod_inputs_list': [
+        singleInputConfigDict,
+        singleInputConfigDict,
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': ['144p'],
+      'audio_codecs': ['aac'],
+      'video_codecs': ['h264'],
+    };
+
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await player.load(manifestUrl);
+
+    // Since we processed only 0:01s, the total duration shoud be 2s.
+    // Be more tolerant with float comparison, (D > 1.9 * length) instead of (D == 2 * length).
+    expect(video.duration).toBeGreaterThan(1.9);
   });
 }
