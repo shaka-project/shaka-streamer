@@ -53,8 +53,6 @@
    (https://github.com/google/shaka-streamer/pull/85)
  - Add HTTP url output support
    (https://github.com/google/shaka-streamer/pull/82)
- - Add LL-DASH support
-   (https://github.com/google/shaka-streamer/pull/88)
  - Fix accidental live-type DASH output in VOD mode
 
 

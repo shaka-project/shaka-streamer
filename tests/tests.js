@@ -147,8 +147,6 @@ describe('Shaka Streamer', () => {
   muxedTextTests(dashManifestUrl, '(dash)');
 
   multiPeriodTests(dashManifestUrl, '(dash)');
-
-  lowLatencyDashTests(dashManifestUrl, '(dash)');
 });
 
 function errorTests() {
@@ -376,39 +374,6 @@ function errorTests() {
     };
 
     await expectAsync(startStreamer(inputConfig, minimalPipelineConfig, {}, outputHttpUrl))
-        .toBeRejectedWith(jasmine.objectContaining({
-          error_type: 'RuntimeError',
-        }));
-  });
-
-  it('fails when utc_timing is not set for low_latency_dash_mode', async () => {
-    const inputConfig = getBasicInputConfig();
-    const pipelineConfig = {
-      low_latency_dash_mode: true,
-      streaming_mode: 'live',
-    };
-
-    await expectAsync(startStreamer(inputConfig, pipelineConfig))
-        .toBeRejectedWith(jasmine.objectContaining({
-          error_type: 'RuntimeError',
-        }));
-  });
-
-  it('fails when low_latency_dash_mode is set without a DASH manifest', async () => {
-    const inputConfig = getBasicInputConfig();
-    const pipelineConfig = {
-      low_latency_dash_mode: true,
-      manifest_format: ['hls'],
-      streaming_mode: 'live',
-      utc_timings: [
-        {
-          scheme_id_uri:'urn:mpeg:dash:utc:http-xsdate:2014',
-          value:'https://time.akamai.com/?.iso'
-        },
-      ],
-    };
-
-    await expectAsync(startStreamer(inputConfig, pipelineConfig))
         .toBeRejectedWith(jasmine.objectContaining({
           error_type: 'RuntimeError',
         }));
@@ -1430,44 +1395,5 @@ function multiPeriodTests(manifestUrl, format) {
     // Since we processed only 0:01s, the total duration shoud be 2s.
     // Be more tolerant with float comparison, (D > 1.9 * length) instead of (D == 2 * length).
     expect(video.duration).toBeGreaterThan(1.9);
-  });
-}
-
-function lowLatencyDashTests(manifestUrl, format) {
-  it('can process LL-DASH streaming ' + format, async() => {
-    const inputConfigDict = {
-      'inputs': [
-        {
-          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
-          'media_type': 'video',
-          // Keep this test short by only encoding 4s of content.
-          'end_time': '0:04',
-        }
-      ],
-    };
-    const pipelineConfigDict = {
-      'streaming_mode': 'live',
-      'resolutions': ['144p'],
-      'video_codecs': ['h264'],
-      'manifest_format': ['dash'],
-      'segment_size': 2,
-      'low_latency_dash_mode': true,
-      'utc_timings': [
-        {
-          'scheme_id_uri':'urn:mpeg:dash:utc:http-xsdate:2014',
-          'value':'https://time.akamai.com/?.iso'
-        },
-      ],
-    };
-    await startStreamer(inputConfigDict, pipelineConfigDict);
-    // TODO(CaitlinO'Callaghan): fix so player loads and test passes
-    player.configure({
-      streaming: {
-        lowLatencyMode: true,
-        inaccurateManifestTolerance: 0,
-        rebufferingGoal: 0.01,
-      }
-    });
-    await player.load(manifestUrl);
   });
 }

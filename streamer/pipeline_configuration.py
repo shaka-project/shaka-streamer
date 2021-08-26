@@ -76,17 +76,6 @@ class EncryptionMode(enum.Enum):
   RAW = 'raw'
   """Raw key mode"""
 
-class UtcTimingPair(configuration.Base):
-  """An object containing the attributes for a DASH MPD UTCTiming 
-  element"""
-
-  # TODO: Use an enum for scheme_id_uri to simplify the config input
-  scheme_id_uri = configuration.Field(str).cast()
-  """SchemeIdUri attribute to be used for the UTCTiming element"""
-
-  value = configuration.Field(str).cast()
-  """Value attribute to be used for the UTCTiming element"""
-
 class RawKeyConfig(configuration.Base):
   """An object representing a list of keys for Raw key encryption"""
 
@@ -319,19 +308,6 @@ class PipelineConfig(configuration.Base):
   encryption = configuration.Field(EncryptionConfig,
                                    default=EncryptionConfig({})).cast()
   """Encryption settings."""
-
-  # TODO: Generalize this to low_latency_mode once LL-HLS is supported by Packager
-  low_latency_dash_mode = configuration.Field(bool, default=False).cast()
-  """If true, stream in low latency mode for DASH."""
-
-  utc_timings = configuration.Field(List[UtcTimingPair]).cast()
-  """UTCTiming schemeIdUri and value pairs for the DASH MPD.
-
-  If multiple UTCTiming pairs are provided for redundancy,
-  list the pairs in the order of preference.
-
-  Must be set for LL-DASH streaming.
-  """
 
 
   def __init__(self, *args) -> None:
