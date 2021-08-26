@@ -3,6 +3,8 @@
  - Multi period support for DASH
    (https://github.com/google/shaka-streamer/issues/43)
    (https://github.com/google/shaka-streamer/pull/78)
+ - Add LL-DASH support
+   (https://github.com/google/shaka-streamer/pull/88)
 
 
 ## 0.4.0 (2021-08-26)

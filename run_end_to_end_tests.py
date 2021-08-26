@@ -91,9 +91,17 @@ def dashStreamsReady(manifest_path):
   pattern = re.compile(r'<Representation.*?((\n).*?)*?Representation>')
   with open(manifest_path) as manifest_file:
     for representation in pattern.finditer(manifest_file.read()):
-      if not re.search(r'<S t', representation.group()):
-        # This Representation has no segments.
-        return False
+      if controller.is_low_latency_dash_mode():
+        # LL-DASH manifests do not contain the segment reference tag <S>.
+        # Check for the availabilityTimeOffset attribute instead.
+        if not re.search(r'availabilityTimeOffset', representation.group()):
+          # This Representation does not have a availabilityTimeOffset yet,
+          # meaning the first chunk is not yet ready for playout.
+          return False
+      else:
+        if not re.search(r'<S t', representation.group()):
+          # This Representation has no segments.
+          return False
 
   return True
 
