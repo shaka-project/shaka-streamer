@@ -18,8 +18,6 @@ and packaging process for different platforms."""
 import setuptools # type: ignore
 from setuptools.command.build_py import build_py # type: ignore
 import sys
-import shutil
-import os
 import yaml
 
 # os.chmod() is called for every binary at import time,
@@ -30,25 +28,12 @@ import streamer_binaries
 class custom_build_py(build_py):
   """A custom class to override the default behavior of `build_py` command."""
 
+  platform_build_lib = ''
+
   def run(self):
-    # Clean the build directory so the binaries that were added at the previous
-    # build don't remain in the package for the current platform we build for.
-    # This is because setuptools doesn't delete it after a build has
-    # completed and doesn't also re-create it in the next `build` call,
-    # that's why we can't delete it either, so let's just clean it.
-    build_dir = os.path.join(self.build_lib, streamer_binaries.__name__)
-    self._clean_build_dir(build_dir)
+
+    self.build_lib = custom_build_py.platform_build_lib
     return super().run()
-
-  def _clean_build_dir(self, build_dir):
-    try:
-      # To clean the directory, we can remove it and re-create it.
-      shutil.rmtree(build_dir)
-      os.mkdir(build_dir)
-    except FileNotFoundError:
-      # At the first run, the directory might not be on the system yet.
-      return
-
 
 def build_wheel(platform_name, platform_binaries):
   """Builds a wheel distribution for `platform_name` adding the files
@@ -67,6 +52,9 @@ def build_wheel(platform_name, platform_binaries):
       # Run quietly.
       '--quiet',
   ]
+
+  # Build this package in `--bdist-dir` directly.
+  custom_build_py.platform_build_lib = platform_name
 
   # This setup() call will ingest the sys.argv command line arguments.
   setuptools.setup(
@@ -90,8 +78,8 @@ def build_wheel(platform_name, platform_binaries):
         # to the package for the current platform_name.
         streamer_binaries.__name__: platform_binaries,
     },
-    # Use our custom builder.  All it does is cleaning the build directory
-    # before using it for building, as it might contain old unwanted binaries.
+    # Use our custom builder.  All it does is that it sets the `--build-lib`
+    # argument that we can't set from the `bdist_wheel` command interface.
     cmdclass={'build_py': custom_build_py},
   )
 
