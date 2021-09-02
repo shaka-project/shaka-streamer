@@ -157,7 +157,7 @@ class ControllerNode(object):
         sub_dir_name = 'period_' + str(i + 1)
         self._append_nodes_for_inputs_list(singleperiod.inputs,
                                            output_location,
-                                           sub_dir_name, i)
+                                           sub_dir_name, i + 1)
 
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]

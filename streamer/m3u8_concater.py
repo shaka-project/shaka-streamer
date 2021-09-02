@@ -144,8 +144,9 @@ class MediaPlaylist:
     # will have the URI we need, but if we encounter a byterange tag we need to
     # advance one more line.
     for i in range(len(lines)):
-      # Don't use #EXT-X-MAP to get the codec, because HLS specs says
-      # it is an optional tag.
+      # Don't use the URIs from any tag to try to extract codec information.
+      # We should not rely on the exact structure of file names for this.
+      # Use stream_maps instead.
       line = lines[i]
       if line.startswith('#EXTINF'):
         line = lines[i + 1]
@@ -406,22 +407,15 @@ class MediaPlaylist:
           # If a playlist is there, append it.
           concat_txt_playlist.content += optional_txt_playlist.content
         else:
-          # If the no playlist were found for this period,
-          # Create a time gap filled with dummy data for the period's duration.
-          dummy = 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A\n'
-          # Break the period's duration into target duration count and remains,
-          # because the target duration might be a prime number, this might
-          # cause an accumulated rounding error.
-          td_count = durations[i] / concat_txt_playlist.target_duration
-          for _ in range(math.floor(td_count)):
-            concat_txt_playlist.content += '#EXTINF:' + str(
-                concat_txt_playlist.target_duration) + ',\n'
-            concat_txt_playlist.content += dummy
-          # Put whats left in an #EXTINF.
-          remains = round(durations[i] % concat_txt_playlist.target_duration, 3)
-          if remains:
-            concat_txt_playlist.content += '#EXTINF:' + str(remains) + ',\n'
-            concat_txt_playlist.content += dummy
+          # If the no playlist were found for this period, we create at time gap
+          # by filling the period's duration with an empty string.
+          ext_inf_count = math.ceil(durations[i] /
+                                    concat_txt_playlist.target_duration)
+          for _ in range(ext_inf_count):
+            concat_txt_playlist.content += (
+                '#EXTINF:' + str(durations[i] / ext_inf_count) + ',\n' +
+                'data:text/vtt;charset=utf-8,WEBVTT%0A%0A\n'
+              )
         # Add a discontinuity after each period.
         concat_txt_playlist.content += '#EXT-X-DISCONTINUITY\n\n'
       concat_txt_playlists.append(concat_txt_playlist)
