@@ -170,7 +170,7 @@ class Input(configuration.Base):
   """Optional value for a custom DRM label, which defines the encryption key
   applied to the stream. If not provided, the DRM label is derived from stream
   type (video, audio), resolutions, etc. Note that it is case sensitive.
-  
+
   Applies to 'raw' encryption_mode only."""
 
   skip_encryption = configuration.Field(int, default=0).cast()
@@ -330,7 +330,7 @@ class InputConfig(configuration.Base):
   def __init__(self, dictionary: Dict[str, Any]):
     """A constructor to check that either inputs or mutliperiod_inputs_list is provided,
     and produce a helpful error message in case both or none are provided.
-    
+
     We need these checks before passing the input dictionary to the configuration.Base constructor,
     because it does not check for this 'exclusive or-ing' relationship between fields.
     """
@@ -339,16 +339,16 @@ class InputConfig(configuration.Base):
     See some examples at https://github.com/google/shaka-streamer/tree/master/config_files.
     """
 
-    if (dictionary.get('inputs') is not None 
+    if (dictionary.get('inputs') is not None
         and dictionary.get('multiperiod_inputs_list') is not None):
       raise configuration.ConflictingFields(
         InputConfig, 'inputs', 'multiperiod_inputs_list')
-    
+
     # Because these fields are not marked as required at the class level
     # , we need to check ourselves that one of them is provided.
     if not dictionary.get('inputs') and not dictionary.get('multiperiod_inputs_list'):
       raise configuration.MissingRequiredExclusiveFields(
         InputConfig, 'inputs', 'multiperiod_inputs_list')
-      
+
     super().__init__(dictionary)
 

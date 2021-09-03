@@ -163,6 +163,16 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
   def _setup_manifest_format(self) -> List[str]:
     args: List[str] = []
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
+      if self._pipeline_config.utc_timings:
+        args += [
+            '--utc_timings',
+            ','.join(timing.scheme_id_uri + '=' +
+                     timing.value for timing in self._pipeline_config.utc_timings)
+        ]
+      if self._pipeline_config.low_latency_dash_mode:
+        args += [
+            '--low_latency_dash_mode=true',
+        ]
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         args += [
             '--generate_static_live_mpd',

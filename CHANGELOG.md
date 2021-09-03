@@ -1,4 +1,13 @@
-## 0.4.0 (???)
+## 0.5.0 (???)
+
+ - Multi period support for DASH
+   (https://github.com/google/shaka-streamer/issues/43)
+   (https://github.com/google/shaka-streamer/pull/78)
+ - Add LL-DASH support
+   (https://github.com/google/shaka-streamer/pull/88)
+
+
+## 0.4.0 (2021-08-26)
 
  - Fix shutdown of cloud upload
  - Improve the formatting of minimum version errors
@@ -6,7 +15,7 @@
  - Add `--skip_deps_check` to bypass version checks on dependencies
  - Increase preserved segments outside of the availability window, improving HLS
    playback in Shaka Player
- - Require Shaka Packager v2.4+
+ - Require Shaka Packager v2.5+
  - Add AV1 support
    (https://github.com/google/shaka-streamer/issues/10)
  - Drop `raw_images` input type
@@ -15,6 +24,42 @@
  - Fix resolution autodetection boundary cases
  - Add support for extracting text streams from multiplexed inputs
    (https://github.com/google/shaka-streamer/issues/53)
+ - Improved type-checking and type annotations
+ - Fix install commands in docs
+   (https://github.com/google/shaka-streamer/issues/56)
+ - Fix various test failures and test-runner bugs
+ - Fix packaging failures with long-running content
+   (https://github.com/google/shaka-streamer/issues/64)
+ - Add raw-key support
+   (https://github.com/google/shaka-streamer/issues/21)
+   (https://github.com/google/shaka-streamer/pull/63)
+ - Add support for ac3 and ec3
+   (https://github.com/google/shaka-streamer/issues/37)
+   (https://github.com/google/shaka-streamer/pull/69)
+ - Fix running tests from any directory
+   (https://github.com/google/shaka-streamer/issues/49)
+   (https://github.com/google/shaka-streamer/pull/71)
+ - Add config file with Apple's HLS recommendations
+   (https://github.com/google/shaka-streamer/issues/70)
+   (https://github.com/google/shaka-streamer/pull/72)
+ - Add support for HEVC video codec
+   (https://github.com/google/shaka-streamer/pull/74)
+ - Restrict WebM formats to DASH, omit from HLS
+   (https://github.com/google/shaka-streamer/issues/18)
+   (https://github.com/google/shaka-streamer/pull/80)
+ - Automatic frame rate reduction
+   (https://github.com/google/shaka-streamer/pull/77)
+ - Fix missing members in docs, auto-link to types in config docs
+ - Change the documentation theme
+ - Set channel count as an input feature, downmix as needed
+   (https://github.com/google/shaka-streamer/issues/38)
+   (https://github.com/google/shaka-streamer/pull/84)
+ - Add Windows support
+   (https://github.com/google/shaka-streamer/issues/8)
+   (https://github.com/google/shaka-streamer/pull/85)
+ - Add HTTP url output support
+   (https://github.com/google/shaka-streamer/pull/82)
+ - Fix accidental live-type DASH output in VOD mode
 
 
 ## 0.3.0 (2019-10-18)
