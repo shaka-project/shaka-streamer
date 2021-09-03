@@ -36,7 +36,7 @@ from streamer.input_configuration import InputConfig, InputType, MediaType, Inpu
 from streamer.node_base import NodeBase, ProcessStatus
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.packager_node import PackagerNode
-from streamer.pipeline_configuration import PipelineConfig, StreamingMode
+from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
 import streamer.subprocessWindowsPatch  # side-effects only
@@ -93,7 +93,7 @@ class ControllerNode(object):
       _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
 
       # Check that Shaka Packager version is 2.4.2 or above.
-      _check_version('Shaka Packager', ['packager', '-version'], (2, 4, 2))
+      _check_version('Shaka Packager', ['packager', '-version'], (2, 5, 1))
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
@@ -137,11 +137,22 @@ class ControllerNode(object):
       if bucket_url:
         raise RuntimeError(
             'Cloud bucket upload is incompatible with HTTP PUT support.')
-      
+
       if self._input_config.multiperiod_inputs_list:
         # TODO: Edit Multiperiod input list implementation to support HTTP outputs
         raise RuntimeError(
             'Multiperiod input list support is incompatible with HTTP outputs.')
+
+    if self._pipeline_config.low_latency_dash_mode:
+      # Check some restrictions on LL-DASH packaging.
+      if ManifestFormat.DASH not in self._pipeline_config.manifest_format:
+        raise RuntimeError(
+            'low_latency_dash_mode is only compatible with DASH ouputs. ' +
+            'manifest_format must include DASH')
+
+      if not self._pipeline_config.utc_timings:
+        raise RuntimeError(
+            'For low_latency_dash_mode, the utc_timings must be set.')
 
     # Note that we remove the trailing slash from the output location, because
     # otherwise GCS would create a subdirectory whose name is "".
@@ -179,7 +190,7 @@ class ControllerNode(object):
 
     for node in self._nodes:
       node.start()
-      
+
     return self
 
   def _append_nodes_for_inputs_list(self, inputs: List[Input],
@@ -187,7 +198,7 @@ class ControllerNode(object):
                                     period_dir: Optional[str] = None,
                                     index: int = 0) -> None:
     """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
-    
+
     Args:
       inputs (List[Input]): A list of Input streams.
       output_location (str): A path were the packager will write outputs in.
@@ -195,7 +206,7 @@ class ControllerNode(object):
       If passed, this indicates that inputs argument is one period in a list of periods.
       index (int): The index of the current Transcoder/Packager nodes.
     """
-    
+
     outputs: List[OutputStream] = []
     for input in inputs:
       # External command inputs need to be processed by an additional node
@@ -207,7 +218,7 @@ class ControllerNode(object):
         command_output = Pipe.create_ipc_pipe(self._temp_dir)
         self._nodes.append(ExternalCommandNode(
             input.name, command_output.write_end()))
-        # reset the name of the input to be the output pipe path - which the 
+        # reset the name of the input to be the output pipe path - which the
         # transcoder node will read from - instead of a shell command.
         input.reset_name(command_output.read_end())
 
@@ -296,6 +307,14 @@ class ControllerNode(object):
     """
 
     return self._pipeline_config.streaming_mode == StreamingMode.VOD
+
+  def is_low_latency_dash_mode(self) -> bool:
+    """Returns True if the pipeline is running in LL-DASH mode.
+
+    :rtype: bool
+    """
+
+    return self._pipeline_config.low_latency_dash_mode
 
 class VersionError(Exception):
   """A version error for one of Shaka Streamer's external dependencies.
