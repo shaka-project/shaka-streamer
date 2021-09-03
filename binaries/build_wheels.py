@@ -27,12 +27,12 @@ import streamer_binaries
 # Version constants.
 # Change to download different versions.
 FFMPEG_VERSION = 'n4.4-1'
-PACKAGER_VERSION = 'v2.99.5'
+PACKAGER_VERSION = 'v2.6.0'
 
-# A map of postfixes that will be combined with the binary download links
-# to achieve a full download link.  Different postfix for each platform.
+# A map of suffixes that will be combined with the binary download links
+# to achieve a full download link.  Different suffix for each platform.
 # Extend this dictionary to add more platforms.
-PLATFORM_POSTFIXES = {
+PLATFORM_SUFFIXES = {
     # 64-bit Windows
     'win_amd64': '-win-x64.exe',
     # 64-bit Linux
@@ -41,18 +41,18 @@ PLATFORM_POSTFIXES = {
     'manylinux2014_aarch64': '-linux-arm64',
     # 64-bit with 10.9 SDK
     'macosx_10_9_x86_64': '-osx-x64',
-  }
+}
 
 FFMPEG_DL_PREFIX = 'https://github.com/joeyparrish/static-ffmpeg-binaries/releases/download/' + FFMPEG_VERSION
-PACKAGER_DL_PREFIX = 'https://github.com/joeyparrish/shaka-packager/releases/download/' + PACKAGER_VERSION
+PACKAGER_DL_PREFIX = 'https://github.com/google/shaka-packager/releases/download/' + PACKAGER_VERSION
 
 # The download links to each binary.  These download links
-# aren't complete, they miss the platfrom-specific postfix.
+# aren't complete, they miss the platfrom-specific suffix.
 BINARIES_DL = [
     FFMPEG_DL_PREFIX + '/ffmpeg',
     FFMPEG_DL_PREFIX + '/ffprobe',
     PACKAGER_DL_PREFIX + '/packager',
-  ]
+]
 
 
 class custom_build_py(setuptools.command.build_py.build_py):
@@ -136,12 +136,12 @@ def main():
   # For each platform(OS+CPU), we download the its binaries and
   # create a binary wheel distribution that contains the executable
   # binaries specific to this platform.
-  for platform_name, postfix in PLATFORM_POSTFIXES.items():
+  for platform_name, suffix in PLATFORM_SUFFIXES.items():
     binaries_to_include = []
-    # Use the `postfix` specific to this platfrom to achieve
+    # Use the `suffix` specific to this platfrom to achieve
     # the full download link for each binary.
     for binary_dl in BINARIES_DL:
-      download_link = binary_dl + postfix
+      download_link = binary_dl + suffix
       binary_name = download_binary(download_url=download_link,
                                     download_dir=streamer_binaries.__name__)
       binaries_to_include.append(binary_name)
