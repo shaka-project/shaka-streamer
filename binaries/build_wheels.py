@@ -145,7 +145,7 @@ def main():
       binary_name = download_binary(download_url=download_link,
                                     download_dir=streamer_binaries.__name__)
       binaries_to_include.append(binary_name)
-    # Build a wheel distribution with for this platform
+    # Build a wheel distribution for this platform
     # and include the binaries we have just downloaded.
     build_bdist_wheel(platform_name, binaries_to_include)
 
