@@ -498,6 +498,8 @@ class RuntimeMap(Generic[RuntimeMapSubclass], Base):
   def __lt__(self, other: Any) -> bool:
     return self._sortable_properties() < other._sortable_properties()
 
+  def __hash__(self) -> int:
+      return super().__hash__()
 
   @classmethod
   def set_map(cls,

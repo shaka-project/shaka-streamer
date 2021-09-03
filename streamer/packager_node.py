@@ -59,20 +59,22 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
   def __init__(self,
                pipeline_config: PipelineConfig,
                output_location: str,
-               output_streams: List[OutputStream]) -> None:
+               output_streams: List[OutputStream],
+               index: int) -> None:
     super().__init__()
     self._pipeline_config: PipelineConfig = pipeline_config
     self.output_location: str = output_location
     self._segment_dir: str = build_path(
         output_location, pipeline_config.segment_folder)
-    self._output_streams: List[OutputStream] = output_streams
+    self.output_streams: List[OutputStream] = output_streams
+    self._index = index
 
   def start(self) -> None:
     args = [
         'packager',
     ]
 
-    args += [self._setup_stream(stream) for stream in self._output_streams]
+    args += [self._setup_stream(stream) for stream in self.output_streams]
 
     if self._pipeline_config.quiet:
       args += [
@@ -112,7 +114,8 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       # Log by writing all Packager output to a file.  Unlike the logging
       # system in ffmpeg, this will stop any Packager output from getting to
       # the screen.
-      stdout = open('PackagerNode.log', 'w')
+      packager_log_file = 'PackagerNode-' + str(self._index) + '.log'
+      stdout = open(packager_log_file, 'w')
 
     self._process: subprocess.Popen = self._create_process(
         args,
