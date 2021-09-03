@@ -407,15 +407,14 @@ class MediaPlaylist:
           # If a playlist is there, append it.
           concat_txt_playlist.content += optional_txt_playlist.content
         else:
-          # If the no playlist were found for this period, we create at time gap
+          # If no playlist were found for this period, we create a time gap
           # by filling the period's duration with an empty string.
           ext_inf_count = math.ceil(durations[i] /
                                     concat_txt_playlist.target_duration)
           for _ in range(ext_inf_count):
             concat_txt_playlist.content += (
                 '#EXTINF:' + str(durations[i] / ext_inf_count) + ',\n' +
-                'data:text/vtt;charset=utf-8,WEBVTT%0A%0A\n'
-              )
+                'data:text/vtt;charset=utf-8,WEBVTT%0A%0A\n')
         # Add a discontinuity after each period.
         concat_txt_playlist.content += '#EXT-X-DISCONTINUITY\n\n'
       concat_txt_playlists.append(concat_txt_playlist)
