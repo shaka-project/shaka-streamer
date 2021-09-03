@@ -44,6 +44,7 @@ Features
   * Control output folders and file names
   * Add arbitrary FFmpeg filters for input or output
 
+* Supports generating multi-period VOD content for DASH (also works for HLS)
 
 Caveat: text processing
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,12 +60,9 @@ config.
 Platform support
 ----------------
 
-We support common Linux distributions and macOS.
+We support common Linux distributions, macOS and Windows.
 
 Multiple VAAPI devices are not yet supported on Linux.  See `issue #17`_.
-
-Windows is not supported at this time due to our use of ``os.mkfifo``, but we
-are accepting PRs if you’d like to add Windows support. See `issue #8`_.
 
 
 Getting started

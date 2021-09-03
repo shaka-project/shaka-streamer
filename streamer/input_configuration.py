@@ -314,7 +314,7 @@ class Input(configuration.Base):
     return bitrate_configuration.AudioChannelLayout.get_value(self.channel_layout)
 
 class SinglePeriod(configuration.Base):
-  """An object repersenting one optional video stream and multiple audio and text streams"""
+  """An object representing a single period in a multiperiod inputs list."""
 
   inputs = configuration.Field(List[Input], required=True).cast()
 
