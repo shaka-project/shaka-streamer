@@ -29,11 +29,13 @@ class TranscoderNode(PolitelyWaitOnFinish):
                inputs: List[Input],
                pipeline_config: PipelineConfig,
                outputs: List[OutputStream],
+               index: int,
                hermetic_ffmpeg: Optional[str]) -> None:
     super().__init__()
     self._inputs = inputs
     self._pipeline_config = pipeline_config
     self._outputs = outputs
+    self._index = index
     # If a hermetic ffmpeg is passed, use it.
     self._ffmpeg = hermetic_ffmpeg or 'ffmpeg'
 
@@ -149,7 +151,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
     if self._pipeline_config.debug_logs:
       # Use this environment variable to turn on ffmpeg's logging.  This is
       # independent of the -loglevel switch above.
-      env['FFREPORT'] = 'file=TranscoderNode.log:level=32'
+      ffmpeg_log_file = 'TranscoderNode-' + str(self._index) + '.log'
+      env['FFREPORT'] = 'file={}:level=32'.format(ffmpeg_log_file)
 
     self._process = self._create_process(args, env)
 

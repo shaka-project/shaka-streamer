@@ -205,10 +205,10 @@ class ControllerNode(object):
       # InputConfig contains multiperiod_inputs_list only.
       # Create one Transcoder node and one Packager node for each period.
       for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
-        sub_dir_name = 'period_' + str(i)
+        sub_dir_name = 'period_' + str(i + 1)
         self._append_nodes_for_inputs_list(singleperiod.inputs,
                                            output_location,
-                                           sub_dir_name)
+                                           sub_dir_name, i + 1)
 
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
@@ -235,13 +235,16 @@ class ControllerNode(object):
 
   def _append_nodes_for_inputs_list(self, inputs: List[Input],
                                     output_location: str,
-                                    period_dir: Optional[str] = None) -> None:
+                                    period_dir: Optional[str] = None,
+                                    index: int = 0) -> None:
     """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
 
     Args:
       inputs (List[Input]): A list of Input streams.
+      output_location (str): A path were the packager will write outputs in.
       period_dir (Optional[str]): A subdirectory name where a single period will be outputted to.
       If passed, this indicates that inputs argument is one period in a list of periods.
+      index (int): The index of the current Transcoder/Packager nodes.
     """
 
     outputs: List[OutputStream] = []
@@ -304,8 +307,9 @@ class ControllerNode(object):
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,
                                       outputs,
+                                      index,
                                       self.hermetic_ffmpeg))
-
+    
     # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
     # and put that period in it.
     if period_dir:
@@ -315,6 +319,7 @@ class ControllerNode(object):
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
                                     outputs,
+                                    index,
                                     self.hermetic_packager))
 
   def check_status(self) -> ProcessStatus:
