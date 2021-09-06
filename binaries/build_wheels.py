@@ -17,10 +17,10 @@ the platforms we build for and then builds distribution wheels for them.
 """
 
 import os
-import sys
+import shutil
+import subprocess
 import urllib.request
-import setuptools # type: ignore
-import setuptools.command.build_py #type: ignore
+
 import streamer_binaries
 
 
@@ -55,24 +55,12 @@ BINARIES_DL = [
 ]
 
 
-class custom_build_py(setuptools.command.build_py.build_py):
-  """A custom class to override the default behavior of `build_py` command."""
-
-  platform_build_lib = ''
-
-  def initialize_options(self):
-    return_val = super().initialize_options()
-    # Sets the `--build-lib` directory.
-    self.build_lib = custom_build_py.platform_build_lib
-    return return_val
-
-
 def build_bdist_wheel(platform_name, platform_binaries):
   """Builds a wheel distribution for `platform_name` adding the files
   in `platform_binaries` to it using the `package_data` parameter."""
 
-  sys.argv = [
-      'setup.py',
+  args = [
+      'python3', 'auto_build_setup.py',
       # Build binary as a wheel.
       'bdist_wheel',
       # Platform name to embed in generated filenames.
@@ -83,38 +71,13 @@ def build_bdist_wheel(platform_name, platform_binaries):
       '--python-tag', 'py3',
       # Run quietly.
       '--quiet',
+      # Encode the list of binaries to incldue for this platform as a string.
+      # We will parse this argument in 'auto_build_setup.py' file.
+      str(platform_binaries),
   ]
-
-  # Build this package in `--bdist-dir` directly.
-  custom_build_py.platform_build_lib = platform_name
-
-  # This setup() call will ingest the sys.argv command line arguments.
-  setuptools.setup(
-    name='shaka-streamer-binaries',
-    version=streamer_binaries.__version__,
-    author='Google',
-    description='A package containing FFmpeg, FFprobe, and Shaka Packager static builds.',
-    long_description=('An auxiliary package that provides platform-specific'
-                      ' binaries used by Shaka Streamer.'),
-    url='https://github.com/google/shaka-streamer/tree/master/binaries',
-    packages=[streamer_binaries.__name__,],
-    classifiers=[
-        'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: POSIX :: Linux',
-        'Operating System :: MacOS :: MacOS X',
-        'Operating System :: Microsoft :: Windows',
-    ],
-    package_data={
-        # Only add the corresponding platform specific binaries
-        # to the package for the current `platform_name`.
-        streamer_binaries.__name__: platform_binaries,
-    },
-    # Use our custom builder.  All it does is that it sets the `--build-lib`
-    # argument that we can't set from the `bdist_wheel` command interface.
-    cmdclass={'build_py': custom_build_py},
-  )
-
+  subprocess.check_call(args)
+  # Remove the build directory so that it is not reused by 'auto_build_setup.py'.
+  shutil.rmtree('build')
 
 def download_binary(download_url: str, download_dir: str) -> str:
   """Downloads a file and writes it to the file system.
