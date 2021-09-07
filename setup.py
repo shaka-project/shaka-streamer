@@ -41,6 +41,6 @@ setuptools.setup(
       'Operating System :: MacOS :: MacOS X',
       'Operating System :: Microsoft :: Windows',
   ],
-  # Python 3.5 tested in Ubuntu 16.04 LTS (Xenial Xerus).
-  python_requires='>=3.5',
+  # Python 3.6 tested in GitHub Actions CI
+  python_requires='>=3.6',
 )
