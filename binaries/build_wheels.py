@@ -60,7 +60,7 @@ def build_bdist_wheel(platform_name, platform_binaries):
   in `platform_binaries` to it using the `package_data` parameter."""
 
   args = [
-      'python3', 'auto_build_setup.py',
+      'python3', 'setup.py',
       # Build binary as a wheel.
       'bdist_wheel',
       # Platform name to embed in generated filenames.
@@ -71,12 +71,12 @@ def build_bdist_wheel(platform_name, platform_binaries):
       '--python-tag', 'py3',
       # Run quietly.
       '--quiet',
-      # Encode the list of binaries to incldue for this platform as a string.
-      # We will parse this argument in 'auto_build_setup.py' file.
-      str(platform_binaries),
   ]
+  # After '--', we send the platform specific binaries that we want to include.
+  args += ['--']
+  args += platform_binaries
   subprocess.check_call(args)
-  # Remove the build directory so that it is not reused by 'auto_build_setup.py'.
+  # Remove the build directory so that it is not reused by 'setup.py'.
   shutil.rmtree('build')
 
 def download_binary(download_url: str, download_dir: str) -> str:

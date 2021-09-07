@@ -12,24 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: This file is intended to be used only by the build script
-# and not to be run from the terminal.
+
 import sys
-import ast
 import setuptools # type: ignore
 
 import streamer_binaries
 
-# The last argument passed MUST be a list of binary file names
-# that we wish include in the build.
-# Parse this argument into a list.
-# This argument will look something like this:
-# 	['binary_1', 'binary_2', 'binary_3', 'binary_4']
-platform_binaries = ast.literal_eval(sys.argv[-1])
-assert isinstance(platform_binaries, list)
-
-# The rest are the command line arguments given to setup() function.
-sys.argv = sys.argv[:-1]
+try:
+  separator_index = sys.argv.index('--')
+except ValueError:
+  # '--' is not passed, `platfrom_binaries` will be an empty list.
+  separator_index = len(sys.argv)
+platform_binaries = sys.argv[separator_index + 1:]
+sys.argv = sys.argv[:separator_index]
 
 setuptools.setup(
   name='shaka-streamer-binaries',
