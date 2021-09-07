@@ -70,6 +70,12 @@ describe('Shaka Streamer', () => {
     document.body.appendChild(video);
 
     player = new shaka.Player(video);
+    const retryParameters = {
+      maxAttempts: 5,
+      timeout: 90e3,
+      stallTimeout: 30e3,
+    };
+    player.configure('manifest.retryParameters', retryParameters);
     player.addEventListener('error', (error) => {
       fail(error);
     });
