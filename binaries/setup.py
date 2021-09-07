@@ -18,11 +18,7 @@ import setuptools # type: ignore
 
 import streamer_binaries
 
-try:
-  separator_index = sys.argv.index('--')
-except ValueError:
-  # If '--' is not passed, `platform_binaries` will be an empty list.
-  separator_index = len(sys.argv)
+separator_index = sys.argv.index('--')
 platform_binaries = sys.argv[separator_index + 1:]
 sys.argv = sys.argv[:separator_index]
 
