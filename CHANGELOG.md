@@ -21,6 +21,8 @@
  - Fix framerate detection for mixed-framerate content
    (https://github.com/google/shaka-streamer/issues/90)
    (https://github.com/google/shaka-streamer/pull/93)
+ - Fix cloud upload errors for S3
+   (https://github.com/google/shaka-streamer/issues/67)
 
 
 ## 0.4.0 (2021-08-26)
