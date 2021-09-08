@@ -49,18 +49,18 @@ def main():
   parser = argparse.ArgumentParser(description=description,
                                    formatter_class=CustomArgParseFormatter)
 
-  parser.add_argument('-i', '--input_config',
+  parser.add_argument('-i', '--input-config',
                       required=True,
                       help='The path to the input config file (required).')
-  parser.add_argument('-p', '--pipeline_config',
+  parser.add_argument('-p', '--pipeline-config',
                       required=True,
                       help='The path to the pipeline config file (required).')
-  parser.add_argument('-b', '--bitrate_config',
+  parser.add_argument('-b', '--bitrate-config',
                       help='The path to a config file which defines custom ' +
                            'bitrates and resolutions for transcoding. ' +
                            '(optional, see example in ' +
                            'config_files/bitrate_config.yaml)')
-  parser.add_argument('-c', '--cloud_url',
+  parser.add_argument('-c', '--cloud-url',
                       default=None,
                       help='The Google Cloud Storage or Amazon S3 URL to ' +
                            'upload to.  (Starts with gs:// or s3://)')
@@ -69,12 +69,16 @@ def main():
                       help='The output folder to write files to, or an HTTP ' +
                            'or HTTPS URL where files will be PUT.' +
                            'Used even if uploading to cloud storage.')
-  parser.add_argument('--skip_deps_check',
+  parser.add_argument('--skip-deps-check',
                       action='store_true',
-                      default=False,
                       help='Skip checks for dependencies and their versions. ' +
                            'This can be useful for testing pre-release ' +
                            'versions of FFmpeg or Shaka Packager.')
+  parser.add_argument('--use-system-binaries',
+                      action='store_true',
+                      help='Use FFmpeg, FFprobe and Shaka Packager binaries ' +
+                           'found in PATH instead of the ones offered by ' +
+                           'Shaka Streamer.')
 
   args = parser.parse_args()
 
@@ -99,7 +103,8 @@ def main():
   try:
     with controller.start(args.output, input_config_dict, pipeline_config_dict,
                           bitrate_config_dict, args.cloud_url,
-                          not args.skip_deps_check):
+                          not args.skip_deps_check,
+                          not args.use_system_binaries):
       # Sleep so long as the pipeline is still running.
       while True:
         status = controller.check_status()

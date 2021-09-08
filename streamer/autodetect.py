@@ -28,6 +28,9 @@ TYPES_WE_CANT_PROBE = [
   InputType.EXTERNAL_COMMAND,
 ]
 
+# This module level variable might be set by the controller node
+# if the user chooses to use the shaka streamer bundled binaries.
+hermetic_ffprobe: Optional[str] = None
 
 def _probe(input: Input, field: str) -> Optional[str]:
   """Autodetect some feature of the input, if possible, using ffprobe.
@@ -46,7 +49,8 @@ def _probe(input: Input, field: str) -> Optional[str]:
 
   args: List[str] = [
       # Probe this input file
-      'ffprobe', input.name,
+      hermetic_ffprobe or 'ffprobe',
+      input.name,
   ]
 
   # Add any required input arguments for this input type

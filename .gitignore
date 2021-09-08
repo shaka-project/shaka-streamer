@@ -8,8 +8,11 @@ docs/build/
 build/
 dist/
 shaka_streamer.egg-info/
+shaka_streamer_binaries.egg-info/
 .idea/
 venv/
 dev/
 .vscode/
-packager.exe
+ffmpeg*
+ffprobe*
+packager*

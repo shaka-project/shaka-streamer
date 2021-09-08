@@ -8,6 +8,11 @@
    (https://github.com/google/shaka-streamer/pull/83)
  - LL-DASH support
    (https://github.com/google/shaka-streamer/pull/88)
+ - Require Python 3.6+
+ - Require Shaka Packager v2.6+
+ - New shaka-streamer-binaries package for binary dependencies
+   (https://github.com/google/shaka-streamer/issues/60)
+   (https://github.com/google/shaka-streamer/pull/87)
 
 
 ## 0.4.0 (2021-08-26)

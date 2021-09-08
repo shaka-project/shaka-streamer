@@ -60,7 +60,8 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
                pipeline_config: PipelineConfig,
                output_location: str,
                output_streams: List[OutputStream],
-               index: int) -> None:
+               index: int,
+               hermetic_packager: Optional[str]) -> None:
     super().__init__()
     self._pipeline_config: PipelineConfig = pipeline_config
     self.output_location: str = output_location
@@ -68,10 +69,12 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         output_location, pipeline_config.segment_folder)
     self.output_streams: List[OutputStream] = output_streams
     self._index = index
+    # If a hermetic packager is passed, use it.
+    self._packager = hermetic_packager or 'packager'
 
   def start(self) -> None:
     args = [
-        'packager',
+        self._packager,
     ]
 
     args += [self._setup_stream(stream) for stream in self.output_streams]

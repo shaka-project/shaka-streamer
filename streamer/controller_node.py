@@ -29,9 +29,11 @@ import sys
 import tempfile
 
 from typing import Any, Dict, List, Optional, Tuple, Union
+from streamer import __version__
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
+from streamer import autodetect
 from streamer.input_configuration import InputConfig, InputType, MediaType, Input
 from streamer.node_base import NodeBase, ProcessStatus
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
@@ -73,7 +75,8 @@ class ControllerNode(object):
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
             bucket_url: Union[str, None] = None,
-            check_deps: bool = True) -> 'ControllerNode':
+            check_deps: bool = True,
+            use_hermetic: bool = True) -> 'ControllerNode':
     """Create and start all other nodes.
 
     :raises: `RuntimeError` if the controller has already started.
@@ -81,19 +84,48 @@ class ControllerNode(object):
              invalid.
     """
 
+    if use_hermetic:
+      try:
+        import streamer_binaries # type: ignore
+      except (ImportError, PermissionError) as ex:
+        # If the package couldn't be imported.
+        if isinstance(ex, ImportError):
+          raise RuntimeError(
+              'shaka-streamer-binaries was not found.\n'
+              '  Install it with `pip install shaka-streamer-binaries`.\n'
+              '  Alternatively, use the `--use-system-binaries` option if you '
+              'want to use the system wide binaries of ffmpeg/ffprobe/packager.'
+            ) from None
+        # If we can't set the permissions for the bundled executables,
+        # we may not be able to run it as a subprocess.
+        if isinstance(ex, PermissionError):
+          raise RuntimeError(
+              'Couldn\'t set the permissions for the bundled '
+              '`shaka-streamer-binaries` executables.'
+            ) from None
+
     if self._nodes:
       raise RuntimeError('Controller already started!')
 
     if check_deps:
-      # Check that ffmpeg version is 4.1 or above.
-      _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
+      # If we are using the hermetic binaries, just check
+      # for the package's version.
+      if use_hermetic:
+        if streamer_binaries.__version__ < __version__:
+          raise VersionError(
+              'An outdated `shaka-streamer-binaries` is installed.\n'
+              '  Update it with `pip install --upgrade shaka-streamer-binaries`.'
+            )
+      else:
+        # Check that ffmpeg version is 4.1 or above.
+        _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
 
-      # Check that ffprobe version (used for autodetect features) is 4.1 or
-      # above.
-      _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
+        # Check that ffprobe version (used for autodetect features) is 4.1 or
+        # above.
+        _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
 
-      # Check that Shaka Packager version is 2.4.2 or above.
-      _check_version('Shaka Packager', ['packager', '-version'], (2, 5, 1))
+        # Check that Shaka Packager version is 2.6.0 or above.
+        _check_version('Shaka Packager', ['packager', '-version'], (2, 6, 0))
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
@@ -108,6 +140,13 @@ class ControllerNode(object):
       # If using cloud storage, make sure the user is logged in and can access
       # the destination, independent of the version check above.
       CloudNode.check_access(bucket_url)
+
+    self.hermetic_ffmpeg: Optional[str] = None
+    self.hermetic_packager: Optional[str] = None
+    if use_hermetic:
+      self.hermetic_ffmpeg = streamer_binaries.ffmpeg
+      self.hermetic_packager = streamer_binaries.packager
+      autodetect.hermetic_ffprobe = streamer_binaries.ffprobe
 
     # Define resolutions and bitrates before parsing other configs.
     bitrate_config = BitrateConfig(bitrate_config_dict)
@@ -160,7 +199,8 @@ class ControllerNode(object):
 
     if self._input_config.inputs:
       # InputConfig contains inputs only.
-      self._append_nodes_for_inputs_list(self._input_config.inputs, output_location)
+      self._append_nodes_for_inputs_list(self._input_config.inputs,
+                                         output_location)
     else:
       # InputConfig contains multiperiod_inputs_list only.
       # Create one Transcoder node and one Packager node for each period.
@@ -267,7 +307,8 @@ class ControllerNode(object):
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,
                                       outputs,
-                                      index))
+                                      index,
+                                      self.hermetic_ffmpeg))
     
     # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
     # and put that period in it.
@@ -278,7 +319,8 @@ class ControllerNode(object):
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
                                     outputs,
-                                    index))
+                                    index,
+                                    self.hermetic_packager))
 
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.

@@ -21,7 +21,7 @@ from streamer.input_configuration import Input, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.pipeline_configuration import PipelineConfig, StreamingMode
-from typing import List, Union
+from typing import List, Union, Optional
 
 class TranscoderNode(PolitelyWaitOnFinish):
 
@@ -29,16 +29,19 @@ class TranscoderNode(PolitelyWaitOnFinish):
                inputs: List[Input],
                pipeline_config: PipelineConfig,
                outputs: List[OutputStream],
-               index: int) -> None:
+               index: int,
+               hermetic_ffmpeg: Optional[str]) -> None:
     super().__init__()
     self._inputs = inputs
     self._pipeline_config = pipeline_config
     self._outputs = outputs
     self._index = index
+    # If a hermetic ffmpeg is passed, use it.
+    self._ffmpeg = hermetic_ffmpeg or 'ffmpeg'
 
   def start(self) -> None:
     args = [
-        'ffmpeg',
+        self._ffmpeg,
         # Do not prompt for output files that already exist. Since we created
         # the named pipe in advance, it definitely already exists. A prompt
         # would block ffmpeg to wait for user input.

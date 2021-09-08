@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,28 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import base64
-import setuptools
 
-import streamer
+import sys
+import setuptools # type: ignore
 
-with open('README.md', 'r') as f:
-  long_description = f.read()
+import streamer_binaries
+
+separator_index = sys.argv.index('--')
+platform_binaries = sys.argv[separator_index + 1:]
+sys.argv = sys.argv[:separator_index]
 
 setuptools.setup(
-  name='shaka-streamer',
-  version=streamer.__version__,
+  name='shaka-streamer-binaries',
+  version=streamer_binaries.__version__,
   author='Google',
-  description='A simple config-file based approach to streaming media.',
-  long_description=long_description,
-  long_description_content_type='text/markdown',
-  url='https://github.com/google/shaka-streamer',
-  packages=setuptools.find_packages(),
-  install_requires=[
-      'PyYAML',
-      'pywin32;platform_system=="Windows"',
-  ],
-  scripts=['shaka-streamer'],
+  description='A package containing FFmpeg, FFprobe, and Shaka Packager static builds.',
+  long_description=('An auxiliary package that provides platform-specific'
+                    ' binaries used by Shaka Streamer.'),
+  url='https://github.com/google/shaka-streamer/tree/master/binaries',
+  packages=[streamer_binaries.__name__,],
   classifiers=[
       'Programming Language :: Python :: 3',
       'License :: OSI Approved :: Apache Software License',
@@ -41,6 +38,8 @@ setuptools.setup(
       'Operating System :: MacOS :: MacOS X',
       'Operating System :: Microsoft :: Windows',
   ],
-  # Python 3.6 tested in GitHub Actions CI
-  python_requires='>=3.6',
+  package_data={
+      # Only add the corresponding platform specific binaries to the wheel.
+      streamer_binaries.__name__: platform_binaries,
+  }
 )
