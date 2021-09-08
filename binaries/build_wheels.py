@@ -54,6 +54,8 @@ BINARIES_DL = [
     PACKAGER_DL_PREFIX + '/packager',
 ]
 
+BINARIES_ROOT_DIR = os.path.dirname(__file__)
+
 
 def build_bdist_wheel(platform_name, platform_binaries):
   """Builds a wheel distribution for `platform_name` adding the files
@@ -72,12 +74,15 @@ def build_bdist_wheel(platform_name, platform_binaries):
       # Run quietly.
       '--quiet',
   ]
+
   # After '--', we send the platform specific binaries that we want to include.
   args += ['--']
   args += platform_binaries
-  subprocess.check_call(args)
+
+  subprocess.check_call(args, cwd=BINARIES_ROOT_DIR)
+
   # Remove the build directory so that it is not reused by 'setup.py'.
-  shutil.rmtree('build')
+  shutil.rmtree(os.path.join(BINARIES_ROOT_DIR, 'build'))
 
 def download_binary(download_url: str, download_dir: str) -> str:
   """Downloads a file and writes it to the file system.
@@ -99,6 +104,7 @@ def main():
   # For each platform(OS+CPU), we download the its binaries and
   # create a binary wheel distribution that contains the executable
   # binaries specific to this platform.
+  download_dir = os.path.join(BINARIES_ROOT_DIR, streamer_binaries.__name__)
   for platform_name, suffix in PLATFORM_SUFFIXES.items():
     binaries_to_include = []
     # Use the `suffix` specific to this platfrom to achieve
@@ -106,7 +112,7 @@ def main():
     for binary_dl in BINARIES_DL:
       download_link = binary_dl + suffix
       binary_name = download_binary(download_url=download_link,
-                                    download_dir=streamer_binaries.__name__)
+                                    download_dir=download_dir)
       binaries_to_include.append(binary_name)
     # Build a wheel distribution for this platform
     # and include the binaries we have just downloaded.
