@@ -197,7 +197,7 @@ def start():
       return createCrossOriginResponse(
           status=418, mimetype='application/json', body=body)
     else:
-      traceback.print_exc()
+      print('EXCEPTION', repr(e), traceback.format_exc(), flush=True)
       return createCrossOriginResponse(status=500, body=str(e))
 
   return createCrossOriginResponse()
