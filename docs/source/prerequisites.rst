@@ -40,7 +40,7 @@ This can also be installed via ``pip3`` on any platform:
   # To install/upgrade per-user:
   pip3 install --user --upgrade pyyaml
 
-Shaka Streamer binaries (optional)
+Shaka Streamer Binaries (optional)
 ----------------------------------
 
 Shaka Streamer requires the installation of `Shaka Packager`

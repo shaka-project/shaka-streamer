@@ -44,7 +44,7 @@ Features
   * Control output folders and file names
   * Add arbitrary FFmpeg filters for input or output
 
-* Supports generating multi-period VOD content for DASH (also works for HLS)
+* Supports generating multi-period VOD content for DASH and stitched playlists for HLS
 
 Caveat: text processing
 ~~~~~~~~~~~~~~~~~~~~~~~
