@@ -104,7 +104,7 @@ def get_interlaced(input: Input) -> bool:
 def get_frame_rate(input: Input) -> Optional[float]:
   """Returns the autodetected frame rate of the input."""
 
-  frame_rate_string = _probe(input, 'stream=r_frame_rate')
+  frame_rate_string = _probe(input, 'stream=avg_frame_rate')
   if frame_rate_string is None:
     return None
 
