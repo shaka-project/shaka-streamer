@@ -70,6 +70,12 @@ describe('Shaka Streamer', () => {
     document.body.appendChild(video);
 
     player = new shaka.Player(video);
+    const retryParameters = {
+      maxAttempts: 5,
+      timeout: 90e3,
+      stallTimeout: 30e3,
+    };
+    player.configure('manifest.retryParameters', retryParameters);
     player.addEventListener('error', (error) => {
       fail(error);
     });
@@ -147,6 +153,7 @@ describe('Shaka Streamer', () => {
   muxedTextTests(dashManifestUrl, '(dash)');
 
   multiPeriodTests(dashManifestUrl, '(dash)');
+  multiPeriodTests(hlsManifestUrl, '(hls)');
 
   lowLatencyDashTests(dashManifestUrl, '(dash)');
 });
@@ -1428,7 +1435,8 @@ function multiPeriodTests(manifestUrl, format) {
     await player.load(manifestUrl);
 
     // Since we processed only 0:01s, the total duration shoud be 2s.
-    // Be more tolerant with float comparison, (D > 1.9 * length) instead of (D == 2 * length).
+    // Be more tolerant with float comparison.
+    // Use (D > 1.9 * length) instead of (D == 2 * length).
     expect(video.duration).toBeGreaterThan(1.9);
   });
 }

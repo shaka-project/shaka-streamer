@@ -70,7 +70,6 @@ class AudioCodec(enum.Enum):
           self.value)
 
 
-# TODO: ideally, we wouldn't have to explicitly list hw: variants
 class VideoCodec(enum.Enum):
 
   H264 = 'h264'

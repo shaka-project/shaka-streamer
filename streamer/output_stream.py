@@ -34,7 +34,7 @@ class OutputStream(object):
     self.type: MediaType = type
     self.skip_transcoding = skip_transcoding
     self.input: Input = input
-    self._features: Dict[str, str] = {}
+    self.features: Dict[str, str] = {}
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
 
     if self.skip_transcoding:
@@ -67,7 +67,7 @@ class OutputStream(object):
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_init.{format}',
       MediaType.TEXT: 'text_{language}_init.{format}',
     }
-    path_templ = INIT_SEGMENT[self.type].format(**self._features)
+    path_templ = INIT_SEGMENT[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_media_seg_file(self) -> Pipe:
@@ -76,7 +76,7 @@ class OutputStream(object):
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
       MediaType.TEXT: 'text_{language}_$Number$.{format}',
     }
-    path_templ = MEDIA_SEGMENT[self.type].format(**self._features)
+    path_templ = MEDIA_SEGMENT[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_single_seg_file(self) -> Pipe:
@@ -85,7 +85,7 @@ class OutputStream(object):
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}.{format}',
       MediaType.TEXT: 'text_{language}.{format}',
     }
-    path_templ = SINGLE_SEGMENT[self.type].format(**self._features)
+    path_templ = SINGLE_SEGMENT[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
 
@@ -103,7 +103,7 @@ class AudioOutputStream(OutputStream):
     self.layout = channel_layout
 
     # The features that will be used to generate the output filename.
-    self._features = {
+    self.features = {
       'language': input.language,
       'channels': str(self.layout.max_channels),
       'bitrate': self.get_bitrate(),
@@ -129,7 +129,7 @@ class VideoOutputStream(OutputStream):
     self.resolution = resolution
 
     # The features that will be used to generate the output filename.
-    self._features = {
+    self.features = {
       'resolution_name': self.resolution.get_key(),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
@@ -156,7 +156,7 @@ class TextOutputStream(OutputStream):
                      skip_transcoding, pipe_suffix='.vtt')
 
     # The features that will be used to generate the output filename.
-    self._features = {
+    self.features = {
       'language': input.language,
       'format': 'mp4',
     }

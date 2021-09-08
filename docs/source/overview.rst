@@ -60,7 +60,7 @@ config.
 Platform support
 ----------------
 
-We support common Linux distributions, macOS and Windows.
+We support common Linux distributions, macOS, and Windows.
 
 Multiple VAAPI devices are not yet supported on Linux.  See `issue #17`_.
 

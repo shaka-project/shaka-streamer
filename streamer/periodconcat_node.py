@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 import os
 import re
+import time
 from typing import List
 from xml.etree import ElementTree
 from streamer import __version__
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 from streamer.packager_node import PackagerNode
-from streamer.pipeline_configuration import PipelineConfig, ManifestFormat, StreamingMode
+from streamer.pipeline_configuration import PipelineConfig, ManifestFormat
+from streamer.output_stream import AudioOutputStream, VideoOutputStream
+from streamer.m3u8_concater import HLSConcater
 
 
 class PeriodConcatNode(ThreadedNodeBase):
@@ -38,7 +41,39 @@ class PeriodConcatNode(ThreadedNodeBase):
     self._pipeline_config = pipeline_config
     self._output_location = output_location
     self._packager_nodes: List[PackagerNode] = packager_nodes
-
+    self._concat_will_fail = False
+    
+    # know whether the first period has video and audio or not.
+    fp_has_vid, fp_has_aud = False, False
+    for output_stream in packager_nodes[0].output_streams:
+      if isinstance(output_stream, VideoOutputStream):
+        fp_has_vid = True
+      elif isinstance(output_stream, AudioOutputStream):
+        fp_has_aud = True
+    
+    for i, packager_node in enumerate(self._packager_nodes):
+      has_vid, has_aud = False, False
+      for output_stream in packager_node.output_streams:
+        if isinstance(output_stream, VideoOutputStream):
+          has_vid = True
+        elif isinstance(output_stream, AudioOutputStream):
+          has_aud = True
+      if has_vid != fp_has_vid or has_aud != fp_has_aud:
+        self._concat_will_fail = True
+        print("\nWARNING: Stopping period concatenation.")
+        print("Period#{} has {}video and has {}audio while Period#1 "
+              "has {}video and has {}audio.".format(i + 1, 
+                                                    "" if has_vid else "no ",
+                                                    "" if has_aud else "no ",
+                                                    "" if fp_has_vid else "no ",
+                                                    "" if fp_has_aud else "no "))
+        print("\nHINT:\n\tBe sure that either all the periods have video or all do not,\n"
+              "\tand all the periods have audio or all do not, i.e. don't mix videoless\n"
+              "\tperiods with other periods that have video.\n"
+              "\tThis is necessary for the concatenation to be performed successfully.\n")
+        time.sleep(5)
+        break
+  
   def _thread_single_pass(self) -> None:
     """Watches all the PackagerNode(s), if at least one of them is running it skips this
     _thread_single_pass, if all of them are finished, it starts period concatenation, if one of
@@ -50,11 +85,16 @@ class PeriodConcatNode(ThreadedNodeBase):
       if status == ProcessStatus.Running:
         return
       elif status == ProcessStatus.Errored:
-        raise RuntimeError('Concatenation is stopped due to an error in PackagerNode#{}.'.format(i))
-
+        raise RuntimeError(
+          'Concatenation is stopped due '
+          'to an error in PackagerNode#{}.'.format(i + 1))
+    
+    if self._concat_will_fail:
+      raise RuntimeError('Unable to concatenate the inputs.')
+    
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
       self._dash_concat()
-
+    
     if ManifestFormat.HLS in self._pipeline_config.manifest_format:
       self._hls_concat()
 
@@ -122,16 +162,34 @@ class PeriodConcatNode(ThreadedNodeBase):
       contents += "<!--Made Multi-Period with https://github.com/google/shaka-streamer version {} -->\n".format(__version__)
 
       # xml.ElementTree replaces the default namespace with 'ns0'.
-      # Register the DASH namespace back as the defualt namespace before converting to string.
+      # Register the DASH namespace back as the default namespace before converting to string.
       ElementTree.register_namespace('', default_dash_namespace)
-
-      # xml.etree.ElementTree already have an ElementTree().write() method,
+      
+      # xml.etree.ElementTree already has an ElementTree().write() method,
       # but it won't allow putting comments at the begining of the file.
       contents += ElementTree.tostring(element=concat_mpd, encoding='unicode')
       master_dash.write(contents)
-
+  
   def _hls_concat(self) -> None:
-    """Concatenates multiple HLS playlists with #EXT-X-DISCONTINUITY."""
-
-    pass
-
+    """Concatenates multiple HLS playlists using #EXT-X-DISCONTINUITY."""
+    
+    # Initialize the HLS concater with a sample Master HLS playlist and
+    # the output location of the concatenated playlists.
+    first_hls_playlist = os.path.join(self._packager_nodes[0].output_location,
+                                      self._pipeline_config.hls_output)
+    # NOTE: Media files' segments location will be relative to this
+    # self._output_location we pass to the constructor.
+    hls_concater = HLSConcater(first_hls_playlist, self._output_location)
+    
+    for packager_node in self._packager_nodes:
+      hls_playlist = os.path.join(packager_node.output_location,
+                                  self._pipeline_config.hls_output)
+      hls_concater.add(hls_playlist, packager_node)
+    
+    # Start the period concatenation and write the output in the output location
+    # passed to the HLSConcater at the construction time.
+    hls_concater.concat_and_write(
+        self._pipeline_config.hls_output,
+        'Concatenated with https://github.com/google/shaka-streamer'
+        ' version {}'.format(__version__),
+      )
