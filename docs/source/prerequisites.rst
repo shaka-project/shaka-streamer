@@ -40,6 +40,30 @@ This can also be installed via ``pip3`` on any platform:
   # To install/upgrade per-user:
   pip3 install --user --upgrade pyyaml
 
+Shaka Streamer Binaries (optional)
+----------------------------------
+
+Shaka Streamer requires the installation of `Shaka Packager`
+and `FFmpeg`, as it uses them internally.
+
+These binaries can most likely be installed for your platform
+using ``pip3`` through the PyPi package ``shaka-streamer-binaries``.
+
+If you choose to install ``shaka-streamer-binaries``, you won't need to install
+the other two dependencies: `Shaka Packager` and `FFmpeg`.
+
+To install ``shaka-streamer-binaries``:
+
+.. code:: sh
+
+  pip3 install shaka-streamer-binaries
+
+The static `FFmpeg` builds are pulled from here:
+https://github.com/joeyparrish/static-ffmpeg-binaries
+
+The static `Shaka Packager` builds are pulled from here:
+https://github.com/google/shaka-packager
+
 Shaka Packager
 --------------
 
