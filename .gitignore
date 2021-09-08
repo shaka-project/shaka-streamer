@@ -16,3 +16,4 @@ dev/
 ffmpeg*
 ffprobe*
 packager*
+.mypy_cache/
