@@ -16,79 +16,44 @@
 Overview
 ========
 
-Features
---------
+Why Shaka Streamer?
+-------------------
+
+Shaka Streamer is packaging and streaming made easy.
 
 * Simple, config-file-based application
 
   * No complicated command-lines
-  * Sane defaults provided
-  * You can re-use the same pipeline config across many inputs
+  * Sane defaults
+  * Reusable configs
 
-* Supports VOD and live content
-* Supports DASH and HLS output
-* Supports clear and encrypted output
-* Supports hardware encoding (if available from the platform)
+* Runs on Linux, macOS, and Windows
 * Supports almost any input FFmpeg can ingest
 * Can push output automatically to Google Cloud Storage or Amazon S3
-* Lots of options for input
+* FFmpeg and Shaka Packager binaries provided
 
-  * Transcode and package static input for VOD
-  * Loop a file for simulated live streaming
-  * Grab video from a webcam
-  * Generate input from an arbitrary external command
-
-* Gives you control over details if you want it
-
-  * Control DASH live stream attributes
-  * Control output folders and file names
-  * Add arbitrary FFmpeg filters for input or output
-
-* Supports generating multi-period VOD content for DASH and stitched playlists for HLS
-
-Caveat: text processing
-~~~~~~~~~~~~~~~~~~~~~~~
-
-We do support subtitles/captions (``media_type`` set to ``text``) for VOD
-content.  But please note that at this time, we have no way to pipeline text
-for live streams, loop a single text input with ``input_type`` of
-``looped_file``, transform text streams from one format to another, or cut a
-snippet of text using the ``start_time`` and ``end_time`` fields of the input
-config.
-
-
-Platform support
-----------------
-
-We support common Linux distributions, macOS, and Windows.
-
-Multiple VAAPI devices are not yet supported on Linux.  See `issue #17`_.
+See also the more detailed list of :ref:`Features` below.
 
 
 Getting started
 ---------------
 
-Release versions of Shaka Streamer can be installed or upgraded through ``pip3``
-with:
+Shaka Streamer requires `Python 3.6+`_.  Release versions of Shaka Streamer can
+be installed or upgraded through ``pip3`` with:
 
 .. code:: sh
 
   # To install/upgrade globally (drop the "sudo" for Windows):
-  sudo pip3 install --upgrade shaka-streamer
+  sudo pip3 install --upgrade shaka-streamer shaka-streamer-binaries
 
   # To install/upgrade per-user:
-  pip3 install --user --upgrade shaka-streamer
+  pip3 install --user --upgrade shaka-streamer shaka-streamer-binaries
 
 
-Shaka Streamer requires at a minimum:
-
-* `Python 3`_
-* `Python “yaml” module`_
-* `Shaka Packager`_
-* `FFmpeg`_
-
-See :doc:`prerequisites` for detailed instructions on installing prerequisites
-and optional dependencies.
+The ``shaka-streamer-binaries`` package contains `Shaka Packager`_ and `FFmpeg`_
+binaries, for your convenience.  You may also choose to install these
+dependencies separately and use ``shaka-streamer --use-system-binaries`` instead
+of the binary package.
 
 To use Shaka Streamer, you need two YAML config files: one to describe the
 input, and one to describe the encoding pipeline. Sample configs can be found
@@ -119,8 +84,55 @@ Example command-line for live streaming to Amazon S3:
      -p config_files/pipeline_live_config.yaml \
      -c s3://my_s3_bucket/folder/
 
+
+Features
+--------
+
+* Supports:
+
+  * VOD or live content
+  * DASH and HLS output (or both at once)
+  * VOD multi-period DASH (and equivalent HLS output)
+  * Clear or encrypted output
+  * Hardware encoding (if available from the platform)
+
+* Lots of options for input
+
+  * Transcode and package static input for VOD
+  * Loop a file for simulated live streaming
+  * Grab video from a webcam
+  * Generate input from an arbitrary external command
+
+* Gives you control over details if you want it
+
+  * Control DASH live stream attributes
+  * Control output folders and file names
+  * Add arbitrary FFmpeg filters for input or output
+
+
+Known issues
+~~~~~~~~~~~~
+We do support subtitles/captions (``media_type`` set to ``text``) for VOD
+content.  But please note that at this time, we have no way to pipeline text
+for live streams, loop a single text input with ``input_type`` of
+``looped_file``, transform text streams from one format to another, or cut a
+snippet of text using the ``start_time`` and ``end_time`` fields of the input
+config.
+
+Multiple VAAPI devices are not yet supported on Linux.  See `issue #17`_.
+
+
+Development
+-----------
+If you wish to make changes to Shaka Streamer, you will also need to install the
+`Python "yaml" module`_.
+
+See :doc:`prerequisites` for detailed instructions on installing prerequisites
+and optional dependencies.
+
+
 Running tests
--------------
+~~~~~~~~~~~~~
 
 We have end-to-end tests that will start streams and check them from a headless
 browser using Shaka Player. End-to-end tests can be run like so:
@@ -129,8 +141,9 @@ browser using Shaka Player. End-to-end tests can be run like so:
 
    python3 run_end_to_end_tests.py
 
+
 Technical details
------------------
+~~~~~~~~~~~~~~~~~
 
 Shaka Streamer connects FFmpeg and Shaka Packager in a pipeline, such that
 output from FFmpeg is piped directly into the packager, and packaging and
@@ -156,11 +169,12 @@ directly to the pipeline, you can create a ``ControllerNode`` and call the
 the ``shaka-streamer`` script as an example of how to do this.  See also
 :doc:`module_api`.
 
+
 .. _config_files/: https://github.com/google/shaka-streamer/tree/master/config_files
 .. _issue #8: https://github.com/google/shaka-streamer/issues/8
 .. _issue #17: https://github.com/google/shaka-streamer/issues/17
 .. _issue #23: https://github.com/google/shaka-streamer/issues/23
-.. _Python 3: https://www.python.org/downloads/
-.. _Python “yaml” module: https://pyyaml.org/
+.. _Python 3.6+: https://www.python.org/downloads/
+.. _Python "yaml" module: https://pyyaml.org/
 .. _Shaka Packager: https://github.com/google/shaka-packager
 .. _FFmpeg: https://ffmpeg.org/

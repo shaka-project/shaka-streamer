@@ -69,6 +69,7 @@ release = streamer.__version__
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosectionlabel',
     'sphinx.ext.viewcode',
 ]
 
