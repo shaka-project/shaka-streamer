@@ -297,7 +297,6 @@ class Input(configuration.Base):
     Note that for types which support autodetect, these arguments must be
     understood by ffprobe as well as ffmpeg.
     """
-
     args_matrix: Dict[InputType, Dict[str, List[str]]] = {
         InputType.WEBCAM: {
             'Linux': [

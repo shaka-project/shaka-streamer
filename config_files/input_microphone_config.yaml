@@ -25,6 +25,6 @@ inputs:
     # the index of the audio device after a colon(":0",":1",":2",etc...).
     # On Windows, this is the name of the directshow capture source, which
     # differs based on the hardware.  E.g. "audio=Microphone Array".
-    name: 0
+    name: "0"
     # The media type.
     media_type: audio
