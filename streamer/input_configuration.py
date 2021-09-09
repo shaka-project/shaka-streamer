@@ -304,6 +304,7 @@ class Input(configuration.Base):
         ]
       elif platform.system() == 'Windows':
         return [
+            # Treat the input as a directshow input device.
             '-f', 'dshow',
         ]
       else:
