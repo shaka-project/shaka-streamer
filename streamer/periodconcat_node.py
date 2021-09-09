@@ -142,7 +142,7 @@ class PeriodConcatNode(ThreadedNodeBase):
       period.attrib['duration'] = mpd.attrib['mediaPresentationDuration']
 
       # A BaseURL that will have the relative path to media file.
-      base_url = ElementTree.Element('BaseURL')
+      base_url = ElementTree.Element('{{{}}}BaseURL'.format(default_dash_namespace))
       base_url.text = os.path.relpath(packager_node.output_location, self._output_location) + '/'
       period.insert(0, base_url)
 

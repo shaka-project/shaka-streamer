@@ -17,6 +17,7 @@
 import os
 import re
 import math
+import posixpath
 from typing import List, Dict, Set, Optional, Tuple
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.bitrate_configuration import VideoCodec, AudioCodec, VideoResolution, AudioChannelLayout
@@ -92,13 +93,13 @@ class MediaPlaylist:
             self.content += line
             line = media_playlist.readline()
           # Update the segment's URI.
-          self.content += os.path.join(period_dir ,line)
+          self.content += posixpath.join(period_dir ,line)
         elif line.startswith('#EXT-X-MAP'):
           # An EXT-X-MAP must have a URI attribute and optionally
           # a BYTERANGE attribute.
           attribs = _extract_attributes(line)
           self.content += '#EXT-X-MAP:URI=' + _quote(
-              os.path.join(period_dir, _unquote(attribs['URI'])))
+              posixpath.join(period_dir, _unquote(attribs['URI'])))
           if attribs.get('BYTERANGE'):
             self.content += ',BYTERANGE=' + attribs['BYTERANGE']
           self.content += '\n'
