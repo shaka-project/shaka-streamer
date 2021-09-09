@@ -37,7 +37,7 @@ class InputType(enum.Enum):
   The device path should be given in the name field.  For example, on Linux,
   this might be /dev/video0.
 
-  Does not support media_type of 'text'.
+  Only supports media_type of 'video'.
   """
 
   MICROPHONE = 'microphone'
@@ -46,7 +46,7 @@ class InputType(enum.Enum):
   The device path should given in the name field.  For example, on Linux, this
   might be "default".
 
-  Does not support media_type of 'text'.
+  Only supports media_type of 'audio'.
   """
 
   EXTERNAL_COMMAND = 'external_command'
