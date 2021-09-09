@@ -320,6 +320,10 @@ class Input(configuration.Base):
             '-f', 'avfoundation',
             '-framerate', '30',
         ]
+      elif platform.system() == 'Windows':
+        return [
+            '-f', 'dshow',
+        ]
       else:
         assert False, 'Webcams not supported on this platform!'
 
