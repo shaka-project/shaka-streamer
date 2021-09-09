@@ -21,6 +21,21 @@ from . import configuration
 from typing import List, Dict, Any, Optional
 
 
+class InputNotFound(configuration.ConfigError):
+  """An error raised when an input stream is not found."""
+
+  def __init__(self, input):
+    super().__init__(input.__class__, 'track_num',
+                     getattr(input.__class__, 'track_num'))
+    self.input = input
+
+  def __str__(self):
+    return ('In {}, {} track #{} was'
+            ' not found in "{}"').format(self.class_name,
+                                         self.input.media_type.value,
+                                         self.input.track_num,
+                                         self.input.name)
+
 class InputType(enum.Enum):
   FILE = 'file'
   """A track from a file.  Usable only with VOD."""
@@ -194,6 +209,9 @@ class Input(configuration.Base):
     # FIXME: A late import to avoid circular dependency issues between these two
     # modules.
     from . import autodetect
+
+    if not autodetect.is_present(self):
+      raise InputNotFound(self)
 
     def require_field(name: str) -> None:
       """Raise MissingRequiredField if the named field is still missing."""
