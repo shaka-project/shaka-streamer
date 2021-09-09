@@ -229,7 +229,7 @@ class Field(Generic[FieldType]):
     # original type.  If this doesn't exist, you are probably dealing with a
     # basic type like "str" or "int".
     if hasattr(type, '__origin__'):
-      return type.__origin__  # type: ignore
+      return type.__origin__ or type  # type: ignore
 
     return type
 
@@ -358,7 +358,7 @@ class Base(object):
 
     # For fields containing other config objects, specially check and convert
     # them.
-    assert field.type is not None
+    assert field.type is not None, 'No type info for Field {}'.format(key)
     if issubclass(field.type, Base):
       # A config object at this stage should be a dictionary.
       if not isinstance(value, dict):

@@ -1,18 +1,28 @@
 ## 0.5.0 (???)
 
+ - Command-line argument style changed (dashes instead of underscores)
  - Multi period support for DASH
    (https://github.com/google/shaka-streamer/issues/43)
    (https://github.com/google/shaka-streamer/pull/78)
+   (https://github.com/google/shaka-streamer/pull/91)
  - Multi period support for HLS
    (https://github.com/google/shaka-streamer/issues/43)
    (https://github.com/google/shaka-streamer/pull/83)
+   (https://github.com/google/shaka-streamer/pull/91)
  - LL-DASH support
    (https://github.com/google/shaka-streamer/pull/88)
  - Require Python 3.6+
  - Require Shaka Packager v2.6+
- - New shaka-streamer-binaries package for binary dependencies
+ - New shaka-streamer-binaries package for binary dependencies;
+   add argument --use-system-binaries to use your system-installed deps instead
    (https://github.com/google/shaka-streamer/issues/60)
    (https://github.com/google/shaka-streamer/pull/87)
+   (https://github.com/google/shaka-streamer/pull/92)
+ - Fix framerate detection for mixed-framerate content
+   (https://github.com/google/shaka-streamer/issues/90)
+   (https://github.com/google/shaka-streamer/pull/93)
+ - Fix cloud upload errors for S3
+   (https://github.com/google/shaka-streamer/issues/67)
 
 
 ## 0.4.0 (2021-08-26)

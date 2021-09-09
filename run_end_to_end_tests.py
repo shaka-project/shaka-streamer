@@ -49,7 +49,7 @@ log.setLevel(logging.ERROR)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
 controller = None
-test_hermetics = False
+use_system_binaries = False
 
 # Flask was unable to autofind the root_path correctly after an os.chdir() from another directory
 # Dunno why,refer to https://stackoverflow.com/questions/35864584/error-no-such-file-or-directory-when-using-os-chdir-in-flask
@@ -171,7 +171,7 @@ def start():
                      configs['pipeline_config'],
                      configs['bitrate_config'],
                      check_deps=False,
-                     use_hermetic=test_hermetics)
+                     use_hermetic=not use_system_binaries)
   except Exception as e:
     # If the controller throws an exception during startup, we want to call
     # stop() to shut down any external processes that have already been started.
@@ -197,7 +197,7 @@ def start():
       return createCrossOriginResponse(
           status=418, mimetype='application/json', body=body)
     else:
-      traceback.print_exc()
+      print('EXCEPTION', repr(e), traceback.format_exc(), flush=True)
       return createCrossOriginResponse(status=500, body=str(e))
 
   return createCrossOriginResponse()
@@ -278,13 +278,16 @@ def main():
                       help='Number of trials to run')
   parser.add_argument('--reporters', nargs='+',
                       help='Enables specified reporters in karma')
-  parser.add_argument('--test-hermetics',
+  parser.add_argument('--use-system-binaries',
                       action='store_true',
-                      help='Runs the tests using binaries from `shaka-streamer-binaries`')
+                      help='Use FFmpeg, FFprobe and Shaka Packager binaries ' +
+                           'found in PATH instead of the ones offered by ' +
+                           'Shaka Streamer.')
+
   args = parser.parse_args()
 
-  global test_hermetics
-  test_hermetics = args.test_hermetics
+  global use_system_binaries
+  use_system_binaries = args.use_system_binaries
 
   # Do static type checking on the project first.
   type_check_result = mypy_api.run(['streamer/'])

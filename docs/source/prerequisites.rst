@@ -16,13 +16,13 @@
 Installing Prerequisites
 ========================
 
-Yaml Module
------------
+Yaml Module (required for development only)
+-------------------------------------------
 
-We use the Python YAML module to parse config files.  If you install Shaka
+We use the `Python "yaml" module`_ to parse config files.  If you install Shaka
 Streamer via ``pip3``, then this dependency will be installed for you
 automatically.  If you got Shaka Streamer source from GitHub, you will need to
-install the YAML module separately.
+install the module separately.
 
 To install it on Ubuntu:
 
@@ -40,32 +40,29 @@ This can also be installed via ``pip3`` on any platform:
   # To install/upgrade per-user:
   pip3 install --user --upgrade pyyaml
 
-Shaka Streamer Binaries (optional)
-----------------------------------
 
-Shaka Streamer requires the installation of `Shaka Packager`
-and `FFmpeg`, as it uses them internally.
+Shaka Streamer Binaries package (recommended)
+---------------------------------------------
 
-These binaries can most likely be installed for your platform
-using ``pip3`` through the PyPi package ``shaka-streamer-binaries``.
+Shaka Streamer requires `Shaka Packager`_ and `FFmpeg`_ as it uses them
+internally.
 
-If you choose to install ``shaka-streamer-binaries``, you won't need to install
-the other two dependencies: `Shaka Packager` and `FFmpeg`.
-
-To install ``shaka-streamer-binaries``:
+These binaries can be installed for your platform easily with the
+``shaka-streamer-binaries`` package:
 
 .. code:: sh
 
   pip3 install shaka-streamer-binaries
 
-The static `FFmpeg` builds are pulled from here:
+The static FFmpeg builds are pulled from here:
 https://github.com/joeyparrish/static-ffmpeg-binaries
 
-The static `Shaka Packager` builds are pulled from here:
+The static Shaka Packager builds are pulled from here:
 https://github.com/google/shaka-packager
 
-Shaka Packager
---------------
+
+Shaka Packager (manual installation, not recommended)
+-----------------------------------------------------
 
 Pre-built Shaka Packager binaries can be downloaded from github here:
 https://github.com/google/shaka-packager/releases
@@ -80,8 +77,9 @@ To install a Shaka Packager binary on Linux:
 To build Shaka Packager from source, follow instructions here:
 https://google.github.io/shaka-packager/html/build_instructions.html
 
-FFmpeg
-------
+
+FFmpeg (manual installation, not recommended)
+---------------------------------------------
 
 If your Linux distribution has FFmpeg v4.1+, you can just install the package.
 For example, this will work in Ubuntu 19.04+:
@@ -116,6 +114,7 @@ to install it:
 
    brew install ffmpeg
 
+
 Cloud Storage (optional)
 ------------------------
 
@@ -124,6 +123,7 @@ bucket. To use this feature, the Google Cloud SDK is required.
 
 See https://cloud.google.com/sdk/install for details on installing the Google
 Cloud SDK on your platform.
+
 
 Google Cloud Storage
 ~~~~~~~~~~~~~~~~~~~~
@@ -138,11 +138,13 @@ log in through your browser.
 Follow the instructions given to you by gcloud to initialize the environment
 and login.
 
+
 Amazon S3
 ~~~~~~~~~
 
 To authenticate to Amazon S3, you can either add credentials to your `boto
 config file`_ or login interactively using the `AWS CLI`_.
+
 
 Test Dependencies (optional)
 ----------------------------
@@ -171,6 +173,9 @@ To install Node.js and NPM on any other platform, you can try one of these:
 * https://github.com/nodesource/distributions
 * https://nodejs.org/en/download/
 
+.. _Python "yaml" module: https://pyyaml.org/
+.. _Shaka Packager: https://github.com/google/shaka-packager
+.. _FFmpeg: https://ffmpeg.org/
 .. _Homebrew: https://brew.sh/
 .. _boto config file: http://boto.cloudhackers.com/en/latest/boto_config_tut.html
 .. _AWS CLI: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html

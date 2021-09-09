@@ -87,22 +87,14 @@ class ControllerNode(object):
     if use_hermetic:
       try:
         import streamer_binaries # type: ignore
-      except (ImportError, PermissionError) as ex:
+      except ImportError as ex:
         # If the package couldn't be imported.
-        if isinstance(ex, ImportError):
-          raise RuntimeError(
-              'shaka-streamer-binaries was not found.\n'
-              '  Install it with `pip install shaka-streamer-binaries`.\n'
-              '  Alternatively, use the `--use-system-binaries` option if you '
-              'want to use the system wide binaries of ffmpeg/ffprobe/packager.'
-            ) from None
-        # If we can't set the permissions for the bundled executables,
-        # we may not be able to run it as a subprocess.
-        if isinstance(ex, PermissionError):
-          raise RuntimeError(
-              'Couldn\'t set the permissions for the bundled '
-              '`shaka-streamer-binaries` executables.'
-            ) from None
+        raise RuntimeError(
+            'shaka-streamer-binaries was not found.\n'
+            '  Install it with `pip install shaka-streamer-binaries`.\n'
+            '  Alternatively, use the `--use-system-binaries` option if you '
+            'want to use the system wide binaries of ffmpeg/ffprobe/packager.'
+        ) from None
 
     if self._nodes:
       raise RuntimeError('Controller already started!')

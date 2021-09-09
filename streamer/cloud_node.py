@@ -162,9 +162,15 @@ Additional output from gsutil:
     # being deleted from the remote storage location.
     subprocess.check_call(args)
 
+    compression_args = []
+    if self._bucket_url.startswith('gs:'):
+      # This arg seems to fail on S3, but still works for GCS.
+      compression_args = [
+          '-J', # compress all files in transit, since they are text
+      ]
+
     # Sync the temporary copies of the manifest files.
-    args = COMMON_GSUTIL_ARGS + [
-        '-J', # compress all files in transit, since they are text
+    args = COMMON_GSUTIL_ARGS + compression_args + [
         self._temp_dir, # local input folder to sync
         self._bucket_url, # destination in cloud storage
     ]
