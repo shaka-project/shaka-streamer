@@ -22,7 +22,7 @@ inputs:
     # On macOS, this is a device name, typically "default".
     # On Windows, this is the name of the directshow capture source, which
     # differs based on the hardware.  On a laptop this will typically
-    # be 'video=Integrated Camera'.
+    # be "video=Integrated Camera".
     name: /dev/video0
     # The media type.
     media_type: video
