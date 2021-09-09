@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is a sample input configuration file for Shaka Streamer for webcam input.
+# This is a sample input configuration file for Shaka Streamer for microphone input.
 
 # List of inputs.
 inputs:
     # The type of input.
-  - input_type: webcam
-    # Name of the input device.  On Linux, this is a device node path.
-    # On macOS, this is a device name, typically "default".
+  - input_type: microphone
+    # Name of the input device.
+    # On Linux, this is the audio device name, typically "default", or
+    # the index of the audio device("0","1","2",etc...).
+    # On macOS, this is the audio device name, typically ":default", or
+    # the index of the audio device after a colon(":0",":1",":2",etc...).
     # On Windows, this is the name of the directshow capture source, which
-    # differs based on the hardware.  On a laptop this will typically
-    # be "video=Integrated Camera".
-    name: /dev/video0
+    # differs based on the hardware.  E.g. "audio=Microphone Array".
+    name: "0"
     # The media type.
-    media_type: video
+    media_type: audio
