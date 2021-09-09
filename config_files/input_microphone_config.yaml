@@ -19,12 +19,10 @@ inputs:
     # The type of input.
   - input_type: microphone
     # Name of the input device.
-    # On Linux, this is the index of the audio device("0","1","2",etc...),
-    # also "default" will likely work.
-    #
-    # On macOS, this is the index of the audio device after
-    # a colon(":0",":1",":2",etc...).
-    #
+    # On Linux, this is the audio device name, typically "default", or
+    # the index of the audio device("0","1","2",etc...).
+    # On macOS, this is the audio device name or the index of the audio
+    # device after a colon(":0",":1",":2",etc...).
     # On Windows, this is the name of the directshow capture source, which
     # differs based on the hardware.  E.g. "audio=Microphone Array".
     name: 0
