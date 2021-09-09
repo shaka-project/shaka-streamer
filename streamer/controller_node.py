@@ -100,24 +100,50 @@ class ControllerNode(object):
       raise RuntimeError('Controller already started!')
 
     if check_deps:
-      # If we are using the hermetic binaries, just check
-      # for the package's version.
+      # If we are using the hermetic binaries, check the module version.  We
+      # must match on the first two digits, but the last one can vary between
+      # the two modules.
       if use_hermetic:
-        if streamer_binaries.__version__ < __version__:
+        def shorten_version(version: str) -> str:
+          """Shorten a version string to the first two digits."""
+          components = version.split('.')
+          return '.'.join(components[0:2])
+
+        def next_short_version(version: str) -> str:
+          """Shorten a version to two digits, then increase the second."""
+          components = version.split('.')
+          components[1] = str(int(components[1]) + 1)
+          return '.'.join(components[0:2])
+
+        streamer_short_version = shorten_version(__version__)
+        streamer_binaries_short_version = shorten_version(
+            streamer_binaries.__version__)
+
+        if streamer_binaries_short_version != streamer_short_version:
+          # This is the recommended install command.  It installs the most
+          # recent version of the binary package that matches the current
+          # version of streamer itself.  This is much easier to do in nodejs
+          # dependencies, because you can use a specifier like "1.2.x", but in
+          # Python, you have to use a specifier like ">=1.2,<1.3".
+          pip_command = "pip3 install 'shaka-streamer-binaries>={},<{}'".format(
+              streamer_short_version, next_short_version(__version__))
+
           raise VersionError(
-              'An outdated `shaka-streamer-binaries` is installed.\n'
-              '  Update it with `pip install --upgrade shaka-streamer-binaries`.'
-            )
+              'shaka-streamer-binaries', 'version does not match',
+              streamer_short_version,
+              exact_match=True,
+              addendum='Install with: {}'.format(pip_command))
       else:
         # Check that ffmpeg version is 4.1 or above.
-        _check_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
+        _check_command_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
 
         # Check that ffprobe version (used for autodetect features) is 4.1 or
         # above.
-        _check_version('ffprobe', ['ffprobe', '-version'], (4, 1))
+        _check_command_version('ffprobe', ['ffprobe', '-version'], (4, 1))
 
         # Check that Shaka Packager version is 2.6.0 or above.
-        _check_version('Shaka Packager', ['packager', '-version'], (2, 6, 0))
+        _check_command_version('Shaka Packager', ['packager', '-version'],
+                               (2, 6, 0))
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
@@ -125,7 +151,8 @@ class ControllerNode(object):
         # https://cloud.google.com/sdk/docs/release-notes
         # https://github.com/GoogleCloudPlatform/gsutil/blob/master/CHANGES.md
         # This is only required if the user asked for upload to cloud storage.
-        _check_version('Google Cloud SDK', ['gcloud', '--version'], (212, 0, 0))
+        _check_command_version('Google Cloud SDK', ['gcloud', '--version'],
+                               (212, 0, 0))
 
 
     if bucket_url:
@@ -357,23 +384,30 @@ class VersionError(Exception):
   with Shaka Streamer.  See also :doc:`prerequisites`.
   """
 
-  pass
+  def __init__(self,
+               name: str,
+               problem: str,
+               required_version: str,
+               exact_match: bool = False,
+               addendum: str = ''):
+    or_higher = '' if exact_match else ' or higher'
+    message = '{0} {1}! Please install version {2}{3} of {0}.'.format(
+        name, problem, required_version, or_higher)
+    if addendum:
+      message += '\n' + addendum
+    super().__init__(message)
 
-def _check_version(name: str,
-                   command: List[str],
-                   minimum_version: Union[Tuple[int, int], Tuple[int, int, int]]) -> None:
-  min_version_string = '.'.join(str(x) for x in minimum_version)
-
-  def make_error_string(problem):
-    return '{0} {1}! Please install version {2} or higher of {0}.'.format(
-        name, problem, min_version_string)
+def _check_command_version(name: str,
+                           command: List[str],
+                           minimum_version: Tuple[int, ...]) -> None:
+  minimum_version_string = '.'.join(str(x) for x in minimum_version)
 
   try:
     version_string = str(subprocess.check_output(command))
   except (subprocess.CalledProcessError, OSError) as e:
     if isinstance(e, subprocess.CalledProcessError):
       print(e.stdout, file=sys.stderr)
-    raise VersionError(make_error_string('not found')) from None
+    raise VersionError(name, 'not found', minimum_version_string) from None
 
   # Matches two or more numbers (one or more digits each) separated by dots.
   # For example: 4.1.3 or 7.2 or 216.999.8675309
@@ -382,6 +416,6 @@ def _check_version(name: str,
   if version_match:
     version = tuple([int(piece) for piece in version_match.group(0).split('.')])
     if version < minimum_version:
-      raise VersionError(make_error_string('out of date'))
+      raise VersionError(name, 'out of date', minimum_version_string)
   else:
-    raise VersionError(name + ' version could not be parsed!')
+    raise RuntimeError(name + ' version could not be parsed!')
