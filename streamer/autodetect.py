@@ -80,13 +80,6 @@ def _probe(input: Input, field: str) -> Optional[str]:
 
   return output_string
 
-def is_present(input: Input) -> bool:
-  """Returns true if the stream for this input is indeed found.
-
-  If we can't probe this input type, assume it is present."""
-
-  return bool(_probe(input, 'stream=index') or
-              input.input_type in TYPES_WE_CANT_PROBE)
 
 def get_language(input: Input) -> Optional[str]:
   """Returns the autodetected the language of the input."""
