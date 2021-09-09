@@ -40,6 +40,15 @@ class InputType(enum.Enum):
   Does not support media_type of 'text'.
   """
 
+  MICROPHONE = 'microphone'
+  """A microphone device.  Usable only with live.
+
+  The device path should given in the name field.  For example, on Linux, this
+  might be "default".
+
+  Does not support media_type of 'text'.
+  """
+
   EXTERNAL_COMMAND = 'external_command'
   """An external command that generates a stream of audio or video.
 
@@ -288,24 +297,50 @@ class Input(configuration.Base):
     Note that for types which support autodetect, these arguments must be
     understood by ffprobe as well as ffmpeg.
     """
-    if self.input_type == InputType.WEBCAM:
-      if platform.system() == 'Linux':
-        return [
-            # Treat the input as a video4linux device, which is how webcams show
-            # up on Linux.
-            '-f', 'video4linux2',
-        ]
-      elif platform.system() == 'Darwin':  # AKA macOS
-        return [
-            # Webcams on macOS use FFmpeg's avfoundation input format.  With
-            # this, you also have to specify an input framerate, unfortunately.
-            '-f', 'avfoundation',
-            '-framerate', '30',
-        ]
-      else:
-        assert False, 'Webcams not supported on this platform!'
 
-    return []
+    args_matrix: Dict[InputType, Dict[str, List[str]]] = {
+        InputType.WEBCAM: {
+            'Linux': [
+                # Treat the input as a video4linux device, which is how
+                # webcams show up on Linux.
+                '-f', 'video4linux2',
+            ],
+            'Darwin': [
+                # Webcams on macOS use FFmpeg's avfoundation input format.  With
+                # this, you also have to specify an input framerate, unfortunately.
+                '-f', 'avfoundation',
+                '-framerate', '30',
+            ],
+            'Windows': [
+                # Treat the input as a directshow input device.
+                '-f', 'dshow',
+            ],
+        },
+        InputType.MICROPHONE: {
+            'Linux': [
+                # PulseAudio input device.
+                '-f', 'pulse',
+            ],
+            'Darwin': [
+                # AVFoundation also works as an audio input device.
+                '-f', 'avfoundation',
+            ],
+            'Windows': [
+                # Directshow also works as an audio input device.
+                '-f', 'dshow',
+            ],
+        },
+    }
+
+    args_for_input_type = args_matrix.get(self.input_type)
+    # If the input's type wasn't of what interests us.
+    if not args_for_input_type:
+      return []
+
+    args = args_for_input_type.get(platform.system())
+    assert args, '{} is not supported on this platform!'.format(self.input_type.value)
+
+    return args
 
   def get_resolution(self) -> bitrate_configuration.VideoResolution:
     return bitrate_configuration.VideoResolution.get_value(self.resolution)
