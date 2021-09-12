@@ -54,7 +54,7 @@ BINARIES_DL = [
     PACKAGER_DL_PREFIX + '/packager',
 ]
 
-BINARIES_ROOT_DIR = os.path.dirname(__file__)
+BINARIES_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def build_bdist_wheel(platform_name, platform_binaries):
