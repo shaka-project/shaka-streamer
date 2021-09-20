@@ -49,7 +49,7 @@ class ExternalCommandNode(node_base.NodeBase):
                                          env=env, **new_group_flag)
 
   def stop(self, status):
-    # We create the external shell process in a new group, sending
+    # Since we created the external shell process in a new group, sending
     # a SIGTERM to the group will terminate the shell and its children.
     if self.check_status() == node_base.ProcessStatus.Running:
       if os.name == 'posix':
