@@ -14,6 +14,9 @@
 
 """A module that runs an external command to generate media."""
 
+import os
+import signal
+import subprocess
 from . import node_base
 
 class ExternalCommandNode(node_base.NodeBase):
@@ -35,4 +38,21 @@ class ExternalCommandNode(node_base.NodeBase):
     # subprocess to execute each line as a command when shell=True.  So convert
     # newlines into spaces.
     command = self._command.replace('\n', ' ')
-    self._process = self._create_process(command, shell=True, env=env)
+    # Create a new group for the spawned shell to easily shut it down.
+    if os.name == 'posix':
+      # A POSIX only argument.
+      new_group_flag = {'start_new_session': True}
+    elif os.name == 'nt':
+      # A Windows only argument.
+      new_group_flag = {'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP}
+    self._process = self._create_process(command, shell=True,
+                                         env=env, **new_group_flag)
+
+  def stop(self, status):
+    # Since we created the external shell process in a new group, sending
+    # a SIGTERM to the group will terminate the shell and its children.
+    if self.check_status() == node_base.ProcessStatus.Running:
+      if os.name == 'posix':
+        os.killpg(os.getpgid(self._process.pid), signal.SIGTERM)
+      elif os.name == 'nt':
+        os.kill(self._process.pid, signal.CTRL_BREAK_EVENT)

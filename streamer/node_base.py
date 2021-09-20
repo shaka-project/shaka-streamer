@@ -67,7 +67,7 @@ class NodeBase(object):
                       merge_env: bool = True,
                       stdout: Union[int, IO[Any], None] = None,
                       stderr: Union[int, IO[Any], None] = None,
-                      shell: bool = False) -> subprocess.Popen:
+                      shell: bool = False, **kwargs) -> subprocess.Popen:
     """A central point to create subprocesses, so that we can debug the
     command-line arguments.
 
@@ -102,7 +102,7 @@ class NodeBase(object):
                             env=child_env,
                             stdin=subprocess.DEVNULL,
                             stdout=stdout, stderr=stderr,
-                            shell=shell)
+                            shell=shell, **kwargs)
 
   def check_status(self) -> ProcessStatus:
     """Returns the current ProcessStatus of the node."""

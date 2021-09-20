@@ -21,8 +21,9 @@
 inputs:
     # The type of input.
   - input_type: external_command
-    # The command to run.  Here $SHAKA_STREAMER_EXTERNAL_COMMAND_OUTPUT is
-    # replaced with the output pipe.
+    # The command to run.  Here $SHAKA_STREAMER_EXTERNAL_COMMAND_OUTPUT
+    # (or %SHAKA_STREAMER_EXTERNAL_COMMAND_OUTPUT% on Windows) is replaced
+    # with the output pipe.
     name: >
       gource
         -1240x680

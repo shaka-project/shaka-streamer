@@ -150,6 +150,15 @@ class AudioChannelLayout(configuration.RuntimeMap):
 
 
 DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
+  'mono': AudioChannelLayout({
+    'max_channels': 1,
+    'bitrates': {
+      'aac': '64k',
+      'opus': '32k',
+      'ac3': '96k',
+      'eac3': '48k',
+    },
+  }),
   'stereo': AudioChannelLayout({
     'max_channels': 2,
     'bitrates': {
