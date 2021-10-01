@@ -1,4 +1,4 @@
-## 0.5.0 (???)
+## 0.5.0 (2021-10-01)
 
  - Command-line argument style changed (dashes instead of underscores)
  - Multi period support for DASH
@@ -23,6 +23,14 @@
    (https://github.com/google/shaka-streamer/pull/93)
  - Fix cloud upload errors for S3
    (https://github.com/google/shaka-streamer/issues/67)
+ - Report clear error if an input track does not exist
+   (https://github.com/google/shaka-streamer/issues/89)
+   (https://github.com/google/shaka-streamer/pull/94)
+ - Fix orphaned subprocesses using CTRL-C
+   (https://github.com/google/shaka-streamer/issues/46)
+   (https://github.com/google/shaka-streamer/pull/96)
+ - Add webcam and microphone support on Windows
+   (https://github.com/google/shaka-streamer/pull/95)
 
 
 ## 0.4.0 (2021-08-26)
