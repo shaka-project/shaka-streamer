@@ -1,7 +1,7 @@
 import os
 import platform
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 
 # Get the directory path where this __init__.py file resides.

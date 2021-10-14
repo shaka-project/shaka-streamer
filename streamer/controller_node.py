@@ -143,7 +143,7 @@ class ControllerNode(object):
 
         # Check that Shaka Packager version is 2.6.0 or above.
         _check_command_version('Shaka Packager', ['packager', '-version'],
-                               (2, 6, 0))
+                               (2, 6, 1))
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
