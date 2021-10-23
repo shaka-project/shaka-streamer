@@ -116,7 +116,7 @@ class BodyAsFileIO(io.BufferedIOBase):
 
 
 class Connection:
-  """A class that encapsulates an HTTP(S)Connection with its status."""
+  """A class that packages an HTTP(S)Connection with its status."""
 
   def __init__(self,
                ConnectionFactory: Union[Type[HTTPConnection],
@@ -218,10 +218,14 @@ class RequestHandler(BaseHTTPRequestHandler):
     return open(path, 'rb')
 
 
-class RequestHandlersManager():
-  """A request handlers' manager that produces a RequestHandler whenever its
-  __call__ method is called. It is used to keep a pool of connections that it
-  passes to the request handler so that these connections can be reused."""
+class RequestHandlersFactory():
+  """A request handlers' factory that produces a RequestHandler whenever
+  its __call__ method is called.  It stores all the relevant data that the
+  the instantiated request handler will need when sending a request to the host.
+
+  It also keeps a pool of connections so that connections used while handling a
+  request can be reused again.
+  """
 
   def __init__(self, upload_location: str, initial_headers: Dict[str, str] = {},
                temp_dir: Optional[str] = None, max_conns: int = 50):
@@ -230,7 +234,8 @@ class RequestHandlersManager():
     if url.scheme not in ['http', 'https']:
       # We can only instantiate HTTP/HTTPS connections.
       raise RuntimeError("Unsupported scheme: {}", url.scheme)
-    self._ConnectionFactory = HTTPConnection if url.scheme == 'http' else HTTPSConnection
+    self._ConnectionFactory = HTTPConnection if url.scheme == 'http' \
+                              else HTTPSConnection
     self._destination_host = url.netloc
     # Store the url path to prepend it to the path of each handled
     # request before forwarding the request to `self._destination_host`.
@@ -251,9 +256,8 @@ class RequestHandlersManager():
     self._connection_pooling_lock = Lock()
 
   def __call__(self, *args, **kwargs) -> RequestHandler:
-    """This magical method makes a RequestHandlersManager instance
-    callable and returns a RequestHandler when called.  This means
-    that a RequestHandlersManager instance is a RequestHandler factory.
+    """This magical method makes a RequestHandlersFactory instance
+    callable and returns a RequestHandler when called.
     """
 
     return RequestHandler(self._get_a_connection(), self._extra_headers,
@@ -262,8 +266,8 @@ class RequestHandlersManager():
 
   def _get_a_connection(self) -> Connection:
     """This method looks for an unused connection in the pool and returns it
-    to be used. Access to the connection pool is locked so that race conditions
-    doesn't occur if the server running this request handler manager is threaded.
+    to be used.  Access to the connection pool is locked so that race conditions
+    doesn't occur if the server running this request handler factory is threaded.
     """
 
     # Acquire the lock to make this method thread safe over
@@ -314,8 +318,8 @@ class HTTPUpload(ThreadedNodeBase):
   """
 
   refresh_period = 60 * 60 * 24 * 365
-  """The default period after which `self.get_refresh_period()` will be called.
-  This might be overridden by subclasses.
+  """The default period after which `self.refresh_period_passed()`
+  will be called.  This might be overridden by subclasses.
   """
 
   def __init__(self, upload_location: str, extra_headers: Dict[str, str],
@@ -325,10 +329,12 @@ class HTTPUpload(ThreadedNodeBase):
                      continue_on_exception=True,
                      sleep_time=self.refresh_period)
 
-    self.req_handlers_manager = RequestHandlersManager(upload_location, 
-                                                       extra_headers, temp_dir)
+    self.RequestHandlersFactory = RequestHandlersFactory(upload_location,
+                                                         extra_headers,
+                                                         temp_dir)
 
-    self.server = ThreadingHTTPServer(('localhost', 0), self.req_handlers_manager)
+    self.server = ThreadingHTTPServer(('localhost', 0),
+                                      self.RequestHandlersFactory)
 
     self.server_location = 'http://' + self.server.server_name + \
                            ':' + str(self.server.server_port)
