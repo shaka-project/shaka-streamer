@@ -21,6 +21,7 @@ also want to look at the source code to the command-line front end script
 """
 
 
+from _typeshed import NoneType
 import os
 import re
 import shutil
@@ -30,6 +31,7 @@ import tempfile
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer import __version__
+from streamer import proxy_node
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
@@ -41,6 +43,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
+from streamer.proxy_node import ProxyUploadNode
 import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
@@ -347,6 +350,8 @@ class ControllerNode(object):
     If one node is errored, this returns Errored; otherwise if one node is running,
     this returns Running; this only returns Finished if all nodes are finished.
     If there are no nodes, this returns Finished.
+
+    :rtype: ProcessStatus
     """
     if not self._nodes:
       return ProcessStatus.Finished
@@ -376,6 +381,29 @@ class ControllerNode(object):
     """
 
     return self._pipeline_config.low_latency_dash_mode
+
+  def get_upload_node(self, upload_location: str,
+                      extra_headers: Dict[str, str]) -> ProxyUploadNode:
+    """Returns an instance of a ProxyUploadNode subclass based on the
+    protocol used in `upload_location`.
+
+    Args:
+      upload_location (str): The location where media content will be uploaded.
+      extra_headers (Dict[str, str]): Extra headers to be added when
+        sending the PUT request to `upload_location`.
+    :rtype: ProxyUploadNode
+    :raises: `RuntimeError` if the protocol used in `upload_location` was not
+      recognized.
+    """
+
+    # We need to pass a temporary direcotry when working with multi-period input
+    # and using HTTP PUT for uploading.  This is so that the ProxyUploadNode
+    # keeps a copy of the manifests in the temporary directory so we can use them
+    # later to assemble the multi-period manifests.
+    temp_dir = self._input_config.multiperiod_inputs_list and self._temp_dir
+    # mypy thinks that `temp_dir` might be a List[SinglePeriod].
+    assert isinstance(temp_dir, (type(None), str))
+    return proxy_node.get_upload_node(upload_location, extra_headers, temp_dir)
 
 class VersionError(Exception):
   """A version error for one of Shaka Streamer's external dependencies.
