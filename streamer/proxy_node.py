@@ -19,10 +19,9 @@ accepts PUT requests.
 
 import io
 import os
-import abc
 import time
 import posixpath
-from urllib.parse import urlparse, ParseResult
+from urllib.parse import urlparse
 from threading import Thread, Lock
 from typing import Optional, Union, Type, Dict, List
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -53,7 +52,7 @@ class BodyAsFileIO(io.BufferedIOBase):
       self._buffer = b''
 
   def read(self, blocksize: Optional[int] = None) -> bytes:
-    """This method is used to read `self.body` incrementally with each call.
+    """This method reads `self.body` incrementally with each call.
     This is done because if we try to use `read()` on `self.body` it will wait
     forever for an `EOF` which is not present and will never be.
 
@@ -133,10 +132,18 @@ class RequestHandler(BaseHTTPRequestHandler):
   """
 
   def __init__(self, conn: Connection, extra_headers: Dict[str, str],
-               param_query: str, temp_dir: Optional[str], *args, **kwargs):
+               base_path: str, param_query: str, temp_dir: Optional[str],
+               *args, **kwargs):
+
     self._conn = conn
+    # Extra headers to add when sending the request to the host
+    # using `self._conn`.
     self._extra_headers = extra_headers
-    self._params_and_queries = param_query
+    # The base path that will be prepended to the path of the handled request
+    # before forwarding the request to the host using `self._conn`.
+    self._base_path = base_path
+    # Parameters and query string to send in the url with each forwarded request.
+    self._params_and_querystring = param_query
     self._temp_dir = temp_dir
     # Call `super().__init__()` last because this call is what handles the
     # actual request and we need the variables defined above to handle
@@ -165,10 +172,13 @@ class RequestHandler(BaseHTTPRequestHandler):
     # access token for instance.
     for key, value in self._extra_headers:
       self.headers.add_header(key, value)
-    # Forward the request to the connection we have with the same path as
-    # how we received it.  Also include any parameters and the query string.
-    self._conn.connection.request('PUT', self.path + self._params_and_queries,
-                                  body, self.headers, encode_chunked=encode_chunked)
+    # The url will be the result of joining the base path we should
+    # send the request to with the path this request came to.
+    url = posixpath.join(self._base_path, self.path[1:]) 
+    # Also include any parameters and the query string.
+    url += self._params_and_querystring
+    self._conn.connection.request('PUT', url, body, self.headers,
+                                  encode_chunked=encode_chunked)
     res = self._conn.connection.getresponse()
     if res.status == CREATED:
       # Mark the connection as unused and respond to shaka packager with success.
@@ -213,21 +223,25 @@ class RequestHandlersManager():
   __call__ method is called. It is used to keep a pool of connections that it
   passes to the request handler so that these connections can be reused."""
 
-  def __init__(self, url: ParseResult, initial_headers: Dict[str, str],
-               temp_dir: Optional[str], max_conns: int = 50):
+  def __init__(self, upload_location: str, initial_headers: Dict[str, str] = {},
+               temp_dir: Optional[str] = None, max_conns: int = 50):
 
+    url = urlparse(upload_location)
     if url.scheme not in ['http', 'https']:
       # We can only instantiate HTTP/HTTPS connections.
       raise RuntimeError("Unsupported scheme: {}", url.scheme)
     self._ConnectionFactory = HTTPConnection if url.scheme == 'http' else HTTPSConnection
     self._destination_host = url.netloc
-    # Store the parameters and queries to send them when requesting
-    # from `self._destination_host`.
+    # Store the url path to prepend it to the path of each handled
+    # request before forwarding the request to `self._destination_host`.
+    self._base_path = url.path
+    # Store the parameters and the query string to send them in
+    # any request going to `self._destination_host`.
     self._params_query = ';' + url.params if url.params else ''
     self._params_query += '?' + url.query if url.query else ''
     # These headers are going to be sent to `self._destination_host`
     # with each request along with the headers that the request handler
-    # receives. Note that these extra headers can possibely overwrite
+    # receives.  Note that these extra headers can possibely overwrite
     # the original request headers that the request handler received.
     self._extra_headers = initial_headers
     self._temp_dir = temp_dir
@@ -243,7 +257,8 @@ class RequestHandlersManager():
     """
 
     return RequestHandler(self._get_a_connection(), self._extra_headers,
-                          self._params_query, self._temp_dir, *args, **kwargs)
+                          self._base_path, self._params_query, self._temp_dir,
+                          *args, **kwargs)
 
   def _get_a_connection(self) -> Connection:
     """This method looks for an unused connection in the pool and returns it
@@ -287,16 +302,28 @@ class RequestHandlersManager():
     self._extra_headers.update(**kwargs)
 
 
-class ProxyUploadNode(ThreadedNodeBase):
-  """A base class for the different uploading nodes."""
+class HTTPUpload(ThreadedNodeBase):
+  """A ThreadedNodeBase subclass that launches a local threaded
+  HTTP server running at `self.server_location` and connected to
+  the host of `upload_location`.  The requests sent to this server
+  will be sent to the `upload_location` after adding `extra_headers`
+  to its headers.  if `temp_dir` argument was not None, DASH and HLS
+  manifests will be stored in it before sending them to `upload_location`.
 
-  @abc.abstractmethod
-  def __init__(self, upload_location: ParseResult,
-               extra_headers: Dict[str, str], temp_dir: Optional[str]):
+  The local HTTP server at `self.server_location` can only ingest PUT requests.
+  """
+
+  refresh_period = 60 * 60 * 24 * 365
+  """The default period after which `self.get_refresh_period()` will be called.
+  This might be overridden by subclasses.
+  """
+
+  def __init__(self, upload_location: str, extra_headers: Dict[str, str],
+               temp_dir: Optional[str]):
 
     super().__init__(thread_name=self.__class__.__name__,
                      continue_on_exception=True,
-                     sleep_time=self.get_refresh_period())
+                     sleep_time=self.refresh_period)
 
     self.req_handlers_manager = RequestHandlersManager(upload_location, 
                                                        extra_headers, temp_dir)
@@ -304,8 +331,7 @@ class ProxyUploadNode(ThreadedNodeBase):
     self.server = ThreadingHTTPServer(('localhost', 0), self.req_handlers_manager)
 
     self.server_location = 'http://' + self.server.server_name + \
-                           ':' + str(self.server.server_port) + \
-                            upload_location.path
+                           ':' + str(self.server.server_port)
 
     self.server_thread = Thread(name=self.server_location,
                                 target=self.server.serve_forever,
@@ -323,32 +349,18 @@ class ProxyUploadNode(ThreadedNodeBase):
   def _thread_single_pass(self):
     return self.refresh_period_passed()
 
-  def get_refresh_period(self) -> float:
-    """This method is used to set the `self._sleep_time` for a ProxyUploadNode.
-    It defaults to a very long time that might be changed by subclasses
-    overriding this method.
-    """
-    # Never thought my life is that short.
-    return 60 * 60 * 24 * 365 * 100
-
   def refresh_period_passed(self) -> None:
     # Ideally, we will have nothing to do after each refresh period
     # which is a very long time by default.
     return
 
 
-class HTTPUpload(ProxyUploadNode):
-  """The ProxyUploadNode used when PUT requesting to a url using HTTP/HTTPS."""
+class GCSUpload(HTTPUpload):
+  """The upload node used when PUT requesting to a GCS bucket.
 
-  def __init__(self, upload_location: str, extra_headers: Dict[str, str],
-               temp_dir: Optional[str]):
-
-    # No preprocessing needed for the upload location url or the headers.
-    super().__init__(urlparse(upload_location), extra_headers, temp_dir)
-
-
-class GCSUpload(ProxyUploadNode):
-  """The ProxyUploadNode used when PUT requesting to a GCS bucket."""
+  It will parse the `upload_location` argument with `gs://` protocol
+  and use the GCP REST API that uses HTTPS protocol instead.
+  """
   # https://cloud.google.com/storage/docs/uploading-objects#upload-object-xml
   # curl -X PUT --data-binary @OBJECT_LOCATION \
   # -H "Authorization: Bearer OAUTH2_TOKEN" \
@@ -356,15 +368,18 @@ class GCSUpload(ProxyUploadNode):
   def __init__(self, upload_location: str, extra_headers: Dict[str, str],
                temp_dir: Optional[str]):
 
-    self.extra_headers: Dict[str, str] = {}
-    super().__init__(self.extra_headers, temp_dir)
+    super().__init__(upload_location, extra_headers, temp_dir)
 
   def refresh_period_passed(self) -> None:
     pass
 
 
-class S3Upload(ProxyUploadNode):
-  """The ProxyUploadNode used when PUT requesting to a S3 bucket."""
+class S3Upload(HTTPUpload):
+  """The upload node used when PUT requesting to a S3 bucket.
+
+  It will parse the `upload_location` argument with `s3://` protocol
+  and use the AWS REST API that uses HTTPS protocol instead.
+  """
   # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html#API_PutObject_RequestSyntax
   # curl -X PUT --data-binary @OBJECT_LOCATION \
   # -H "Authorization: idk yet but it's some sort of aws specific auth" \
@@ -372,17 +387,16 @@ class S3Upload(ProxyUploadNode):
   def __init__(self, upload_location: str, extra_headers: Dict[str, str],
                temp_dir: Optional[str]):
 
-    self.extra_headers: Dict[str, str] = {}
-    super().__init__(self.extra_headers, temp_dir)
+    super().__init__(upload_location, extra_headers, temp_dir)
 
   def refresh_period_passed(self) -> None:
     pass
 
 
 def get_upload_node(upload_location: str, extra_headers: Dict[str, str],
-                    temp_dir: Optional[str] = None) -> ProxyUploadNode:
-  """Instantiates an appropriate ProxyUploadNode subclass based
-  on the protocol used in `upload_location` url.
+                    temp_dir: Optional[str] = None) -> HTTPUpload:
+  """Instantiates an appropriate HTTPUpload node based on the protocol
+  used in `upload_location` url.
   """
 
   if upload_location.startswith(("http://", "https://")):

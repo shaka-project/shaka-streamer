@@ -21,7 +21,6 @@ also want to look at the source code to the command-line front end script
 """
 
 
-from _typeshed import NoneType
 import os
 import re
 import shutil
@@ -43,7 +42,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
-from streamer.proxy_node import ProxyUploadNode
+from streamer.proxy_node import HTTPUpload
 import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
@@ -383,21 +382,21 @@ class ControllerNode(object):
     return self._pipeline_config.low_latency_dash_mode
 
   def get_upload_node(self, upload_location: str,
-                      extra_headers: Dict[str, str]) -> ProxyUploadNode:
-    """Returns an instance of a ProxyUploadNode subclass based on the
-    protocol used in `upload_location`.
+                      extra_headers: Dict[str, str]) -> HTTPUpload:
+    """Returns an HTTPUpload instance.
 
     Args:
       upload_location (str): The location where media content will be uploaded.
       extra_headers (Dict[str, str]): Extra headers to be added when
         sending the PUT request to `upload_location`.
-    :rtype: ProxyUploadNode
+
+    :rtype: HTTPUpload
     :raises: `RuntimeError` if the protocol used in `upload_location` was not
       recognized.
     """
 
     # We need to pass a temporary direcotry when working with multi-period input
-    # and using HTTP PUT for uploading.  This is so that the ProxyUploadNode
+    # and using HTTP PUT for uploading.  This is so that the HTTPUpload
     # keeps a copy of the manifests in the temporary directory so we can use them
     # later to assemble the multi-period manifests.
     temp_dir = self._input_config.multiperiod_inputs_list and self._temp_dir
