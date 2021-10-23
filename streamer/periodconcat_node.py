@@ -17,14 +17,17 @@
 import os
 import re
 import time
-from typing import List
+from typing import List, Optional
 from xml.etree import ElementTree
+from http.client import HTTPConnection, CREATED
 from streamer import __version__
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import PipelineConfig, ManifestFormat
 from streamer.output_stream import AudioOutputStream, VideoOutputStream
 from streamer.m3u8_concater import HLSConcater
+from streamer.proxy_node import HTTPUpload
+from streamer.util import is_url
 
 
 class PeriodConcatNode(ThreadedNodeBase):
@@ -35,17 +38,20 @@ class PeriodConcatNode(ThreadedNodeBase):
   def __init__(self,
                pipeline_config: PipelineConfig,
                packager_nodes: List[PackagerNode],
-               output_location: str) -> None:
+               output_location: str,
+               upload_proxy: Optional[HTTPUpload]) -> None:
     """Stores all relevant information needed for the period concatenation."""
-    super().__init__(thread_name='periodconcat', continue_on_exception=False, sleep_time=3)
+    super().__init__(thread_name='periodconcat', continue_on_exception=False, sleep_time=1)
     self._pipeline_config = pipeline_config
     self._output_location = output_location
     self._packager_nodes: List[PackagerNode] = packager_nodes
-    self._concat_will_fail = False
-    
+    self._proxy_node = upload_proxy
+    self._concat_will_fail = self._check_failed_concatenation()
+
+  def _check_failed_concatenation(self) -> bool:
     # know whether the first period has video and audio or not.
     fp_has_vid, fp_has_aud = False, False
-    for output_stream in packager_nodes[0].output_streams:
+    for output_stream in self._packager_nodes[0].output_streams:
       if isinstance(output_stream, VideoOutputStream):
         fp_has_vid = True
       elif isinstance(output_stream, AudioOutputStream):
@@ -59,7 +65,6 @@ class PeriodConcatNode(ThreadedNodeBase):
         elif isinstance(output_stream, AudioOutputStream):
           has_aud = True
       if has_vid != fp_has_vid or has_aud != fp_has_aud:
-        self._concat_will_fail = True
         print("\nWARNING: Stopping period concatenation.")
         print("Period#{} has {}video and has {}audio while Period#1 "
               "has {}video and has {}audio.".format(i + 1, 
@@ -72,8 +77,21 @@ class PeriodConcatNode(ThreadedNodeBase):
               "\tperiods with other periods that have video.\n"
               "\tThis is necessary for the concatenation to be performed successfully.\n")
         time.sleep(5)
-        break
-  
+        return True
+
+    if self._proxy_node is None and is_url(self._output_location):
+      print("\nWARNING: Stopping period concatenation.")
+      print("Shaka Packager is using HTTP PUT but not using"
+            " Shaka Streamer's upload proxy.")
+      print("\nHINT:\n\tShaka Streamer's upload proxy stores the manifest files\n"
+            "\ttemporarily in the local filesystem to use them for period concatenation.\n"
+            "\tSet use_local_proxy to True in the pipeline config to enable the"
+            " upload proxy.\n")
+      time.sleep(5)
+      return True
+    # Otherwise, we don't have a reason to fail.
+    return False
+
   def _thread_single_pass(self) -> None:
     """Watches all the PackagerNode(s), if at least one of them is running it skips this
     _thread_single_pass, if all of them are finished, it starts period concatenation, if one of
@@ -90,13 +108,41 @@ class PeriodConcatNode(ThreadedNodeBase):
           'to an error in PackagerNode#{}.'.format(i + 1))
     
     if self._concat_will_fail:
-      raise RuntimeError('Unable to concatenate the inputs.')
+      raise RuntimeError('Unable to concatenate the inputs')
+    
+    # If the packager was pushing HTTP requests to the stream's proxy server,
+    # the proxy server should have stored the manifest files in a temporary
+    # directory in the filesystem.
+    if self._proxy_node is not None:
+      assert self._proxy_node.temp_dir, ('There should be a proxy temp direcotry'
+                                         ' when processing multi-period input')
+      self._output_location = self._proxy_node.temp_dir
+      # As the period concatenator node is the last to run, changing the
+      # output location at run time won't disturb any other node.
+      for packager_node in self._packager_nodes:
+        packager_node.output_location = packager_node.output_location.replace(
+            self._proxy_node.server_location,
+            self._proxy_node.temp_dir, 1)
     
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
       self._dash_concat()
     
     if ManifestFormat.HLS in self._pipeline_config.manifest_format:
       self._hls_concat()
+    
+    # Push the concatenated manifests if a proxy is used.
+    if self._proxy_node is not None:
+      conn = HTTPConnection(self._proxy_node.server.server_name,
+                            self._proxy_node.server.server_port)
+      # The concatenated manifest files where written in `self._output_location`.
+      for manifest_file_name in os.listdir(self._output_location):
+        if manifest_file_name.endswith(('.mpd', '.m3u8')):
+          manifest_file_path = os.path.join(self._output_location, manifest_file_name)
+          conn.request('PUT', '/' + manifest_file_name, open(manifest_file_path, 'r'))
+          res = conn.getresponse()
+          if res.status != CREATED:
+            print("Got unexpected status code: {}, Msg: {!r}".format(res.status,
+                                                                     res.read()))
 
     self._status = ProcessStatus.Finished
 

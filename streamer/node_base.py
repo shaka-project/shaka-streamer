@@ -166,6 +166,7 @@ class ThreadedNodeBase(NodeBase):
     self._thread_name = thread_name
     self._continue_on_exception = continue_on_exception
     self._sleep_time = sleep_time
+    self._sleep_waker_event = threading.Event()
     self._thread = threading.Thread(target=self._thread_main, name=thread_name)
 
   def _thread_main(self) -> None:
@@ -183,7 +184,7 @@ class ThreadedNodeBase(NodeBase):
           return
 
       # Wait a little bit before performing the next pass.
-      time.sleep(self._sleep_time)
+      self._sleep_waker_event.wait(self._sleep_time)
 
   @abc.abstractmethod
   def _thread_single_pass(self) -> None:
@@ -204,6 +205,8 @@ class ThreadedNodeBase(NodeBase):
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
     self._status = ProcessStatus.Finished
+    # If the thread was sleeping, wake it up.
+    self._sleep_waker_event.set()
     self._thread.join()
 
   def check_status(self) -> ProcessStatus:
