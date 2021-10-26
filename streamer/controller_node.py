@@ -31,7 +31,6 @@ import tempfile
 from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer import __version__
 from streamer import proxy_node
-from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
 from streamer import autodetect
@@ -61,6 +60,7 @@ class ControllerNode(object):
         dir=global_temp_dir, prefix='shaka-live-', suffix='')
 
     self._nodes: List[NodeBase] = []
+    self.upload_proxy: Optional[HTTPUpload] = None
 
   def __del__(self) -> None:
     # Clean up named pipes by removing the temp directory we placed them in.
@@ -76,7 +76,7 @@ class ControllerNode(object):
             input_config_dict: Dict[str, Any],
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
-            bucket_url: Union[str, None] = None,
+            extra_headers: Dict[str, str] = {},
             check_deps: bool = True,
             use_hermetic: bool = True) -> 'ControllerNode':
     """Create and start all other nodes.
@@ -147,21 +147,6 @@ class ControllerNode(object):
         _check_command_version('Shaka Packager', ['packager', '-version'],
                                (2, 6, 0))
 
-      if bucket_url:
-        # Check that the Google Cloud SDK is at least v212, which introduced
-        # gsutil 4.33 with an important rsync bug fix.
-        # https://cloud.google.com/sdk/docs/release-notes
-        # https://github.com/GoogleCloudPlatform/gsutil/blob/master/CHANGES.md
-        # This is only required if the user asked for upload to cloud storage.
-        _check_command_version('Google Cloud SDK', ['gcloud', '--version'],
-                               (212, 0, 0))
-
-
-    if bucket_url:
-      # If using cloud storage, make sure the user is logged in and can access
-      # the destination, independent of the version check above.
-      CloudNode.check_access(bucket_url)
-
     self.hermetic_ffmpeg: Optional[str] = None
     self.hermetic_packager: Optional[str] = None
     if use_hermetic:
@@ -194,15 +179,6 @@ class ControllerNode(object):
             'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
             'must be set to True!')
 
-      if bucket_url:
-        raise RuntimeError(
-            'Cloud bucket upload is incompatible with HTTP PUT support.')
-
-      if self._input_config.multiperiod_inputs_list:
-        # TODO: Edit Multiperiod input list implementation to support HTTP outputs
-        raise RuntimeError(
-            'Multiperiod input list support is incompatible with HTTP outputs.')
-
     if self._pipeline_config.low_latency_dash_mode:
       # Check some restrictions on LL-DASH packaging.
       if ManifestFormat.DASH not in self._pipeline_config.manifest_format:
@@ -217,6 +193,12 @@ class ControllerNode(object):
     # Note that we remove the trailing slash from the output location, because
     # otherwise GCS would create a subdirectory whose name is "".
     output_location = output_location.rstrip('/')
+    if (proxy_node.is_supported_protocol(output_location)
+        and self._pipeline_config.use_local_proxy):
+      self.upload_proxy = self.get_upload_node(output_location, extra_headers)
+      # All the outputs now should be sent to the proxy server instead.
+      output_location = self.upload_proxy.server_location
+      self._nodes.append(self.upload_proxy)
 
     if self._input_config.inputs:
       # InputConfig contains inputs only.
@@ -236,18 +218,8 @@ class ControllerNode(object):
         self._nodes.append(PeriodConcatNode(
           self._pipeline_config,
           packager_nodes,
-          output_location))
-
-    if bucket_url:
-      cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
-      os.mkdir(cloud_temp_dir)
-
-      packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
-      self._nodes.append(CloudNode(output_location,
-                                   bucket_url,
-                                   cloud_temp_dir,
-                                   packager_nodes,
-                                   self.is_vod()))
+          output_location,
+          self.upload_proxy))
 
     for node in self._nodes:
       node.start()
@@ -335,7 +307,8 @@ class ControllerNode(object):
     # and put that period in it.
     if period_dir:
       output_location = os.path.join(output_location, period_dir)
-      os.mkdir(output_location)
+      if not is_url(output_location):
+        os.mkdir(output_location)
 
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
@@ -355,7 +328,9 @@ class ControllerNode(object):
     if not self._nodes:
       return ProcessStatus.Finished
 
-    value = max(node.check_status().value for node in self._nodes)
+    value = max(node.check_status().value for node in self._nodes
+                # We don't check the the upload node.
+                if node != self.upload_proxy)
     return ProcessStatus(value)
 
   def stop(self) -> None:
@@ -399,10 +374,12 @@ class ControllerNode(object):
     # and using HTTP PUT for uploading.  This is so that the HTTPUpload
     # keeps a copy of the manifests in the temporary directory so we can use them
     # later to assemble the multi-period manifests.
-    temp_dir = self._input_config.multiperiod_inputs_list and self._temp_dir
-    # mypy thinks that `temp_dir` might be a List[SinglePeriod].
-    assert isinstance(temp_dir, (type(None), str))
-    return proxy_node.get_upload_node(upload_location, extra_headers, temp_dir)
+    upload_temp_dir = None
+    if self._input_config.multiperiod_inputs_list:
+      upload_temp_dir = os.path.join(self._temp_dir, 'upload')
+      os.mkdir(upload_temp_dir)
+    return proxy_node.get_upload_node(upload_location, extra_headers,
+                                      upload_temp_dir)
 
 class VersionError(Exception):
   """A version error for one of Shaka Streamer's external dependencies.

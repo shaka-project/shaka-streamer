@@ -17,113 +17,19 @@ content to cloud storage providers (GCS and S3) and also any server that
 accepts PUT requests.
 """
 
-import io
 import os
-import time
-import posixpath
-from urllib.parse import urlparse
-from threading import Thread, Lock
-from typing import Optional, Union, Type, Dict, List
+import threading
+import urllib.parse
+from typing import Optional, Union, Type, Dict
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from http.client import HTTPConnection, HTTPResponse, HTTPSConnection, CREATED
+from http.client import HTTPConnection, HTTPSConnection, CREATED, OK
+
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
+from streamer.util import RequestBodyAsFileIO
 
 
-class BodyAsFileIO(io.BufferedIOBase):
-  """A class that provides a layer of access to the `rfile` property of the
-  request handler.  This is done because the `rfile` can't be read on its own
-  as a file since it does not have an `EOF`.  This class will encapsulate the
-  logic of using Content-Length or chunk size to decide whether the read is over
-  or not.  Another solution would be to read the whole request body and then
-  send it, but this will be very slow for big request bodies, so this class
-  is built to read the request body incrementally only when `read()` is requested.
-  """
-
-  def __init__(self, rfile: io.BufferedIOBase, content_length: Optional[int]):
-    super().__init__()
-    self._body = rfile
-    # Decide whether this is a chunked request or not based on content length.
-    if content_length is not None:
-      self._is_chunked = False
-      self._left_to_read = content_length
-    else:
-      self._is_chunked = True
-      self._last_chunk_read = False
-      self._buffer = b''
-
-  def read(self, blocksize: Optional[int] = None) -> bytes:
-    """This method reads `self.body` incrementally with each call.
-    This is done because if we try to use `read()` on `self.body` it will wait
-    forever for an `EOF` which is not present and will never be.
-
-    This method -like the original `read()`- will read up to (but not more than)
-    `blocksize` if it is a non-negative integer, and will read till `EOF` if
-    blocksize is None, a negative integer, or not passed.
-    """
-
-    if self._is_chunked:
-      return self._read_chunked(blocksize)
-    else:
-      return self._read_not_chunked(blocksize)
-
-  def _read_chunked(self, blocksize: Optional[int] = None) -> bytes:
-    """This method provides the read functionality from a request
-    body with chunked Transfer-Encoding.
-    """
-
-    # For non-negative blocksize values.
-    if blocksize and blocksize >= 0:
-      # Keep buffering until we can fulfil the blocksize or there
-      # are no chunks left to buffer.
-      while blocksize > len(self._buffer) and not self._last_chunk_read:
-        byte_chunk_size = self._body.readline()
-        self._buffer += byte_chunk_size
-        int_chunk_size = int(byte_chunk_size.strip(), base=16)
-        self._buffer += self._body.read(int_chunk_size)
-        # Consume the CLRF after each chunk.
-        self._buffer += self._body.readline()
-        if int_chunk_size == 0:
-          # A zero sized chunk indicates that no more chunks left.
-          self._last_chunk_read = True
-      self._buffer, bytes_read = self._buffer[blocksize:], self._buffer[:blocksize]
-      return bytes_read
-    # When blocksize is a negative integer or None.
-    else:
-      bytes_read = b''
-      while True:
-        chunk = self._read_chunked(64 * 1024)
-        bytes_read += chunk
-        if chunk == b'':
-          return bytes_read
-
-  def _read_not_chunked(self, blocksize: Optional[int] = None) -> bytes:
-    """This method provides the read functionality from a request
-    body of a known Content-Length.
-    """
-
-    # Don't try to read if there is nothing to read.
-    if self._left_to_read == 0:
-      return b''
-    # For non-negative blocksize values.
-    if blocksize and blocksize >= 0:
-      size_to_read = min(blocksize, self._left_to_read)
-      self._left_to_read -= size_to_read
-      return self._body.read(size_to_read)
-    # When blocksize is a negative integer or None.
-    else:
-      size_to_read, self._left_to_read = self._left_to_read, 0
-      return self._body.read(size_to_read)
-
-
-class Connection:
-  """A class that packages an HTTP(S)Connection with its status."""
-
-  def __init__(self,
-               ConnectionFactory: Union[Type[HTTPConnection],
-                                        Type[HTTPSConnection]], host: str):
-    self.connection = ConnectionFactory(host)
-    self.is_used = True
-    self.res_error: Optional[HTTPResponse] = None
+# Protocols we have classes for to handle them.
+SUPPORTED_PROTOCOLS = ['http', 'https', 'gs', 's3']
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -131,9 +37,9 @@ class RequestHandler(BaseHTTPRequestHandler):
   shaka packager and redirects them to the destination.
   """
 
-  def __init__(self, conn: Connection, extra_headers: Dict[str, str],
-               base_path: str, param_query: str, temp_dir: Optional[str],
-               *args, **kwargs):
+  def __init__(self, conn: Union[Type[HTTPConnection], Type[HTTPSConnection]],
+               extra_headers: Dict[str, str], base_path: str, param_query: str,
+               temp_dir: Optional[str], *args, **kwargs):
 
     self._conn = conn
     # Extra headers to add when sending the request to the host
@@ -153,6 +59,15 @@ class RequestHandler(BaseHTTPRequestHandler):
   def do_PUT(self):
     """do_PUT will handle the PUT requests coming from shaka packager."""
 
+    headers = {}
+    # Use the same headers for requesting.
+    for k, v in self.headers.items():
+      if k.lower() != 'host':
+        headers[k] = v
+    # Add the extra headers, this might contain an access token for instance.
+    for k, v in self._extra_headers.items():
+      headers[k] = v
+
     # Don't chunk by default, as the request body is already chunked
     # or we have a content-length header which means we are not using
     # chunked transfer-encoding.
@@ -167,29 +82,27 @@ class RequestHandler(BaseHTTPRequestHandler):
         encode_chunked = True
     else:
       content_length = content_length and int(content_length)
-      body = BodyAsFileIO(self.rfile, content_length)
-    # Add the extra headers to `self.headers`, this might contain an
-    # access token for instance.
-    for key, value in self._extra_headers:
-      self.headers.add_header(key, value)
+      body = RequestBodyAsFileIO(self.rfile, content_length)
+
     # The url will be the result of joining the base path we should
     # send the request to with the path this request came to.
-    url = posixpath.join(self._base_path, self.path[1:]) 
+    url = self._base_path + self.path
     # Also include any parameters and the query string.
     url += self._params_and_querystring
-    self._conn.connection.request('PUT', url, body, self.headers,
-                                  encode_chunked=encode_chunked)
-    res = self._conn.connection.getresponse()
-    if res.status == CREATED:
-      # Mark the connection as unused and respond to shaka packager with success.
-      self._conn.is_used = False
-      self.send_response(CREATED, 'Created')
-      self.end_headers()
-      # self.wfile.write(res.read1())
-    else:
-      # Set the error log to the response to log it later.
-      self._conn.res_error = res
-  
+
+    self._conn.request('PUT', url, body, headers, encode_chunked=encode_chunked)
+    res = self._conn.getresponse()
+    # Disable request logging.
+    self.log_request = lambda _: None
+    # Respond to Shaka Packager with the response we got.
+    self.send_response(res.status)
+    self.end_headers()
+    # self.wfile.write(res.read1())
+    # The destination should send (201/CREATED), but some do also send (200/OK).
+    if res.status != CREATED and res.status != OK:
+      print('Unexpected status for the PUT request:'
+             ' {}, ErrMsg: {!r}'.format(res.status, res.read1()))
+
   def _write_body_and_get_file_io(self):
     """A method that writes a request body to the filesystem
     and returns a file io object opened for reading.
@@ -198,7 +111,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     # Store the request body in `self._temp_dir`.
     # Ignore the first '/' `self.path` as posixpath will think
     # it points to the root direcotry.
-    path = posixpath.join(self._temp_dir, self.path[1:])
+    path = os.path.join(self._temp_dir, self.path[1:])
     # With `exist_ok=True`, any intermidiate direcotries are created if needed.
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'wb') as request_body_file:
@@ -222,15 +135,12 @@ class RequestHandlersFactory():
   """A request handlers' factory that produces a RequestHandler whenever
   its __call__ method is called.  It stores all the relevant data that the
   the instantiated request handler will need when sending a request to the host.
-
-  It also keeps a pool of connections so that connections used while handling a
-  request can be reused again.
   """
 
   def __init__(self, upload_location: str, initial_headers: Dict[str, str] = {},
                temp_dir: Optional[str] = None, max_conns: int = 50):
 
-    url = urlparse(upload_location)
+    url = urllib.parse.urlparse(upload_location)
     if url.scheme not in ['http', 'https']:
       # We can only instantiate HTTP/HTTPS connections.
       raise RuntimeError("Unsupported scheme: {}", url.scheme)
@@ -252,55 +162,15 @@ class RequestHandlersFactory():
     self._temp_dir = temp_dir
     self._max_conns = max_conns
 
-    self._connection_pool: List[Connection] = []
-    self._connection_pooling_lock = Lock()
-
   def __call__(self, *args, **kwargs) -> RequestHandler:
     """This magical method makes a RequestHandlersFactory instance
     callable and returns a RequestHandler when called.
     """
 
-    return RequestHandler(self._get_a_connection(), self._extra_headers,
+    connection = self._ConnectionFactory(self._destination_host)
+    return RequestHandler(connection, self._extra_headers,
                           self._base_path, self._params_query, self._temp_dir,
                           *args, **kwargs)
-
-  def _get_a_connection(self) -> Connection:
-    """This method looks for an unused connection in the pool and returns it
-    to be used.  Access to the connection pool is locked so that race conditions
-    doesn't occur if the server running this request handler factory is threaded.
-    """
-
-    # Acquire the lock to make this method thread safe over
-    # the shared connection pool.
-    self._connection_pooling_lock.acquire()
-    def _find_conn() -> Optional[Connection]:
-      for conn in self._connection_pool:
-        if not conn.is_used:
-          conn.is_used = True
-          # Release the lock before returning a valid connection.
-          self._connection_pooling_lock.release()
-          return conn
-      return None
-
-    # First look for an unused connection.
-    conn = _find_conn()
-    if conn is not None:
-      return conn
-
-    # Make another connection if we didn't yet hit the cap.
-    if len(self._connection_pool) < self._max_conns:
-      self._connection_pool.append(Connection(self._ConnectionFactory,
-                                              self._destination_host))
-      # Release the lock before returning a valid connection.
-      self._connection_pooling_lock.release()
-      return self._connection_pool[-1]
-
-    # Wait until a connection is unused.
-    while True:
-      conn = _find_conn()
-      if conn is not None:
-        return conn
-      time.sleep(0.1)
 
   def update_headers(self, **kwargs):
     self._extra_headers.update(**kwargs)
@@ -317,7 +187,7 @@ class HTTPUpload(ThreadedNodeBase):
   The local HTTP server at `self.server_location` can only ingest PUT requests.
   """
 
-  refresh_period = 60 * 60 * 24 * 365
+  refresh_period = 60 * 60 * 24 * 365.25
   """The default period after which `self.refresh_period_passed()`
   will be called.  This might be overridden by subclasses.
   """
@@ -329,9 +199,10 @@ class HTTPUpload(ThreadedNodeBase):
                      continue_on_exception=True,
                      sleep_time=self.refresh_period)
 
+    self.temp_dir = temp_dir
     self.RequestHandlersFactory = RequestHandlersFactory(upload_location,
                                                          extra_headers,
-                                                         temp_dir)
+                                                         self.temp_dir)
 
     self.server = ThreadingHTTPServer(('localhost', 0),
                                       self.RequestHandlersFactory)
@@ -339,9 +210,8 @@ class HTTPUpload(ThreadedNodeBase):
     self.server_location = 'http://' + self.server.server_name + \
                            ':' + str(self.server.server_port)
 
-    self.server_thread = Thread(name=self.server_location,
-                                target=self.server.serve_forever,
-                                daemon=True)
+    self.server_thread = threading.Thread(name=self.server_location,
+                                          target=self.server.serve_forever)
 
   def stop(self, status: Optional[ProcessStatus]):
     self.server.shutdown()
@@ -413,3 +283,7 @@ def get_upload_node(upload_location: str, extra_headers: Dict[str, str],
     return S3Upload(upload_location, extra_headers, temp_dir)
   else:
     raise RuntimeError("Protocol of [{}] isn't supported".format(upload_location))
+
+def is_supported_protocol(upload_location: str) -> bool:
+  return bool([upload_location.startswith(protocol + '://') for
+               protocol in SUPPORTED_PROTOCOLS].count(True))
