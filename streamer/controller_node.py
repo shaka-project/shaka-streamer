@@ -166,6 +166,16 @@ class ControllerNode(object):
     self._input_config = InputConfig(input_config_dict)
     self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
+    # Note that we remove the trailing slash from the output location, because
+    # otherwise GCS would create a subdirectory whose name is "".
+    output_location = output_location.rstrip('/')
+    if (proxy_node.is_supported_protocol(output_location)
+        and self._pipeline_config.use_local_proxy):
+      self.upload_proxy = self.get_upload_node(output_location, extra_headers)
+      # All the outputs now should be sent to the proxy server instead.
+      output_location = self.upload_proxy.server_location
+      self._nodes.append(self.upload_proxy)
+
     if not is_url(output_location):
       # Check if the directory for outputted Packager files exists, and if it
       # does, delete it and remake a new one.
@@ -189,16 +199,6 @@ class ControllerNode(object):
       if not self._pipeline_config.utc_timings:
         raise RuntimeError(
             'For low_latency_dash_mode, the utc_timings must be set.')
-
-    # Note that we remove the trailing slash from the output location, because
-    # otherwise GCS would create a subdirectory whose name is "".
-    output_location = output_location.rstrip('/')
-    if (proxy_node.is_supported_protocol(output_location)
-        and self._pipeline_config.use_local_proxy):
-      self.upload_proxy = self.get_upload_node(output_location, extra_headers)
-      # All the outputs now should be sent to the proxy server instead.
-      output_location = self.upload_proxy.server_location
-      self._nodes.append(self.upload_proxy)
 
     if self._input_config.inputs:
       # InputConfig contains inputs only.
@@ -376,7 +376,7 @@ class ControllerNode(object):
     # later to assemble the multi-period manifests.
     upload_temp_dir = None
     if self._input_config.multiperiod_inputs_list:
-      upload_temp_dir = os.path.join(self._temp_dir, 'upload')
+      upload_temp_dir = os.path.join(self._temp_dir, 'multiperiod_manifests')
       os.mkdir(upload_temp_dir)
     return proxy_node.get_upload_node(upload_location, extra_headers,
                                       upload_temp_dir)

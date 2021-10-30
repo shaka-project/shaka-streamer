@@ -25,7 +25,7 @@ def is_url(output_location: str) -> bool:
 
 
 class RequestBodyAsFileIO(io.BufferedIOBase):
-  """A class that provides a layer of access to a request body.  It provides
+  """A class that provides a layer of access to an HTTP request body.  It provides
   an interface to treat a request body (of type `io.BufferedIOBase`) as a file.
   Since a request body does not have an `EOF`, this class will encapsulate the
   logic of using Content-Length or chunk size to provide an emulated `EOF`.

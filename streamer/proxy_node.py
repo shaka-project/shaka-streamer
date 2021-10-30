@@ -18,6 +18,7 @@ accepts PUT requests.
 """
 
 import os
+import json
 import threading
 import urllib.parse
 from typing import Optional, Union, Type, Dict
@@ -34,7 +35,7 @@ SUPPORTED_PROTOCOLS = ['http', 'https', 'gs', 's3']
 
 class RequestHandler(BaseHTTPRequestHandler):
   """A request handler that processes the PUT requests coming from
-  shaka packager and redirects them to the destination.
+  shaka packager and pushes them to the destination.
   """
 
   def __init__(self, conn: Union[Type[HTTPConnection], Type[HTTPSConnection]],
@@ -92,7 +93,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     self._conn.request('PUT', url, body, headers, encode_chunked=encode_chunked)
     res = self._conn.getresponse()
-    # Disable request logging.
+    # Disable response logging.
     self.log_request = lambda _: None
     # Respond to Shaka Packager with the response we got.
     self.send_response(res.status)
@@ -187,17 +188,12 @@ class HTTPUpload(ThreadedNodeBase):
   The local HTTP server at `self.server_location` can only ingest PUT requests.
   """
 
-  refresh_period = 60 * 60 * 24 * 365.25
-  """The default period after which `self.refresh_period_passed()`
-  will be called.  This might be overridden by subclasses.
-  """
-
   def __init__(self, upload_location: str, extra_headers: Dict[str, str],
-               temp_dir: Optional[str]):
+               temp_dir: Optional[str], sleep_time: float = 3600 * 24 * 365.25):
 
     super().__init__(thread_name=self.__class__.__name__,
                      continue_on_exception=True,
-                     sleep_time=self.refresh_period)
+                     sleep_time=sleep_time)
 
     self.temp_dir = temp_dir
     self.RequestHandlersFactory = RequestHandlersFactory(upload_location,
@@ -223,11 +219,13 @@ class HTTPUpload(ThreadedNodeBase):
     return super().start()
 
   def _thread_single_pass(self):
-    return self.refresh_period_passed()
+    return self.periodic_work()
 
-  def refresh_period_passed(self) -> None:
-    # Ideally, we will have nothing to do after each refresh period
-    # which is a very long time by default.
+  def periodic_work(self) -> None:
+    # Ideally, we will have nothing to do periodically after the sleep time
+    # which is a very long time by default.  However, this can be overridden
+    # by subclassed and populated with calls to all the functions that needs
+    # to be executed periodically.
     return
 
 
@@ -237,17 +235,57 @@ class GCSUpload(HTTPUpload):
   It will parse the `upload_location` argument with `gs://` protocol
   and use the GCP REST API that uses HTTPS protocol instead.
   """
-  # https://cloud.google.com/storage/docs/uploading-objects#upload-object-xml
-  # curl -X PUT --data-binary @OBJECT_LOCATION \
-  # -H "Authorization: Bearer OAUTH2_TOKEN" \
-  # "https://storage.googleapis.com/BUCKET_NAME/OBJECT_NAME"
+
   def __init__(self, upload_location: str, extra_headers: Dict[str, str],
                temp_dir: Optional[str]):
+    upload_location = 'https://storage.googleapis.com/' + upload_location[5:]
 
-    super().__init__(upload_location, extra_headers, temp_dir)
+    # Normalize the extra headers dictionary.
+    for key in list(extra_headers.copy()):
+      value = extra_headers.pop(key)
+      extra_headers[key.lower()] = value
 
-  def refresh_period_passed(self) -> None:
-    pass
+    # We don't have to get a refresh token.  Maybe there is an access token
+    # provided and we won't outlive it anyway, but that's the user's responsibility.
+    self.refresh_token = extra_headers.pop('refresh-token', None)
+    self.client_id = extra_headers.pop('client-id', None)
+    self.client_secret = extra_headers.pop('client-secert', None)
+    # The access token expires after 3600s in GCS.
+    refresh_period = int(extra_headers.pop('refresh-every', None) or 3300)
+
+    super().__init__(upload_location, extra_headers, temp_dir, refresh_period)
+    # We yet don't have an access token, so we need to get a one.
+    self._refresh_access_token()
+
+  def _refresh_access_token(self):
+    if (self.refresh_token is not None
+        and self.client_id is not None
+        and self.client_secret is not None):
+      conn = HTTPSConnection('oauth2.googleapis.com')
+      req_body = {
+        'grant_type': 'refresh_token',
+        'refresh_token': self.refresh_token,
+        'client_id': self.client_id,
+        'client_secret': self.client_secret,
+      }
+      conn.request('POST', '/token', json.dumps(req_body))
+      res = conn.getresponse()
+      if res.status == OK:
+        res_body = json.loads(res.read1())
+        # Update the Authorization header with the request factory.
+        auth = res_body['token_type'] + ' ' + res_body['access_token']
+        self.RequestHandlersFactory.update_headers(Authorization=auth)
+      else:
+        print("Couldn't refresh access token. ErrCode: {}, ErrMst: {!r}".format(
+            res.status, res.read1()))
+    else:
+      print("Non sufficient info provided to refresh the access token.")
+      print("To refresh access token periodically, 'refresh-token', 'client-id'"
+            " and 'client-secert' headers must be provided.")
+      print("After the current access token expires, the upload will fail.")
+
+  def periodic_work(self) -> None:
+    self._refresh_access_token()
 
 
 class S3Upload(HTTPUpload):
@@ -256,16 +294,13 @@ class S3Upload(HTTPUpload):
   It will parse the `upload_location` argument with `s3://` protocol
   and use the AWS REST API that uses HTTPS protocol instead.
   """
-  # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html#API_PutObject_RequestSyntax
-  # curl -X PUT --data-binary @OBJECT_LOCATION \
-  # -H "Authorization: idk yet but it's some sort of aws specific auth" \
-  # "BUCKET_NAME.s3.amazonaws.com/OBJECT_NAME"
+
   def __init__(self, upload_location: str, extra_headers: Dict[str, str],
                temp_dir: Optional[str]):
 
     super().__init__(upload_location, extra_headers, temp_dir)
 
-  def refresh_period_passed(self) -> None:
+  def periodic_work(self) -> None:
     pass
 
 
@@ -287,3 +322,13 @@ def get_upload_node(upload_location: str, extra_headers: Dict[str, str],
 def is_supported_protocol(upload_location: str) -> bool:
   return bool([upload_location.startswith(protocol + '://') for
                protocol in SUPPORTED_PROTOCOLS].count(True))
+
+# https://cloud.google.com/storage/docs/uploading-objects#upload-object-xml
+# curl -X PUT --data-binary @OBJECT_LOCATION \
+# -H "Authorization: Bearer OAUTH2_TOKEN" \
+# "https://storage.googleapis.com/BUCKET_NAME/OBJECT_NAME"
+
+# https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html#API_PutObject_RequestSyntax
+# curl -X PUT --data-binary @OBJECT_LOCATION \
+# -H "Authorization: idk yet but it's some sort of aws specific auth" \
+# "BUCKET_NAME.s3.amazonaws.com/OBJECT_NAME"

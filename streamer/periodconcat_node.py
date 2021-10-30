@@ -107,17 +107,16 @@ class PeriodConcatNode(ThreadedNodeBase):
           'to an error in PackagerNode#{}.'.format(i + 1))
     
     if self._concat_will_fail:
-      raise RuntimeError(
-        'Unable to concatenate the inputs: {}'.format(self._concat_will_fail))
+      raise RuntimeError('Unable to concatenate the inputs')
     
-    # If the packager was pushing http requests to the stream's proxy server,
+    # If the packager was pushing HTTP requests to the stream's proxy server,
     # the proxy server should have stored the manifest files in a temporary
     # directory in the filesystem.
     if self._proxy_node is not None:
       assert self._proxy_node.temp_dir, ('There should be a proxy temp direcotry'
                                          'when processing multi-period input')
       self._output_location = self._proxy_node.temp_dir
-      # As the period concatenator node is the last to run, chaninging the
+      # As the period concatenator node is the last to run, changing the
       # output location at run time won't disturb any other node.
       for packager_node in self._packager_nodes:
         packager_node.output_location = packager_node.output_location.replace(
@@ -142,7 +141,7 @@ class PeriodConcatNode(ThreadedNodeBase):
           res = conn.getresponse()
           if res.status != CREATED:
             print("Got unexpected status code: {}, Msg: {!r}".format(res.status,
-                                                                   res.read1()))
+                                                                     res.read1()))
 
     self._status = ProcessStatus.Finished
 
