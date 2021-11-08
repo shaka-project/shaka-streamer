@@ -66,9 +66,10 @@ def main():
                       help='The output folder to write files to, or an HTTP ' +
                            'or HTTPS URL where files will be PUT.' +
                            'Used even if uploading to cloud storage.')
-  parser.add_argument('-a', '--add-headers',
-                      default={},
-                      help='Headers to include when sending PUT requests' +
+  parser.add_argument('-H', '--add-header',
+                      action='append',
+                      metavar='key=value',
+                      help='Headers to include when sending PUT requests ' +
                            'to the specified output location.')
   parser.add_argument('--skip-deps-check',
                       action='store_true',
@@ -97,9 +98,10 @@ def main():
       bitrate_config_dict = yaml.safe_load(f)
 
   extra_headers = {}
-  if args.add_headers:
-    extra_headers = ast.literal_eval(args.add_headers)
-    print(extra_headers)
+  if args.add_header:
+    for header in args.add_header:
+      key, value = tuple(header.split('=', 1))
+      extra_headers[key] = value
 
   try:
     with controller.start(args.output, input_config_dict, pipeline_config_dict,

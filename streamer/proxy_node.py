@@ -21,7 +21,7 @@ import os
 import json
 import threading
 import urllib.parse
-from typing import Optional, Union, Type, Dict
+from typing import Optional, Union, Dict
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from http.client import HTTPConnection, HTTPSConnection, CREATED, OK
 
@@ -38,7 +38,7 @@ class RequestHandler(BaseHTTPRequestHandler):
   shaka packager and pushes them to the destination.
   """
 
-  def __init__(self, conn: Union[Type[HTTPConnection], Type[HTTPSConnection]],
+  def __init__(self, conn: Union[HTTPConnection, HTTPSConnection],
                extra_headers: Dict[str, str], base_path: str, param_query: str,
                temp_dir: Optional[str], *args, **kwargs):
 
@@ -98,11 +98,11 @@ class RequestHandler(BaseHTTPRequestHandler):
     # Respond to Shaka Packager with the response we got.
     self.send_response(res.status)
     self.end_headers()
-    # self.wfile.write(res.read1())
+    # self.wfile.write(res.read())
     # The destination should send (201/CREATED), but some do also send (200/OK).
     if res.status != CREATED and res.status != OK:
       print('Unexpected status for the PUT request:'
-             ' {}, ErrMsg: {!r}'.format(res.status, res.read1()))
+             ' {}, ErrMsg: {!r}'.format(res.status, res.read()))
 
   def _write_body_and_get_file_io(self):
     """A method that writes a request body to the filesystem
@@ -135,7 +135,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 class RequestHandlersFactory():
   """A request handlers' factory that produces a RequestHandler whenever
   its __call__ method is called.  It stores all the relevant data that the
-  the instantiated request handler will need when sending a request to the host.
+  instantiated request handler will need when sending a request to the host.
   """
 
   def __init__(self, upload_location: str, initial_headers: Dict[str, str] = {},
@@ -201,6 +201,7 @@ class HTTPUpload(ThreadedNodeBase):
                                                          extra_headers,
                                                          self.temp_dir)
 
+    # By specifying port 0, a random unused port will be chosen for the server.
     self.server = ThreadingHTTPServer(('localhost', 0),
                                       self.RequestHandlersFactory)
 
@@ -254,6 +255,7 @@ class GCSUpload(HTTPUpload):
     refresh_period = int(extra_headers.pop('refresh-every', None) or 3300)
 
     super().__init__(upload_location, extra_headers, temp_dir, refresh_period)
+
     # We yet don't have an access token, so we need to get a one.
     self._refresh_access_token()
 
@@ -271,13 +273,13 @@ class GCSUpload(HTTPUpload):
       conn.request('POST', '/token', json.dumps(req_body))
       res = conn.getresponse()
       if res.status == OK:
-        res_body = json.loads(res.read1())
-        # Update the Authorization header with the request factory.
+        res_body = json.loads(res.read())
+        # Update the Authorization header that the request factory has.
         auth = res_body['token_type'] + ' ' + res_body['access_token']
         self.RequestHandlersFactory.update_headers(Authorization=auth)
       else:
         print("Couldn't refresh access token. ErrCode: {}, ErrMst: {!r}".format(
-            res.status, res.read1()))
+            res.status, res.read()))
     else:
       print("Non sufficient info provided to refresh the access token.")
       print("To refresh access token periodically, 'refresh-token', 'client-id'"
@@ -310,6 +312,7 @@ class S3Upload(HTTPUpload):
     refresh_period = int(extra_headers.pop('refresh-every', None) or 3300)
 
     super().__init__(upload_location, extra_headers, temp_dir, refresh_period)
+
     # We yet don't have an access token, so we need to get a one.
     self._refresh_access_token()
 
@@ -324,17 +327,17 @@ class S3Upload(HTTPUpload):
       conn.request('POST', '/auth/o2/token', json.dumps(req_body))
       res = conn.getresponse()
       if res.status == OK:
-        res_body = json.loads(res.read1())
-        # Update the Authorization header with the request factory.
+        res_body = json.loads(res.read())
+        # Update the Authorization header that the request factory has.
         auth = res_body['token_type'] + ' ' + res_body['access_token']
         self.RequestHandlersFactory.update_headers(Authorization=auth)
       else:
         print("Couldn't refresh access token. ErrCode: {}, ErrMst: {!r}".format(
-            res.status, res.read1()))
+            res.status, res.read()))
     else:
       print("Non sufficient info provided to refresh the access token.")
       print("To refresh access token periodically, 'refresh-token'"
-            " and 'client-id' and headers must be provided.")
+            " and 'client-id' headers must be provided.")
       print("After the current access token expires, the upload will fail.")
 
   def periodic_job(self) -> None:
@@ -354,18 +357,8 @@ def get_upload_node(upload_location: str, extra_headers: Dict[str, str],
   elif upload_location.startswith("s3://"):
     return S3Upload(upload_location, extra_headers, temp_dir)
   else:
-    raise RuntimeError("Protocol of [{}] isn't supported".format(upload_location))
+    raise RuntimeError("Protocol of {} isn't supported".format(upload_location))
 
 def is_supported_protocol(upload_location: str) -> bool:
   return bool([upload_location.startswith(protocol + '://') for
                protocol in SUPPORTED_PROTOCOLS].count(True))
-
-# https://cloud.google.com/storage/docs/uploading-objects#upload-object-xml
-# curl -X PUT --data-binary @OBJECT_LOCATION \
-# -H "Authorization: Bearer OAUTH2_TOKEN" \
-# "https://storage.googleapis.com/BUCKET_NAME/OBJECT_NAME"
-
-# https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html#API_PutObject_RequestSyntax
-# curl -X PUT --data-binary @OBJECT_LOCATION \
-# -H "Authorization: idk yet but it's some sort of aws specific auth" \
-# "BUCKET_NAME.s3.amazonaws.com/OBJECT_NAME"

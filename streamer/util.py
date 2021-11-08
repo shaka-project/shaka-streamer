@@ -31,7 +31,7 @@ class RequestBodyAsFileIO(io.BufferedIOBase):
   logic of using Content-Length or chunk size to provide an emulated `EOF`.
 
   This implementation is much faster than storing the request body
-  in the filesystem then reading it with an `EOF`.
+  in the filesystem then reading it with an `EOF` included.
   """
 
   def __init__(self, rfile: io.BufferedIOBase, content_length: Optional[int]):
@@ -98,6 +98,7 @@ class RequestBodyAsFileIO(io.BufferedIOBase):
 
     # Don't try to read if there is nothing to read.
     if self._left_to_read == 0:
+      # This indicates `EOF` for the caller.
       return b''
     # For non-negative blocksize values.
     if blocksize and blocksize >= 0:

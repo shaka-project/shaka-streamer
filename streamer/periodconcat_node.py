@@ -89,6 +89,7 @@ class PeriodConcatNode(ThreadedNodeBase):
             " upload proxy.\n")
       time.sleep(5)
       return True
+    # Otherwise, we don't have a reason to fail.
     return False
 
   def _thread_single_pass(self) -> None:
