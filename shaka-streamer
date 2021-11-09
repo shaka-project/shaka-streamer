@@ -27,7 +27,6 @@ Full documentation can be found at https://google.github.io/shaka-streamer/
 import argparse
 import sys
 import time
-import ast
 import yaml
 
 import streamer

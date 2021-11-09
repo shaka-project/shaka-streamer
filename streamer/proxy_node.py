@@ -299,6 +299,7 @@ class S3Upload(HTTPUpload):
 
   def __init__(self, upload_location: str, extra_headers: Dict[str, str],
                temp_dir: Optional[str]):
+    raise NotImplementedError("S3 uploads aren't working yet.")
     url_parts = upload_location[5:].split('/', 1)
     bucket = url_parts[0]
     path = '/' + url_parts[1] if len(url_parts) > 1 else ''

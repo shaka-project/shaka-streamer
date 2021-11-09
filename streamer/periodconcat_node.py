@@ -115,7 +115,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     # directory in the filesystem.
     if self._proxy_node is not None:
       assert self._proxy_node.temp_dir, ('There should be a proxy temp direcotry'
-                                         'when processing multi-period input')
+                                         ' when processing multi-period input')
       self._output_location = self._proxy_node.temp_dir
       # As the period concatenator node is the last to run, changing the
       # output location at run time won't disturb any other node.
@@ -142,7 +142,7 @@ class PeriodConcatNode(ThreadedNodeBase):
           res = conn.getresponse()
           if res.status != CREATED:
             print("Got unexpected status code: {}, Msg: {!r}".format(res.status,
-                                                                     res.read1()))
+                                                                     res.read()))
 
     self._status = ProcessStatus.Finished
 

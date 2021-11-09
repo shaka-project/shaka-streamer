@@ -358,8 +358,7 @@ class ControllerNode(object):
 
   def get_upload_node(self, upload_location: str,
                       extra_headers: Dict[str, str]) -> HTTPUpload:
-    """Returns an HTTPUpload instance.
-
+    """
     Args:
       upload_location (str): The location where media content will be uploaded.
       extra_headers (Dict[str, str]): Extra headers to be added when

@@ -48,7 +48,7 @@ class RequestBodyAsFileIO(io.BufferedIOBase):
 
   def read(self, blocksize: Optional[int] = None) -> bytes:
     """This method reads `self.body` incrementally with each call.
-    This is done because if we try to use `read()` on `self.body` it will wait
+    This is done because if we try to use `read()` on `self._body` it will wait
     forever for an `EOF` which is not present and will never be.
 
     This method -like the original `read()`- will read up to (but not more than)
@@ -80,7 +80,7 @@ class RequestBodyAsFileIO(io.BufferedIOBase):
         if int_chunk_size == 0:
           # A zero sized chunk indicates that no more chunks left.
           self._last_chunk_read = True
-      self._buffer, bytes_read = self._buffer[blocksize:], self._buffer[:blocksize]
+      bytes_read, self._buffer = self._buffer[:blocksize], self._buffer[blocksize:]
       return bytes_read
     # When blocksize is a negative integer or None.
     else:
