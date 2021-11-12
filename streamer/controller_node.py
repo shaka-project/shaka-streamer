@@ -145,7 +145,7 @@ class ControllerNode(object):
 
         # Check that Shaka Packager version is 2.6.0 or above.
         _check_command_version('Shaka Packager', ['packager', '-version'],
-                               (2, 6, 0))
+                               (2, 6, 1))
 
     self.hermetic_ffmpeg: Optional[str] = None
     self.hermetic_packager: Optional[str] = None
