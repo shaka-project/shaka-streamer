@@ -1,3 +1,9 @@
+## 0.5.1 (2021-10-14)
+
+ - Require Shaka Packager v2.6.1+, to fix segfault in Linux binaries
+   (https://github.com/google/shaka-packager/issues/996)
+
+
 ## 0.5.0 (2021-10-01)
 
  - Command-line argument style changed (dashes instead of underscores)
