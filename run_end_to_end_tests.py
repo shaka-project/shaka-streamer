@@ -299,7 +299,7 @@ def main():
     return 1
 
   # Install test dependencies.
-  install_deps_command = ['npm', 'install']
+  install_deps_command = ['npm', 'ci']
   subprocess.check_call(install_deps_command)
 
   # Fetch streams used in tests.
