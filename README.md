@@ -1,5 +1,6 @@
 # ![Shaka Streamer](https://raw.githubusercontent.com/google/shaka-streamer/master/docs/source/shaka-streamer-logo.png)
 
+
 Shaka Streamer offers a simple config-file based approach to preparing streaming
 media. It greatly simplifies the process of using FFmpeg and Shaka Packager for
 both VOD and live content.
