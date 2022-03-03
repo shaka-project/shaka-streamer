@@ -168,7 +168,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
     if stream.layout.max_channels == 6:
       filters += [
-        # Work around for https://github.com/google/shaka-packager/issues/598,
+        # Work around for https://github.com/shaka-project/shaka-packager/issues/598,
         # as seen on https://trac.ffmpeg.org/ticket/6974
         'channelmap=channel_layout=5.1',
       ]
@@ -229,7 +229,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
     # that are very close to 1, such as 5120:5123.  In HLS, the behavior is
     # worse.  Some of the width values in the playlist wind up off by one,
     # which causes playback failures in ExoPlayer.
-    # https://github.com/google/shaka-streamer/issues/36
+    # https://github.com/shaka-project/shaka-streamer/issues/36
     filters.append('setsar=1:1')
 
     if (stream.codec in {VideoCodec.H264, VideoCodec.HEVC} 

@@ -27,7 +27,7 @@ setuptools.setup(
   description='A simple config-file based approach to streaming media.',
   long_description=long_description,
   long_description_content_type='text/markdown',
-  url='https://github.com/google/shaka-streamer',
+  url='https://github.com/shaka-project/shaka-streamer',
   packages=setuptools.find_packages(),
   install_requires=[
       'PyYAML',

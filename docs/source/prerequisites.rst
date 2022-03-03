@@ -55,17 +55,17 @@ These binaries can be installed for your platform easily with the
   pip3 install shaka-streamer-binaries
 
 The static FFmpeg builds are pulled from here:
-https://github.com/joeyparrish/static-ffmpeg-binaries
+https://github.com/shaka-project/static-ffmpeg-binaries
 
 The static Shaka Packager builds are pulled from here:
-https://github.com/google/shaka-packager
+https://github.com/shaka-project/shaka-packager
 
 
 Shaka Packager (manual installation, not recommended)
 -----------------------------------------------------
 
 Pre-built Shaka Packager binaries can be downloaded from github here:
-https://github.com/google/shaka-packager/releases
+https://github.com/shaka-project/shaka-packager/releases
 
 To install a Shaka Packager binary on Linux:
 
@@ -75,7 +75,7 @@ To install a Shaka Packager binary on Linux:
      /usr/local/bin/packager
 
 To build Shaka Packager from source, follow instructions here:
-https://google.github.io/shaka-packager/html/build_instructions.html
+https://shaka-project.github.io/shaka-packager/html/build_instructions.html
 
 
 FFmpeg (manual installation, not recommended)
@@ -174,7 +174,7 @@ To install Node.js and NPM on any other platform, you can try one of these:
 * https://nodejs.org/en/download/
 
 .. _Python "yaml" module: https://pyyaml.org/
-.. _Shaka Packager: https://github.com/google/shaka-packager
+.. _Shaka Packager: https://github.com/shaka-project/shaka-packager
 .. _FFmpeg: https://ffmpeg.org/
 .. _Homebrew: https://brew.sh/
 .. _boto config file: http://boto.cloudhackers.com/en/latest/boto_config_tut.html

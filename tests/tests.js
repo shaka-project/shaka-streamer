@@ -566,7 +566,7 @@ function drmTests(manifestUrl, format) {
   it('has raw key encryption enabled ' + format, async () => {
     // Clear Key format is not supported in HLS with Shaka Player yet
     // so for now we bypass the hls tests.
-    // See: https://github.com/google/shaka-player/issues/2146
+    // See: https://github.com/shaka-project/shaka-player/issues/2146
     if (manifestUrl.indexOf('hls.m3u8') !== -1) {
       return pending();
     }
@@ -619,7 +619,7 @@ function drmTests(manifestUrl, format) {
   it('has raw key drm label support ' + format, async () => {
     // Clear Key format is not supported in HLS with Shaka Player yet
     // so for now we bypass the hls tests.
-    // See: https://github.com/google/shaka-player/issues/2146
+    // See: https://github.com/shaka-project/shaka-player/issues/2146
     if (manifestUrl.indexOf('hls.m3u8') !== -1) {
       return pending();
     }
@@ -841,9 +841,9 @@ function autoDetectionTests(manifestUrl) {
     const inputConfigDict = {
       'inputs': [
         {
-          // NOTE: https://github.com/google/shaka-packager/issues/662 prevents
-          // this from working on Sintel.2010.720p.Small.mkv.  The Packager bug
-          // does not seem to affect typical inputs.
+          // NOTE: https://github.com/shaka-project/shaka-packager/issues/662
+          // prevents this from working on Sintel.2010.720p.Small.mkv.  The
+          // Packager bug does not seem to affect typical inputs.
           'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
           'media_type': 'video',
           // Keep this test short by only encoding 1s of content.

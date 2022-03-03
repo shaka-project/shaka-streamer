@@ -170,11 +170,11 @@ the ``shaka-streamer`` script as an example of how to do this.  See also
 :doc:`module_api`.
 
 
-.. _config_files/: https://github.com/google/shaka-streamer/tree/master/config_files
-.. _issue #8: https://github.com/google/shaka-streamer/issues/8
-.. _issue #17: https://github.com/google/shaka-streamer/issues/17
-.. _issue #23: https://github.com/google/shaka-streamer/issues/23
+.. _config_files/: https://github.com/shaka-project/shaka-streamer/tree/main/config_files
+.. _issue #8: https://github.com/shaka-project/shaka-streamer/issues/8
+.. _issue #17: https://github.com/shaka-project/shaka-streamer/issues/17
+.. _issue #23: https://github.com/shaka-project/shaka-streamer/issues/23
 .. _Python 3.6+: https://www.python.org/downloads/
 .. _Python "yaml" module: https://pyyaml.org/
-.. _Shaka Packager: https://github.com/google/shaka-packager
+.. _Shaka Packager: https://github.com/shaka-project/shaka-packager
 .. _FFmpeg: https://ffmpeg.org/
