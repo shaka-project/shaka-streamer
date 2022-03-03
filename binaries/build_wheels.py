@@ -43,8 +43,8 @@ PLATFORM_SUFFIXES = {
     'macosx_10_9_x86_64': '-osx-x64',
 }
 
-FFMPEG_DL_PREFIX = 'https://github.com/joeyparrish/static-ffmpeg-binaries/releases/download/' + FFMPEG_VERSION
-PACKAGER_DL_PREFIX = 'https://github.com/google/shaka-packager/releases/download/' + PACKAGER_VERSION
+FFMPEG_DL_PREFIX = 'https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/' + FFMPEG_VERSION
+PACKAGER_DL_PREFIX = 'https://github.com/shaka-project/shaka-packager/releases/download/' + PACKAGER_VERSION
 
 # The download links to each binary.  These download links
 # aren't complete, they miss the platfrom-specific suffix.

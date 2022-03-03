@@ -30,7 +30,7 @@ the `config_files/`_ folder and browse through some examples.  If you are trying
 to customize one of those examples or get more details on supported options,
 this document is for you.
 
-.. _config_files/: https://github.com/google/shaka-streamer/tree/master/config_files
+.. _config_files/: https://github.com/shaka-project/shaka-streamer/tree/main/config_files
 
 
 Input Configs

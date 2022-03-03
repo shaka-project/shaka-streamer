@@ -388,7 +388,7 @@ class InputConfig(configuration.Base):
     """
 
     assert isinstance(dictionary, dict), """Malformed Input Config File,
-    See some examples at https://github.com/google/shaka-streamer/tree/master/config_files.
+    See some examples at https://github.com/shaka-project/shaka-streamer/tree/main/config_files.
     """
 
     if (dictionary.get('inputs') is not None

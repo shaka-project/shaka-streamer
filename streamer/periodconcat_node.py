@@ -158,8 +158,8 @@ class PeriodConcatNode(ThreadedNodeBase):
 
       contents = "<?xml version='1.0' encoding='UTF-8'?>\n"
       # TODO: Add Shaka-Packager version to this xml comment.
-      contents += "<!--Generated with https://github.com/google/shaka-packager -->\n"
-      contents += "<!--Made Multi-Period with https://github.com/google/shaka-streamer version {} -->\n".format(__version__)
+      contents += "<!--Generated with https://github.com/shaka-project/shaka-packager -->\n"
+      contents += "<!--Made Multi-Period with https://github.com/shaka-project/shaka-streamer version {} -->\n".format(__version__)
 
       # xml.ElementTree replaces the default namespace with 'ns0'.
       # Register the DASH namespace back as the default namespace before converting to string.
@@ -190,6 +190,6 @@ class PeriodConcatNode(ThreadedNodeBase):
     # passed to the HLSConcater at the construction time.
     hls_concater.concat_and_write(
         self._pipeline_config.hls_output,
-        'Concatenated with https://github.com/google/shaka-streamer'
+        'Concatenated with https://github.com/shaka-project/shaka-streamer'
         ' version {}'.format(__version__),
       )
