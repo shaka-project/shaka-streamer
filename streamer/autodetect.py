@@ -68,17 +68,20 @@ def _probe(input: Input, field: str) -> Optional[str]:
   print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
 
   output_bytes: bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
-  # The output is either the language code or just a blank line.
-  output_string: Optional[str] = output_bytes.decode('utf-8').strip()
+  # The output is either some probe information or just a blank line.
+  output_string: str = output_bytes.decode('utf-8').strip()
+  # With certian container formats, ffprobe returns a duplicate
+  # output and some empty lines in between. Issue #119
+  output_string = output_string.split('\n')[0]
   # After stripping the newline, we can fall back to None if it's empty.
-  output_string = output_string or None
+  probe_output: Optional[str] = output_string or None
 
   # Webcams on Linux seem to behave badly if the device is rapidly opened and
   # closed.  Therefore, sleep for 1 second after a webcam probe.
   if input.input_type == InputType.WEBCAM:
     time.sleep(1)
 
-  return output_string
+  return probe_output
 
 def is_present(input: Input) -> bool:
   """Returns true if the stream for this input is indeed found.
