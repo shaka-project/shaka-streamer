@@ -70,7 +70,7 @@ def _probe(input: Input, field: str) -> Optional[str]:
   output_bytes: bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
   # The output is either some probe information or just a blank line.
   output_string: str = output_bytes.decode('utf-8').strip()
-  # With certian container formats, ffprobe returns a duplicate
+  # With certain container formats, ffprobe returns a duplicate
   # output and some empty lines in between. Issue #119
   output_string = output_string.split('\n')[0]
   # After stripping the newline, we can fall back to None if it's empty.
