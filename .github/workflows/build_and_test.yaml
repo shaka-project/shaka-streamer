@@ -8,8 +8,8 @@ name: Build and Test PR
 # Can also be run manually for debugging purposes.
 on:
   # TODO: re-enable pull_request trigger
-  # pull_request:
-  #  types: [opened, synchronize, reopened]
+  pull_request:
+   types: [opened, synchronize, reopened, push]
   workflow_dispatch:
     inputs:
       ref:
