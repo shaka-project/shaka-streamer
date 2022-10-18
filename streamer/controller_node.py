@@ -145,7 +145,7 @@ class ControllerNode(object):
         _check_command_version('Shaka Packager', ['packager', '-version'],
                                (2, 6, 1))
 
-      if bucket_url:
+      if bucket_url and bucket_url.startswith('gs://'):
         # Check that the Google Cloud SDK is at least v212, which introduced
         # gsutil 4.33 with an important rsync bug fix.
         # https://cloud.google.com/sdk/docs/release-notes
@@ -155,7 +155,7 @@ class ControllerNode(object):
                                (212, 0, 0))
 
 
-    if bucket_url:
+    if bucket_url and bucket_url.startswith('gs://'):
       # If using cloud storage, make sure the user is logged in and can access
       # the destination, independent of the version check above.
       CloudNode.check_access(bucket_url)
@@ -328,7 +328,7 @@ class ControllerNode(object):
                                       outputs,
                                       index,
                                       self.hermetic_ffmpeg))
-    
+
     # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
     # and put that period in it.
     if period_dir:

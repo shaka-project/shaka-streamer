@@ -1,3 +1,7 @@
+## 0.5.2 (unreleased)
+
+ - Fix for Google Cloud SDK installation checks running in-error when S3 bucket_url parameter specified.
+
 ## 0.5.1 (2021-10-14)
 
  - Require Shaka Packager v2.6.1+, to fix segfault in Linux binaries

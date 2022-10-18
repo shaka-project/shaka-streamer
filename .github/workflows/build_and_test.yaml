@@ -8,7 +8,7 @@ name: Build and Test PR
 # Can also be run manually for debugging purposes.
 on:
   # TODO: re-enable pull_request trigger
-  #pull_request:
+  # pull_request:
   #  types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
@@ -61,7 +61,8 @@ jobs:
 
       - name: Install Python deps
         run: |
-          python3 -m pip install --upgrade pyyaml sphinx flask mypy==0.812 wheel
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements-dev.txt
           if [[ '${{ runner.os }}' == 'Windows' ]]; then
             python3 -m pip install --upgrade pywin32
           fi
@@ -92,6 +93,7 @@ jobs:
           fi
           # Use the "spec" reporter for clearer logs in GitHub Actions
           $WRAPPER python3 run_end_to_end_tests.py --reporters spec
+          $WRAPPER python3 -m pytest ./tests
 
       #- name: Debug on failure
       #  uses: mxschmitt/action-tmate@v3
