@@ -9,7 +9,7 @@ name: Build and Test PR
 on:
   # TODO: re-enable pull_request trigger
   pull_request:
-   types: [opened, synchronize, reopened, push]
+   types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       ref:
