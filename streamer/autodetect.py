@@ -119,9 +119,10 @@ def get_frame_rate(input: Input) -> Optional[float]:
     return None
 
   # This string is the framerate in the form of a fraction, such as '24/1' or
-  # '30000/1001'.  We must split it into pieces and do the division to get a
+  # '30000/1001'.  Occasionally, there is a pipe after the framerate, such as
+  # '32700/1091|'.  We must split it into pieces and do the division to get a
   # float.
-  fraction = frame_rate_string.split('/')
+  fraction = frame_rate_string.split('|')[0].split('/')
   if len(fraction) == 1:
     frame_rate = float(fraction[0])
   else:
