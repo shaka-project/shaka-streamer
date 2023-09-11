@@ -59,11 +59,8 @@ class AudioCodec(enum.Enum):
 
   def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
-    # TODO: consider Opus in mp4 by default
     # TODO(#31): add support for configurable output format per-codec
-    if self == AudioCodec.OPUS:
-      return 'webm'
-    elif (self == AudioCodec.AAC) or (self == AudioCodec.AC3) or (self == AudioCodec.EAC3):
+    if (self == AudioCodec.OPUS) or (self == AudioCodec.AAC) or (self == AudioCodec.AC3) or (self == AudioCodec.EAC3):
       return 'mp4'
     else:
       assert False, 'No mapping for output format for codec {}'.format(
