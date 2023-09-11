@@ -256,13 +256,13 @@ class PipelineConfig(configuration.Base):
   """
 
   channel_layouts = configuration.Field(
-      List[bitrate_configuration.AudioChannelLayoutName]).cast()
+      List[bitrate_configuration.AudioChannelLayoutName],
+      default=['stereo', 'surround']).cast()
   """A list of channel layouts to encode.
 
   Any channel count greater than the input channel count will be ignored.
 
-  If not set, it will default to a list of all the (AudioChannelLayoutName)s
-  defined in the bitrate configuration.
+  If not set, it will default to ['stereo', 'surround'].
   """
 
   audio_codecs = configuration.Field(
@@ -336,14 +336,11 @@ class PipelineConfig(configuration.Base):
 
   def __init__(self, *args) -> None:
 
-    # Set the default values of the resolutions and channel_layouts
-    # to the values we have in the bitrate configuration.
-    # We need the 'type: ignore' here because mypy thinks these variables are lists
-    # of VideoResolutionName and AudioChannelLayoutName and not Field variables.
+    # Set the default values of the resolutions to the values we have in the
+    # bitrate configuration.  We need the 'type: ignore' here because mypy
+    # thinks this is a list of VideoResolutionName and not Field variables.
     self.__class__.resolutions.default = list(  # type: ignore
       bitrate_configuration.VideoResolution.keys())
-    self.__class__.channel_layouts.default = list(  # type: ignore
-      bitrate_configuration.AudioChannelLayout.keys())
 
     super().__init__(*args)
 
