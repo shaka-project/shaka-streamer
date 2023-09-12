@@ -284,25 +284,6 @@ class TranscoderNode(PolitelyWaitOnFinish):
           # speeds up encoding, balancing against quality
           '-speed', '2',
       ]
-    elif stream.codec == VideoCodec.AV1:
-      args += [
-          # According to graphs at https://bit.ly/2BmIVt6, this AV1 setting
-          # results in almost no reduction in quality (0.8%), but a significant
-          # boost in speed (20x).
-          '-cpu-used', '8',
-          # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/AV1),
-          # this allows threaded encoding in AV1, which makes better use of CPU
-          # resources and speeds up encoding.  This will be ignored by libaom
-          # before version 1.0.0-759-g90a15f4f2, and so there may be no benefit
-          # unless libaom and ffmpeg are built from source (as of Oct 2019).
-          '-row-mt', '1',
-          # According to the wiki (https://trac.ffmpeg.org/wiki/Encode/AV1),
-          # this allows for threaded _decoding_ in AV1, which will provide a
-          # smoother playback experience for the end user.
-          '-tiles', '2x2',
-          # AV1 is considered "experimental".
-          '-strict', 'experimental',
-      ]
 
     keyframe_interval = int(self._pipeline_config.segment_size *
                             input.frame_rate)
