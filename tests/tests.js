@@ -21,6 +21,23 @@ const TEST_DIR = 'test_assets/';
 let player;
 let video;
 
+const jasmineEnv = jasmine.getEnv();
+const originalJasmineExecute = jasmineEnv.execute.bind(jasmineEnv);
+jasmineEnv.execute = () => {
+  // Match exact text or regexp if --filter is set, else empty string will match
+  // all.
+  const filterText = __karma__.config.filter || '';
+  const filterRegExp = new RegExp(filterText);
+
+  // Set jasmine config.
+  jasmineEnv.configure({
+    specFilter: (spec) => spec.getFullName().includes(filterText) ||
+                          filterRegExp.test(spec.getFullName()),
+  });
+
+  originalJasmineExecute();
+};
+
 async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}, outputLocation=OUTPUT_DIR) {
   // Send a request to flask server to start Shaka Streamer.
   const response = await fetch(flaskServerUrl + 'start', {
