@@ -19,6 +19,7 @@ module.exports = function(config) {
     browserNoActivityTimeout: 5 * 60 * 1000, // Disconnect after 5m silence
     client: {
       captureConsole: true,
+      filter: config.filter,
     },
     frameworks: ['jasmine'],
     files: [
