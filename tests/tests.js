@@ -804,7 +804,7 @@ function codecTests(manifestUrl, format) {
       'inputs': [
         {
           'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
-          'media_type': 'audio',
+          'media_type': 'video',
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
@@ -812,16 +812,16 @@ function codecTests(manifestUrl, format) {
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
-      'channel_layouts': ['stereo'],
-      'audio_codecs': ['aac', 'opus'],
+      'resolutions': ['144p'],
+      'video_codecs': ['h264', 'vp9'],
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
 
     let codecList = await getAudioAndVideoCodecs(manifestUrl);
     if (manifestUrl == hlsManifestUrl) {
-      expect(codecList).not.toContain('opus');
+      expect(codecList).not.toContain(jasmine.stringMatching('vp09.*'));
     } else if (manifestUrl == dashManifestUrl) {
-      expect(codecList).toContain('opus');
+      expect(codecList).toContain(jasmine.stringMatching('vp09.*'));
     }
   })
 }
