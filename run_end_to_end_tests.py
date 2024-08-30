@@ -33,7 +33,6 @@ from mypy import api as mypy_api
 from streamer import node_base
 from streamer.controller_node import ControllerNode
 from streamer.configuration import ConfigError
-from werkzeug.utils import secure_filename
 
 OUTPUT_DIR = 'output_files/'
 TEST_DIR = 'test_assets/'
@@ -222,7 +221,10 @@ def stop():
 
 @app.route('/output_files/<path:filename>', methods = ['GET', 'OPTIONS'])
 def send_file(filename):
-  filename = secure_filename(filename)
+  if '..' in filename:
+    return createCrossOriginResponse(
+        status=400, body='Bad request, attempted to break out of output path!')
+
   if not controller:
     return createCrossOriginResponse(
         status=403, body='Instance already shut down!')
