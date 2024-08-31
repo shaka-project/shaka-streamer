@@ -38,9 +38,27 @@ jasmineEnv.execute = () => {
   originalJasmineExecute();
 };
 
+async function fetchRetry(url, options) {
+  // Retry in case of network flake.  This only retries if the request fails
+  // without an HTTP status code, such as a connection failure or other
+  // low-level issue.  A non-200's status code does not throw from fetch().
+  // This is similar to, but less complex than Shaka Player's retry logic.
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await fetch(url, options);
+    } catch (exception) {
+      // Give up on the last try only.
+      if (i == 2) throw exception;
+
+      // Wait 3s between retries.
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  }
+}
+
 async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}, outputLocation=OUTPUT_DIR) {
   // Send a request to flask server to start Shaka Streamer.
-  const response = await fetch(flaskServerUrl + 'start', {
+  const response = await fetchRetry(flaskServerUrl + 'start', {
     method: 'POST',
     headers: {
       'Content-Type': 'text/plain',
@@ -69,7 +87,7 @@ async function startStreamer(inputConfig, pipelineConfig, bitrateConfig={}, outp
 
 async function stopStreamer() {
   // Send a request to flask server to stop Shaka Streamer.
-  const response = await fetch(flaskServerUrl + 'stop');
+  const response = await fetchRetry(flaskServerUrl + 'stop');
   if (!response.ok) {
     throw new Error('Failed to close Shaka Streamer');
   }
@@ -1121,7 +1139,7 @@ function availabilityTests(manifestUrl, format) {
       'availability_window': 500,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
-    const response = await fetch(manifestUrl);
+    const response = await fetchRetry(manifestUrl);
     const bodyText = await response.text();
     const re = /timeShiftBufferDepth="([^"]*)"/;
     const found = bodyText.match(re);
@@ -1172,7 +1190,7 @@ function updateTests(manifestUrl, format) {
       'update_period': 42,
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
-    const response = await fetch(manifestUrl);
+    const response = await fetchRetry(manifestUrl);
     const bodyText = await response.text();
     const re = /minimumUpdatePeriod="([^"]*)"/;
     const found = bodyText.match(re);
