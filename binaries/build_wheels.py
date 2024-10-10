@@ -26,33 +26,41 @@ import streamer_binaries
 
 # Version constants.
 # Change to download different versions.
-FFMPEG_VERSION = 'n4.4-2'
-PACKAGER_VERSION = 'v2.6.1'
+FFMPEG_VERSION = 'n7.1-1'
+PACKAGER_VERSION = 'v3.2.0'
 
 # A map of suffixes that will be combined with the binary download links
 # to achieve a full download link.  Different suffix for each platform.
 # Extend this dictionary to add more platforms.
 PLATFORM_SUFFIXES = {
-    # 64-bit Windows
-    'win_amd64': '-win-x64.exe',
-    # 64-bit Linux
-    'manylinux1_x86_64': '-linux-x64',
-    # Linux on ARM
+    # Linux x64
+    'manylinux2014_x86_64': '-linux-x64',
+    # Linux arm64
     'manylinux2014_aarch64': '-linux-arm64',
-    # 64-bit with 10.9 SDK
+    # macOS x64 with 10.9 SDK
     'macosx_10_9_x86_64': '-osx-x64',
+    # macOS arm64 with 10.9 SDK
+    'macosx_10_9_arm64': '-osx-arm64',
+    # Windows x64
+    'win_amd64': '-win-x64.exe',
 }
 
 FFMPEG_DL_PREFIX = 'https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/' + FFMPEG_VERSION
 PACKAGER_DL_PREFIX = 'https://github.com/shaka-project/shaka-packager/releases/download/' + PACKAGER_VERSION
 
-# The download links to each binary.  These download links
-# aren't complete, they miss the platfrom-specific suffix.
-BINARIES_DL = [
+# The download links to each binary.  These download links aren't complete.
+# They are missing the platfrom-specific suffix and optional distro-specific
+# suffix (Linux only).
+FFMPEG_BINARIES_DL = [
     FFMPEG_DL_PREFIX + '/ffmpeg',
     FFMPEG_DL_PREFIX + '/ffprobe',
+]
+PACKAGER_BINARIES_DL = [
     PACKAGER_DL_PREFIX + '/packager',
 ]
+UBUNTU_SUFFIXES = map(
+    lambda version: '-ubuntu-{}'.format(version),
+    streamer_binaries._ubuntu_versions_with_hw_encoders)
 
 BINARIES_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -88,34 +96,54 @@ def download_binary(download_url: str, download_dir: str) -> str:
   """Downloads a file and writes it to the file system.
   Returns the file name.
   """
-
   binary_name = download_url.split('/')[-1]
   binary_path = os.path.join(download_dir, binary_name)
+
   print('downloading', binary_name, flush=True, end=' ')
   urllib.request.urlretrieve(download_url, binary_path)
   print('(finished)')
+
   # Set executable permissions for the downloaded binaries.
-  default_permissions = 0o755
-  os.chmod(binary_path, default_permissions)
+  executable_permissions = 0o755
+  os.chmod(binary_path, executable_permissions)
+
   return binary_name
 
 
 def main():
-  # For each platform(OS+CPU), we download the its binaries and
-  # create a binary wheel distribution that contains the executable
-  # binaries specific to this platform.
+  # For each platform(OS+CPU), we download the its binaries and create a binary
+  # wheel distribution that contains the executable binaries specific to this
+  # platform.
   download_dir = os.path.join(BINARIES_ROOT_DIR, streamer_binaries.__name__)
+
   for platform_name, suffix in PLATFORM_SUFFIXES.items():
     binaries_to_include = []
-    # Use the `suffix` specific to this platfrom to achieve
-    # the full download link for each binary.
-    for binary_dl in BINARIES_DL:
+
+    # Use the suffix specific to this platfrom to construct the full download
+    # link for each binary.
+    for binary_dl in PACKAGER_BINARIES_DL:
       download_link = binary_dl + suffix
       binary_name = download_binary(download_url=download_link,
                                     download_dir=download_dir)
       binaries_to_include.append(binary_name)
-    # Build a wheel distribution for this platform
-    # and include the binaries we have just downloaded.
+
+    # FFmpeg binaries are like packager binaries, except we have extra variants
+    # for Ubuntu Linux to support hardware encoding.
+    for binary_dl in FFMPEG_BINARIES_DL:
+      download_link = binary_dl + suffix
+      binary_name = download_binary(download_url=download_link,
+                                    download_dir=download_dir)
+      binaries_to_include.append(binary_name)
+
+      if 'linux' in suffix:
+        for ubuntu_suffix in UBUNTU_SUFFIXES:
+          download_link = binary_dl + suffix + ubuntu_suffix
+          binary_name = download_binary(download_url=download_link,
+                                        download_dir=download_dir)
+          binaries_to_include.append(binary_name)
+
+    # Build a wheel distribution for this platform and include the binaries we
+    # have just downloaded.
     build_bdist_wheel(platform_name, binaries_to_include)
 
 
