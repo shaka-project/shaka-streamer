@@ -560,6 +560,13 @@ function liveTests(manifestUrl, format) {
 
 function drmTests(manifestUrl, format) {
   it('has widevine encryption enabled ' + format, async () => {
+    if (manifestUrl.includes('hls.m3u8')) {
+      // https://github.com/shaka-project/shaka-packager/issues/1439
+      // Inappropriate key material in HLS outputs causes this test to fail.
+      // Until this bug is resolved, skip this test for HLS.
+      pending('Skipped due to shaka-packager#1439');
+    }
+
     const inputConfigDict = {
       'inputs': [
         {
@@ -580,8 +587,9 @@ function drmTests(manifestUrl, format) {
       },
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
-    // Player should raise an error and not load because the media
-    // is encrypted and the player doesn't have a license server.
+
+    // The Player should raise an error and not load because the media is
+    // encrypted and the player doesn't have a license server.
     await expectAsync(player.load(manifestUrl)).toBeRejectedWith(
         jasmine.objectContaining({
           code: shaka.util.Error.Code.NO_LICENSE_SERVER_GIVEN,
@@ -594,17 +602,13 @@ function drmTests(manifestUrl, format) {
         },
       },
     });
-    // Player should now be able to load because the player has a license server.
+
+    // The Player should now be able to load because the player has a license
+    // server.
     await player.load(manifestUrl);
   });
 
   it('has raw key encryption enabled ' + format, async () => {
-    // Clear Key format is not supported in HLS with Shaka Player yet
-    // so for now we bypass the hls tests.
-    // See: https://github.com/shaka-project/shaka-player/issues/2146
-    if (manifestUrl.indexOf('hls.m3u8') !== -1) {
-      return pending();
-    }
     const inputConfigDict = {
       'inputs': [
         {
@@ -632,32 +636,35 @@ function drmTests(manifestUrl, format) {
         'clear_lead': 0,
       },
     };
-    await startStreamer(inputConfigDict, pipelineConfigDict);
-    // Player should raise an error and not load because the media
-    // is encrypted and the player doesn't have a license server.
-    await expectAsync(player.load(manifestUrl)).toBeRejectedWith(
-        jasmine.objectContaining({
-          code: shaka.util.Error.Code.NO_LICENSE_SERVER_GIVEN,
-        }));
 
-    player.configure({
-      drm: {
-        clearKeys: {
-          '1e044b199a81850e1927e776e7228cad': '0c3b6b7882ecbf9683bd34e189a5acf8'
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+
+    if (manifestUrl.includes('hls.m3u8')) {
+      // The Player has the keys in the manifest, so this should load.
+      await player.load(manifestUrl);
+    } else {
+      // The Player should raise an error and not load because the media is
+      // encrypted and the player doesn't have a license server.
+      await expectAsync(player.load(manifestUrl)).toBeRejectedWith(
+          jasmine.objectContaining({
+            code: shaka.util.Error.Code.NO_LICENSE_SERVER_GIVEN,
+          }));
+
+      player.configure({
+        drm: {
+          clearKeys: {
+            '1e044b199a81850e1927e776e7228cad': '0c3b6b7882ecbf9683bd34e189a5acf8'
+          },
         },
-      },
-    });
-    // Player should now be able to load because the player has a license server.
-    await player.load(manifestUrl);
+      });
+
+      // The Player should now be able to load because the player has a license
+      // server.
+      await player.load(manifestUrl);
+    }
   });
 
   it('has raw key drm label support ' + format, async () => {
-    // Clear Key format is not supported in HLS with Shaka Player yet
-    // so for now we bypass the hls tests.
-    // See: https://github.com/shaka-project/shaka-player/issues/2146
-    if (manifestUrl.indexOf('hls.m3u8') !== -1) {
-      return pending();
-    }
     const inputConfigDict = {
       'inputs': [
         {
@@ -687,22 +694,30 @@ function drmTests(manifestUrl, format) {
       },
     };
     await startStreamer(inputConfigDict, pipelineConfigDict);
-    // Player should raise an error and not load because the media
-    // is encrypted and the player doesn't have a license server.
-    await expectAsync(player.load(manifestUrl)).toBeRejectedWith(
-        jasmine.objectContaining({
-          code: shaka.util.Error.Code.NO_LICENSE_SERVER_GIVEN,
-        }));
 
-    player.configure({
-      drm: {
-        clearKeys: {
-          '1e044b199a81850e1927e776e7228cad': '0c3b6b7882ecbf9683bd34e189a5acf8'
+    if (manifestUrl.includes('hls.m3u8')) {
+      // The Player has the keys in the manifest, so this should load.
+      await player.load(manifestUrl);
+    } else {
+      // The Player should raise an error and not load because the media is
+      // encrypted and the player doesn't have a license server.
+      await expectAsync(player.load(manifestUrl)).toBeRejectedWith(
+          jasmine.objectContaining({
+            code: shaka.util.Error.Code.NO_LICENSE_SERVER_GIVEN,
+          }));
+
+      player.configure({
+        drm: {
+          clearKeys: {
+            '1e044b199a81850e1927e776e7228cad': '0c3b6b7882ecbf9683bd34e189a5acf8'
+          },
         },
-      },
-    });
-    // Player should now be able to load because the player has a license server.
-    await player.load(manifestUrl);
+      });
+
+      // The Player should now be able to load because the player has a license
+      // server.
+      await player.load(manifestUrl);
+    }
   });
 }
 

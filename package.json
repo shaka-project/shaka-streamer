@@ -5,6 +5,6 @@
     "karma-jasmine": "^4.0.1",
     "karma-junit-reporter": "^2.0.1",
     "karma-spec-reporter": "^0.0.33",
-    "shaka-player": "^3.3.2"
+    "shaka-player": "^4.11.7"
   }
 }
