@@ -58,9 +58,11 @@ FFMPEG_BINARIES_DL = [
 PACKAGER_BINARIES_DL = [
     PACKAGER_DL_PREFIX + '/packager',
 ]
-UBUNTU_SUFFIXES = map(
+# Important: wrap map() in list(), because map returns an iterator, and we need
+# a real list.
+UBUNTU_SUFFIXES = list(map(
     lambda version: '-ubuntu-{}'.format(version),
-    streamer_binaries._ubuntu_versions_with_hw_encoders)
+    streamer_binaries._ubuntu_versions_with_hw_encoders))
 
 BINARIES_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
