@@ -41,5 +41,10 @@ setuptools.setup(
   package_data={
       # Only add the corresponding platform specific binaries to the wheel.
       streamer_binaries.__name__: platform_binaries,
-  }
+  },
+  install_requires=[
+      # This is only used for Linux, and only supports Linux, but can be
+      # installed on all platforms and won't crash if imported or run.
+      'distro',
+  ],
 )

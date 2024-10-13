@@ -30,10 +30,11 @@ import tempfile
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer import __version__
+from streamer import autodetect
+from streamer import min_versions
 from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
-from streamer import autodetect
 from streamer.input_configuration import InputConfig, InputType, MediaType, Input
 from streamer.node_base import NodeBase, ProcessStatus
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
@@ -134,16 +135,17 @@ class ControllerNode(object):
               exact_match=True,
               addendum='Install with: {}'.format(pip_command))
       else:
-        # Check that ffmpeg version is 4.1 or above.
-        _check_command_version('FFmpeg', ['ffmpeg', '-version'], (4, 1))
+        # Check the ffmpeg version.
+        _check_command_version('FFmpeg', ['ffmpeg', '-version'],
+                               min_versions.FFMPEG)
 
-        # Check that ffprobe version (used for autodetect features) is 4.1 or
-        # above.
-        _check_command_version('ffprobe', ['ffprobe', '-version'], (4, 1))
+        # Check the ffprobe version (used for autodetect features).
+        _check_command_version('ffprobe', ['ffprobe', '-version'],
+                               min_versions.FFMPEG)
 
-        # Check that Shaka Packager version is 2.6.0 or above.
+        # Check the Shaka Packager version.
         _check_command_version('Shaka Packager', ['packager', '-version'],
-                               (2, 6, 1))
+                               min_versions.PACKAGER)
 
       if bucket_url:
         # Check that the Google Cloud SDK is at least v212, which introduced
