@@ -43,6 +43,6 @@ packager = os.path.join(_dir_path, 'packager-{}-{}'.format(_os, _cpu))
 if _os == 'linux':
   if distro.id() == 'ubuntu':
     if distro.version() in _ubuntu_versions_with_hw_encoders:
-      suffix = '-ubuntu-{}'.format(distro.version())
+      suffix = '-ubuntu-' + distro.version()
       ffmpeg += suffix
       ffprobe += suffix
