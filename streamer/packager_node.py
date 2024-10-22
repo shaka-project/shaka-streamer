@@ -183,7 +183,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       args += [
           # Generate DASH manifest file.
           '--mpd_output',
-          os.path.join(self.output_location, self._pipeline_config.dash_output),
+          build_path(self.output_location, self._pipeline_config.dash_output),
       ]
     if ManifestFormat.HLS in self._pipeline_config.manifest_format:
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
@@ -197,7 +197,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       args += [
           # Generate HLS playlist file(s).
           '--hls_master_playlist_output',
-          os.path.join(self.output_location, self._pipeline_config.hls_output),
+          build_path(self.output_location, self._pipeline_config.hls_output),
       ]
     return args
 

@@ -96,11 +96,6 @@ def main():
     with open(args.bitrate_config) as f:
       bitrate_config_dict = yaml.safe_load(f)
 
-  if args.cloud_url:
-    if (not args.cloud_url.startswith('gs://') and
-        not args.cloud_url.startswith('s3://')):
-      parser.error('Invalid cloud URL! Only gs:// and s3:// URLs are supported')
-
   try:
     with controller.start(args.output, input_config_dict, pipeline_config_dict,
                           bitrate_config_dict, args.cloud_url,
@@ -114,8 +109,7 @@ def main():
 
         time.sleep(1)
   except (streamer.controller_node.VersionError,
-          streamer.configuration.ConfigError,
-          streamer.cloud_node.CloudAccessError) as e:
+          streamer.configuration.ConfigError) as e:
     # These are common errors meant to give the user specific, helpful
     # information.  Format these errors in a relatively friendly way, with no
     # backtrace or other Python-specific information.

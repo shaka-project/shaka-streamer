@@ -32,7 +32,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer import __version__
 from streamer import autodetect
 from streamer import min_versions
-from streamer.cloud_node import CloudNode
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
 from streamer.input_configuration import InputConfig, InputType, MediaType, Input
@@ -42,6 +41,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
+from streamer.proxy_node import ProxyNode
 import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
@@ -147,21 +147,6 @@ class ControllerNode(object):
         _check_command_version('Shaka Packager', ['packager', '-version'],
                                min_versions.PACKAGER)
 
-      if bucket_url:
-        # Check that the Google Cloud SDK is at least v212, which introduced
-        # gsutil 4.33 with an important rsync bug fix.
-        # https://cloud.google.com/sdk/docs/release-notes
-        # https://github.com/GoogleCloudPlatform/gsutil/blob/master/CHANGES.md
-        # This is only required if the user asked for upload to cloud storage.
-        _check_command_version('Google Cloud SDK', ['gcloud', '--version'],
-                               (212, 0, 0))
-
-
-    if bucket_url:
-      # If using cloud storage, make sure the user is logged in and can access
-      # the destination, independent of the version check above.
-      CloudNode.check_access(bucket_url)
-
     self.hermetic_ffmpeg: Optional[str] = None
     self.hermetic_packager: Optional[str] = None
     if use_hermetic:
@@ -181,27 +166,35 @@ class ControllerNode(object):
     self._input_config = InputConfig(input_config_dict)
     self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
-    if not is_url(output_location):
-      # Check if the directory for outputted Packager files exists, and if it
-      # does, delete it and remake a new one.
-      if os.path.exists(output_location):
-        shutil.rmtree(output_location)
-      os.mkdir(output_location)
-    else:
+    if bucket_url is not None:
       # Check some restrictions and other details on HTTP output.
+      if not ProxyNode.is_understood(bucket_url):
+        url_prefixes = [
+            protocol + '://' for protocol in ProxyNode.ALL_SUPPORTED_PROTOCOLS]
+        raise RuntimeError(
+            'Invalid cloud URL!  Only these are supported: ' +
+            ', '.join(url_prefixes))
+
+      if not ProxyNode.is_supported(bucket_url):
+        raise RuntimeError('Missing libraries for cloud URL: ' + bucket_url)
+
       if not self._pipeline_config.segment_per_file:
         raise RuntimeError(
             'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
             'must be set to True!')
 
-      if bucket_url:
-        raise RuntimeError(
-            'Cloud bucket upload is incompatible with HTTP PUT support.')
+      upload_proxy = ProxyNode.create(bucket_url)
+      upload_proxy.start()
 
-      if self._input_config.multiperiod_inputs_list:
-        # TODO: Edit Multiperiod input list implementation to support HTTP outputs
-        raise RuntimeError(
-            'Multiperiod input list support is incompatible with HTTP outputs.')
+      # All the outputs now should be sent to the proxy server instead.
+      output_location = upload_proxy.server_location
+      self._nodes.append(upload_proxy)
+    else:
+      # Check if the directory for outputted Packager files exists, and if it
+      # does, delete it and remake a new one.
+      if os.path.exists(output_location):
+        shutil.rmtree(output_location)
+      os.mkdir(output_location)
 
     if self._pipeline_config.low_latency_dash_mode:
       # Check some restrictions on LL-DASH packaging.
@@ -214,16 +207,16 @@ class ControllerNode(object):
         raise RuntimeError(
             'For low_latency_dash_mode, the utc_timings must be set.')
 
-    # Note that we remove the trailing slash from the output location, because
-    # otherwise GCS would create a subdirectory whose name is "".
-    output_location = output_location.rstrip('/')
-
     if self._input_config.inputs:
       # InputConfig contains inputs only.
       self._append_nodes_for_inputs_list(self._input_config.inputs,
                                          output_location)
     else:
       # InputConfig contains multiperiod_inputs_list only.
+      if bucket_url:
+        raise RuntimeError(
+            'Direct cloud upload is incompatible with multiperiod support.')
+
       # Create one Transcoder node and one Packager node for each period.
       for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
         sub_dir_name = 'period_' + str(i + 1)
@@ -237,17 +230,6 @@ class ControllerNode(object):
           self._pipeline_config,
           packager_nodes,
           output_location))
-
-    if bucket_url:
-      cloud_temp_dir = os.path.join(self._temp_dir, 'cloud')
-      os.mkdir(cloud_temp_dir)
-
-      packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
-      self._nodes.append(CloudNode(output_location,
-                                   bucket_url,
-                                   cloud_temp_dir,
-                                   packager_nodes,
-                                   self.is_vod()))
 
     for node in self._nodes:
       node.start()
