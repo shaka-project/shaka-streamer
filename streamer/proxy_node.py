@@ -243,13 +243,13 @@ class HTTPUploadBase(ThreadedNodeBase):
         lambda *args, **kwargs: self.create_handler(*args, **kwargs))
 
     # By specifying port 0, a random unused port will be chosen for the server.
-    self.server = ThreadingHTTPServer(('localhost', 0), handler_factory)
-
-    self.server_location = 'http://' + self.server.server_name + \
-                           ':' + str(self.server.server_port)
-
-    self.server_thread = threading.Thread(name=self.server_location,
-                                          target=self.server.serve_forever)
+    self.server: Optional[ThreadingHTTPServer] = ThreadingHTTPServer(
+        ('localhost', 0), handler_factory)
+    self.server_location: str = (
+        'http://' + self.server.server_name +
+        ':' + str(self.server.server_port))
+    self.server_thread: Optional[threading.Thread] = threading.Thread(
+        name=self.server_location, target=self.server.serve_forever)
 
   @abc.abstractmethod
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
@@ -257,12 +257,17 @@ class HTTPUploadBase(ThreadedNodeBase):
     pass
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
-    self.server.shutdown()
-    self.server_thread.join()
+    if self.server:
+      self.server.shutdown()
+      self.server = None
+    if self.server_thread:
+      self.server_thread.join()
+      self.server_thread = None
     return super().stop(status)
 
   def start(self) -> None:
-    self.server_thread.start()
+    if self.server_thread:
+      self.server_thread.start()
     return super().start()
 
   def check_status(self) -> ProcessStatus:
