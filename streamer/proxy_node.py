@@ -233,6 +233,9 @@ class HTTPUploadBase(ThreadedNodeBase):
 
   The local HTTP server at `self.server_location` can only ingest PUT requests.
   """
+  server: Optional[ThreadingHTTPServer] = None
+  server_location: str = ''
+  server_thread: Optional[threading.Thread] = None
 
   def __init__(self) -> None:
     super().__init__(thread_name=self.__class__.__name__,
@@ -243,12 +246,12 @@ class HTTPUploadBase(ThreadedNodeBase):
         lambda *args, **kwargs: self.create_handler(*args, **kwargs))
 
     # By specifying port 0, a random unused port will be chosen for the server.
-    self.server: Optional[ThreadingHTTPServer] = ThreadingHTTPServer(
+    self.server = ThreadingHTTPServer(
         ('localhost', 0), handler_factory)
-    self.server_location: str = (
+    self.server_location = (
         'http://' + self.server.server_name +
         ':' + str(self.server.server_port))
-    self.server_thread: Optional[threading.Thread] = threading.Thread(
+    self.server_thread = threading.Thread(
         name=self.server_location, target=self.server.serve_forever)
 
   @abc.abstractmethod
