@@ -251,8 +251,6 @@ class HTTPUploadBase(ThreadedNodeBase):
     self.server_location = (
         'http://' + self.server.server_name +
         ':' + str(self.server.server_port))
-    self.server_thread = threading.Thread(
-        name=self.server_location, target=self.server.serve_forever)
 
   @abc.abstractmethod
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
@@ -269,7 +267,9 @@ class HTTPUploadBase(ThreadedNodeBase):
     return super().stop(status)
 
   def start(self) -> None:
-    if self.server_thread:
+    if self.server:
+      self.server_thread = threading.Thread(
+          name=self.server_location, target=self.server.serve_forever)
       self.server_thread.start()
     return super().start()
 
