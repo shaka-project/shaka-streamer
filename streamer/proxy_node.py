@@ -124,13 +124,14 @@ class GCSHandler(RequestHandlerBase):
   # Can't annotate the bucket here as a parameter if we don't have the library.
   def __init__(self, bucket: Any, base_path: str,
                *args, **kwargs) -> None:
-    # The HTTP server passes *args and *kwargs that we need to pass along, but
-    # don't otherwise care about.
-    super().__init__(*args, **kwargs)
-
     self._bucket: gcs.Bucket = bucket
     self._base_path: str = base_path
     self._chunked_output: Optional[IO] = None
+
+    # The HTTP server passes *args and *kwargs that we need to pass along, but
+    # don't otherwise care about.  This must happen last, or somehow our
+    # members never get set.
+    super().__init__(*args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
     full_path = self._base_path + path
@@ -161,10 +162,6 @@ class S3Handler(RequestHandlerBase):
   # Can't annotate the client here as a parameter if we don't have the library.
   def __init__(self, client: Any, bucket_name: str, base_path: str,
                *args, **kwargs) -> None:
-    # The HTTP server passes *args and *kwargs that we need to pass along, but
-    # don't otherwise care about.
-    super().__init__(*args, **kwargs)
-
     self._client: aws.Client = client
     self._bucket_name: str = bucket_name
     self._base_path: str = base_path
@@ -175,6 +172,11 @@ class S3Handler(RequestHandlerBase):
     self._next_part_number: int = 0
     self._part_info: list[dict[str,Any]] = []
     self._data: bytes = b''
+
+    # The HTTP server passes *args and *kwargs that we need to pass along, but
+    # don't otherwise care about.  This must happen last, or somehow our
+    # members never get set.
+    super().__init__(*args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
     full_path = self._base_path + path
