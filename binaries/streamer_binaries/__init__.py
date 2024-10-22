@@ -1,7 +1,8 @@
+import distro
 import os
 import platform
 
-__version__ = '0.5.2'
+__version__ = '0.6.0'
 
 
 # Get the directory path where this __init__.py file resides.
@@ -21,6 +22,12 @@ _cpu = {
   'aarch64': 'arm64',
 }[platform.machine()]
 
+# Specific versions of Ubuntu with special builds for hardware-encoding.
+_ubuntu_versions_with_hw_encoders = (
+  '22.04',
+  '24.04',
+)
+
 # Module level variables.
 ffmpeg = os.path.join(_dir_path, 'ffmpeg-{}-{}'.format(_os, _cpu))
 """The path to the installed FFmpeg binary."""
@@ -31,3 +38,11 @@ ffprobe = os.path.join(_dir_path, 'ffprobe-{}-{}'.format(_os, _cpu))
 packager = os.path.join(_dir_path, 'packager-{}-{}'.format(_os, _cpu))
 """The path to the installed Shaka Packager binary."""
 
+# Special overrides for Ubuntu builds with hardware encoding support.
+# These are not static binaries, and so they must be matched to the distro.
+if _os == 'linux':
+  if distro.id() == 'ubuntu':
+    if distro.version() in _ubuntu_versions_with_hw_encoders:
+      suffix = '-ubuntu-' + distro.version()
+      ffmpeg += suffix
+      ffprobe += suffix
