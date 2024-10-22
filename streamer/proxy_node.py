@@ -24,8 +24,11 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 
 
+# HTTP status codes
 HTTP_STATUS_CREATED = 201
 HTTP_STATUS_FAILED = 500
+
+# S3 has a minimum chunk size for multipart uploads.
 MIN_S3_CHUNK_SIZE = (5 << 20)  # 5MB
 
 
@@ -37,12 +40,14 @@ SUPPORTED_PROTOCOLS: list[str] = []
 ALL_SUPPORTED_PROTOCOLS: list[str] = ['gs', 's3']
 
 
+# Optional: To support GCS, import Google Cloud Storage library.
 try:
   import google.cloud.storage as gcs  # type: ignore
   SUPPORTED_PROTOCOLS.append('gs')
 except:
   pass
 
+# Optional: To support S3, import AWS's boto3 library.
 try:
   import boto3 as aws  # type: ignore
   SUPPORTED_PROTOCOLS.append('s3')
@@ -58,6 +63,8 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
     """Handle the PUT requests coming from Shaka Packager."""
     try:
       if self.headers.get('Transfer-Encoding', '').lower() == 'chunked':
+        # Here we parse the chunked transfer encoding and delegate to the
+        # subclass's start/chunk/end methods.
         self.start_chunked(self.path)
 
         while True:
@@ -73,18 +80,23 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
           if chunk_size == 0:
              break  # EOF
 
+        # All done.
         self.end_chunked()
       else:
+        # We have the whole file at once, with a known length.
         content_length = int(self.headers['Content-Length'])
-        if content_length != 0:
-          self.handle_non_chunked(self.path, content_length, self.rfile)
+        self.handle_non_chunked(self.path, content_length, self.rfile)
 
+      # Close the input and respond with "created".
       self.rfile.close()
       self.send_response(HTTP_STATUS_CREATED)
     except Exception as ex:
       print('Upload failure: ' + str(ex))
       traceback.print_exc()
       self.send_response(HTTP_STATUS_FAILED)
+
+    # If we don't call this at the end of the handler, Packager says we
+    # "returned nothing".
     self.end_headers()
 
   @abc.abstractmethod
@@ -109,10 +121,12 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
 
 
 class GCSHandler(RequestHandlerBase):
+  # Can't annotate the bucket here as a parameter if we don't have the library.
   def __init__(self, bucket: Any, base_path: str,
                *args, **kwargs) -> None:
-    self._bucket = bucket
-    self._base_path = base_path
+    self._bucket: gcs.Bucket = bucket
+    self._base_path: str = base_path
+    self._chunked_output: Optional[IO] = None
 
     # The HTTP server passes *args and *kwargs that we need to pass along, but
     # don't otherwise care about.
@@ -127,26 +141,30 @@ class GCSHandler(RequestHandlerBase):
   def start_chunked(self, path: str) -> None:
     full_path = self._base_path + path
     blob = self._bucket.blob(full_path)
-    self._chunk_file = blob.open('wb')
+    self._chunked_output = blob.open('wb')
 
   def handle_chunk(self, data: bytes) -> None:
-    self._chunk_file.write(data)
+    self._chunked_output.write(data)
 
   def end_chunked(self) -> None:
-    self._chunk_file.close()
-    self._chunk_file = None
+    self._chunked_output.close()
+    self._chunked_output = None
 
 
 class S3Handler(RequestHandlerBase):
+  # Can't annotate the client here as a parameter if we don't have the library.
   def __init__(self, client: Any, bucket_name: str, base_path: str,
                *args, **kwargs) -> None:
-    self._client = client
-    self._bucket_name = bucket_name
-    self._base_path = base_path
+    self._client: aws.Client = client
+    self._bucket_name: str = bucket_name
+    self._base_path: str = base_path
+
+    # Used for chunked uploads:
     self._upload_id: Optional[str] = None
     self._upload_path: Optional[str] = None
     self._next_part_number: int = 0
     self._part_info: list[dict[str,Any]] = []
+    self._data: bytes = b''
 
     # The HTTP server passes *args and *kwargs that we need to pass along, but
     # don't otherwise care about.
@@ -162,6 +180,7 @@ class S3Handler(RequestHandlerBase):
     response = self._client.create_multipart_upload(
         Bucket=self._bucket_name, Key=self._upload_path)
 
+    # This ID is sent to subsequent calls into the S3 client.
     self._upload_id = response['UploadId']
     self._part_info = []
     self._next_part_number = 1
@@ -180,6 +199,9 @@ class S3Handler(RequestHandlerBase):
           Bucket=self._bucket_name, Key=self._upload_path,
           PartNumber=self._next_part_number, UploadId=self._upload_id,
           Body=self._data)
+
+      # We have to collect this data, in this format, to finish the multipart
+      # upload later.
       self._part_info.append({
         'PartNumber': self._next_part_number,
         'ETag': response['ETag'],
@@ -188,10 +210,10 @@ class S3Handler(RequestHandlerBase):
       self._data = b''
 
   def end_chunked(self) -> None:
-    # Flush the buffer
+    # Flush the buffer.
     self.handle_chunk(b'', force=True)
 
-    # Complete the upload
+    # Complete the multipart upload.
     upload_info = { 'Parts': self._part_info }
     self._client.complete_multipart_upload(
         Bucket=self._bucket_name, Key=self._upload_path,
