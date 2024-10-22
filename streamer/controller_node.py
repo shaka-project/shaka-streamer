@@ -32,7 +32,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from streamer import __version__
 from streamer import autodetect
 from streamer import min_versions
-from streamer import proxy_node
 from streamer.bitrate_configuration import BitrateConfig, AudioChannelLayout, VideoResolution
 from streamer.external_command_node import ExternalCommandNode
 from streamer.input_configuration import InputConfig, InputType, MediaType, Input
@@ -42,7 +41,7 @@ from streamer.packager_node import PackagerNode
 from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, StreamingMode
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
-from streamer.proxy_node import HTTPUpload
+from streamer.proxy_node import ProxyNode
 import streamer.subprocessWindowsPatch  # side-effects only
 from streamer.util import is_url
 from streamer.pipe import Pipe
@@ -61,7 +60,6 @@ class ControllerNode(object):
         dir=global_temp_dir, prefix='shaka-live-', suffix='')
 
     self._nodes: List[NodeBase] = []
-    self.upload_proxy: Optional[HTTPUpload] = None
 
   def __del__(self) -> None:
     # Clean up named pipes by removing the temp directory we placed them in.
@@ -77,7 +75,7 @@ class ControllerNode(object):
             input_config_dict: Dict[str, Any],
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
-            extra_headers: Dict[str, str] = {},
+            bucket_url: Union[str, None] = None,
             check_deps: bool = True,
             use_hermetic: bool = True) -> 'ControllerNode':
     """Create and start all other nodes.
@@ -168,15 +166,22 @@ class ControllerNode(object):
     self._input_config = InputConfig(input_config_dict)
     self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
-    # Note that we remove the trailing slash from the output location, because
-    # otherwise GCS would create a subdirectory whose name is "".
-    output_location = output_location.rstrip('/')
-    if (proxy_node.is_supported_protocol(output_location)
-        and self._pipeline_config.use_local_proxy):
-      self.upload_proxy = self.get_upload_node(output_location, extra_headers)
+    if bucket_url is not None:
+      if not ProxyNode.is_understood(bucket_url):
+        url_prefixes = [
+            protocol + '://' for protocol in ProxyNode.ALL_SUPPORTED_PROTOCOLS]
+        raise RuntimeError(
+            'Invalid cloud URL!  Only these are supported: ' +
+            ', '.join(url_prefixes))
+
+      if not ProxyNode.is_supported(bucket_url):
+        raise RuntimeError('Missing libraries for cloud URL: ' + bucket_url)
+
+      upload_proxy = ProxyNode.create(bucket_url)
+
       # All the outputs now should be sent to the proxy server instead.
-      output_location = self.upload_proxy.server_location
-      self._nodes.append(self.upload_proxy)
+      output_location = upload_proxy.server_location
+      self._nodes.append(upload_proxy)
 
     if not is_url(output_location):
       # Check if the directory for outputted Packager files exists, and if it
@@ -208,6 +213,10 @@ class ControllerNode(object):
                                          output_location)
     else:
       # InputConfig contains multiperiod_inputs_list only.
+      if bucket_url:
+        raise RuntimeError(
+            'Direct cloud upload is incompatible with multiperiod support.')
+
       # Create one Transcoder node and one Packager node for each period.
       for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
         sub_dir_name = 'period_' + str(i + 1)
@@ -220,8 +229,7 @@ class ControllerNode(object):
         self._nodes.append(PeriodConcatNode(
           self._pipeline_config,
           packager_nodes,
-          output_location,
-          self.upload_proxy))
+          output_location))
 
     for node in self._nodes:
       node.start()
@@ -309,8 +317,7 @@ class ControllerNode(object):
     # and put that period in it.
     if period_dir:
       output_location = os.path.join(output_location, period_dir)
-      if not is_url(output_location):
-        os.mkdir(output_location)
+      os.mkdir(output_location)
 
     self._nodes.append(PackagerNode(self._pipeline_config,
                                     output_location,
@@ -324,15 +331,11 @@ class ControllerNode(object):
     If one node is errored, this returns Errored; otherwise if one node is running,
     this returns Running; this only returns Finished if all nodes are finished.
     If there are no nodes, this returns Finished.
-
-    :rtype: ProcessStatus
     """
     if not self._nodes:
       return ProcessStatus.Finished
 
-    value = max(node.check_status().value for node in self._nodes
-                # We don't check the the upload node.
-                if node != self.upload_proxy)
+    value = max(node.check_status().value for node in self._nodes)
     return ProcessStatus(value)
 
   def stop(self) -> None:
@@ -357,30 +360,6 @@ class ControllerNode(object):
     """
 
     return self._pipeline_config.low_latency_dash_mode
-
-  def get_upload_node(self, upload_location: str,
-                      extra_headers: Dict[str, str]) -> HTTPUpload:
-    """
-    Args:
-      upload_location (str): The location where media content will be uploaded.
-      extra_headers (Dict[str, str]): Extra headers to be added when
-        sending the PUT request to `upload_location`.
-
-    :rtype: HTTPUpload
-    :raises: `RuntimeError` if the protocol used in `upload_location` was not
-      recognized.
-    """
-
-    # We need to pass a temporary direcotry when working with multi-period input
-    # and using HTTP PUT for uploading.  This is so that the HTTPUpload
-    # keeps a copy of the manifests in the temporary directory so we can use them
-    # later to assemble the multi-period manifests.
-    upload_temp_dir = None
-    if self._input_config.multiperiod_inputs_list:
-      upload_temp_dir = os.path.join(self._temp_dir, 'multiperiod_manifests')
-      os.mkdir(upload_temp_dir)
-    return proxy_node.get_upload_node(upload_location, extra_headers,
-                                      upload_temp_dir)
 
 class VersionError(Exception):
   """A version error for one of Shaka Streamer's external dependencies.

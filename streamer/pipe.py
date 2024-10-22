@@ -24,7 +24,7 @@ from typing import Optional
 class Pipe:
   """A class that represents a pipe."""
 
-  def __init__(self):
+  def __init__(self) -> None:
     """Initializes a non-functioning pipe."""
     
     self._read_pipe_name = ''

@@ -320,11 +320,6 @@ class PipelineConfig(configuration.Base):
                                    default=EncryptionConfig({})).cast()
   """Encryption settings."""
 
-  use_local_proxy = configuration.Field(bool, default=True).cast()
-  """Whether to use shaka streamer's local proxy when uploading to a remote
-  storage.  This must be set to True when uploading to GCS or amazon S3 buckets.
-  """
-
   # TODO: Generalize this to low_latency_mode once LL-HLS is supported by Packager
   low_latency_dash_mode = configuration.Field(bool, default=False).cast()
   """If true, stream in low latency mode for DASH."""

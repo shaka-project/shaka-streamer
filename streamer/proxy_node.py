@@ -12,198 +12,172 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module that implements a simple proxy server for uploading packaged
-content to cloud storage providers (GCS and S3) and also any server that
-accepts PUT requests.
-"""
+"""A simple proxy server to upload to cloud stroage providers."""
 
-import os
-import json
+import abc
 import threading
+import traceback
 import urllib.parse
-from typing import Optional, Union, Dict
+from typing import IO, Optional
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from http.client import HTTPConnection, HTTPSConnection, CREATED, OK
 
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
-from streamer.util import RequestBodyAsFileIO
 
 
-# Protocols we have classes for to handle them.
-SUPPORTED_PROTOCOLS = ['http', 'https', 'gs', 's3']
+HTTP_STATUS_CREATED = 201
+HTTP_STATUS_FAILED = 500
+MAX_CHUNK_SIZE = (1 << 20)  # 1 MB
 
 
-class RequestHandler(BaseHTTPRequestHandler):
+# Supported protocols.  Built based on which optional modules are available for
+# cloud storage providers.
+SUPPORTED_PROTOCOLS: list[str] = []
+
+# All supported protocols.  Used to provide more useful error messages.
+ALL_SUPPORTED_PROTOCOLS: list[str] = ['gs', 's3']
+
+
+try:
+  import google.cloud.storage as gcs  # type: ignore
+  SUPPORTED_PROTOCOLS.append('gs')
+except:
+  pass
+
+try:
+  import boto3 as aws  # type: ignore
+  SUPPORTED_PROTOCOLS.append('s3')
+except:
+  pass
+
+
+class RequestHandlerBase(BaseHTTPRequestHandler):
   """A request handler that processes the PUT requests coming from
-  shaka packager and pushes them to the destination.
+  Shaka Packager and pushes them to the destination.
   """
+  def do_PUT(self) -> None:
+    """Handle the PUT requests coming from Shaka Packager."""
+    try:
+      if self.headers.get('Transfer-Encoding', '').lower() == 'chunked':
+        self.start_chunked(self.path)
 
-  def __init__(self, conn: Union[HTTPConnection, HTTPSConnection],
-               extra_headers: Dict[str, str], base_path: str, param_query: str,
-               temp_dir: Optional[str], *args, **kwargs):
+        while True:
+          # Parse the chunk size
+          chunk_size_line = self.rfile.readline().strip()
+          chunk_size = int(chunk_size_line, 16)
 
-    self._conn = conn
-    # Extra headers to add when sending the request to the host
-    # using `self._conn`.
-    self._extra_headers = extra_headers
-    # The base path that will be prepended to the path of the handled request
-    # before forwarding the request to the host using `self._conn`.
+          # Read the chunk and process it
+          if chunk_size != 0:
+            self.handle_chunk(self.rfile.read(chunk_size))
+          self.rfile.readline()  # Read the trailer
+
+          if chunk_size == 0:
+             break  # EOF
+
+        self.end_chunked()
+      else:
+        content_length = int(self.headers['Content-Length'])
+        if content_length != 0:
+          self.handle_non_chunked(self.path, content_length, self.rfile)
+
+      self.rfile.close()
+      self.send_response(HTTP_STATUS_CREATED)
+    except Exception as ex:
+      print('Upload failure: ' + str(ex))
+      traceback.print_exc()
+      self.send_response(HTTP_STATUS_FAILED)
+    self.end_headers()
+
+  @abc.abstractmethod
+  def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
+    """Write the non-chunked data stream from |file| to the destination."""
+    pass
+
+  @abc.abstractmethod
+  def start_chunked(self, path: str) -> None:
+    """Set up for a chunked transfer to the destination."""
+    pass
+
+  @abc.abstractmethod
+  def handle_chunk(self, data: bytes) -> None:
+    """Handle a single chunk of data."""
+    pass
+
+  @abc.abstractmethod
+  def end_chunked(self) -> None:
+    """End the chunked transfer."""
+    pass
+
+
+class GCSHandler(RequestHandlerBase):
+  def __init__(self, bucket: gcs.Bucket, base_path: str,
+               *args, **kwargs) -> None:
+    self._bucket = bucket
     self._base_path = base_path
-    # Parameters and query string to send in the url with each forwarded request.
-    self._params_and_querystring = param_query
-    self._temp_dir = temp_dir
-    # Call `super().__init__()` last because this call is what handles the
-    # actual request and we need the variables defined above to handle
-    # this request.
+
+    # The HTTP server passes *args and *kwargs that we need to pass along, but
+    # don't otherwise care about.
     super().__init__(*args, **kwargs)
 
-  def do_PUT(self):
-    """do_PUT will handle the PUT requests coming from shaka packager."""
+  def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
+    full_path = self._base_path + path
+    blob = self._bucket.blob(full_path)
+    blob.upload_from_file(file, size=length, retries=3)
 
-    headers = {}
-    # Use the same headers for requesting.
-    for k, v in self.headers.items():
-      if k.lower() != 'host':
-        headers[k] = v
-    # Add the extra headers, this might contain an access token for instance.
-    for k, v in self._extra_headers.items():
-      headers[k] = v
+  def start_chunked(self, path: str) -> None:
+    full_path = self._base_path + path
+    blob = self._bucket.blob(full_path)
+    self._chunk_file = blob.open('wb')
 
-    # Don't chunk by default, as the request body is already chunked
-    # or we have a content-length header which means we are not using
-    # chunked transfer-encoding.
-    encode_chunked = False
-    content_length = self.headers['Content-Length']
-    # Store the manifest files locally in `self._temp_dir`.
-    if self._temp_dir is not None and self.path.endswith(('.mpd', '.m3u8')):
-      body = self._write_body_and_get_file_io()
-      if content_length == None:
-        # We need to re-chunk it again as we wrote it as a whole
-        # to the filesystem.
-        encode_chunked = True
-    else:
-      content_length = content_length and int(content_length)
-      body = RequestBodyAsFileIO(self.rfile, content_length)
+  def handle_chunk(self, data: bytes) -> None:
+    self._chunk_file.write(data)
 
-    # The url will be the result of joining the base path we should
-    # send the request to with the path this request came to.
-    url = self._base_path + self.path
-    # Also include any parameters and the query string.
-    url += self._params_and_querystring
-
-    self._conn.request('PUT', url, body, headers, encode_chunked=encode_chunked)
-    res = self._conn.getresponse()
-    # Disable response logging.
-    self.log_request = lambda _: None
-    # Respond to Shaka Packager with the response we got.
-    self.send_response(res.status)
-    self.end_headers()
-    # self.wfile.write(res.read())
-    # The destination should send (201/CREATED), but some do also send (200/OK).
-    if res.status != CREATED and res.status != OK:
-      print('Unexpected status for the PUT request:'
-             ' {}, ErrMsg: {!r}'.format(res.status, res.read()))
-
-  def _write_body_and_get_file_io(self):
-    """A method that writes a request body to the filesystem
-    and returns a file io object opened for reading.
-    """
-
-    # Store the request body in `self._temp_dir`.
-    # Ignore the first '/' `self.path` as posixpath will think
-    # it points to the root direcotry.
-    path = os.path.join(self._temp_dir, self.path[1:])
-    # With `exist_ok=True`, any intermidiate direcotries are created if needed.
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'wb') as request_body_file:
-      if self.headers['Content-Length'] is not None:
-        content_length = int(self.headers['Content-Length'])
-        request_body_file.write(self.rfile.read(content_length))
-      else:
-        while True:
-          bytes_chunk_size = self.rfile.readline()
-          int_chunk_size = int(bytes_chunk_size.strip(), base=16)
-          request_body_file.write(self.rfile.read(int_chunk_size))
-          # An empty newline that we have to consume.
-          self.rfile.readline()
-          # Chunk of size zero indicates that we have reached the end.
-          if int_chunk_size == 0:
-            break
-    return open(path, 'rb')
+  def end_chunked(self) -> None:
+    self._chunk_file.close()
 
 
-class RequestHandlersFactory():
-  """A request handlers' factory that produces a RequestHandler whenever
-  its __call__ method is called.  It stores all the relevant data that the
-  instantiated request handler will need when sending a request to the host.
-  """
+class S3Handler(RequestHandlerBase):
+  def __init__(self, upload_location: str, *args, **kwargs) -> None:
+    self._upload_location = upload_location
 
-  def __init__(self, upload_location: str, initial_headers: Dict[str, str] = {},
-               temp_dir: Optional[str] = None, max_conns: int = 50):
+    # The HTTP server passes *args and *kwargs that we need to pass along, but
+    # don't otherwise care about.
+    super().__init__(*args, **kwargs)
 
-    url = urllib.parse.urlparse(upload_location)
-    if url.scheme not in ['http', 'https']:
-      # We can only instantiate HTTP/HTTPS connections.
-      raise RuntimeError("Unsupported scheme: {}", url.scheme)
-    self._ConnectionFactory = HTTPConnection if url.scheme == 'http' \
-                              else HTTPSConnection
-    self._destination_host = url.netloc
-    # Store the url path to prepend it to the path of each handled
-    # request before forwarding the request to `self._destination_host`.
-    self._base_path = url.path
-    # Store the parameters and the query string to send them in
-    # any request going to `self._destination_host`.
-    self._params_query = ';' + url.params if url.params else ''
-    self._params_query += '?' + url.query if url.query else ''
-    # These headers are going to be sent to `self._destination_host`
-    # with each request along with the headers that the request handler
-    # receives.  Note that these extra headers can possibely overwrite
-    # the original request headers that the request handler received.
-    self._extra_headers = initial_headers
-    self._temp_dir = temp_dir
-    self._max_conns = max_conns
+  def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
+    # FIXME: S3 upload
+    pass
 
-  def __call__(self, *args, **kwargs) -> RequestHandler:
-    """This magical method makes a RequestHandlersFactory instance
-    callable and returns a RequestHandler when called.
-    """
+  def start_chunked(self, path: str) -> None:
+    # FIXME: S3 upload
+    pass
 
-    connection = self._ConnectionFactory(self._destination_host)
-    return RequestHandler(connection, self._extra_headers,
-                          self._base_path, self._params_query, self._temp_dir,
-                          *args, **kwargs)
+  def handle_chunk(self, data: bytes) -> None:
+    # FIXME: S3 upload
+    pass
 
-  def update_headers(self, **kwargs):
-    self._extra_headers.update(**kwargs)
+  def end_chunked(self) -> None:
+    # FIXME: S3 upload
+    pass
 
 
-class HTTPUpload(ThreadedNodeBase):
-  """A ThreadedNodeBase subclass that launches a local threaded
-  HTTP server running at `self.server_location` and connected to
-  the host of `upload_location`.  The requests sent to this server
-  will be sent to the `upload_location` after adding `extra_headers`
-  to its headers.  if `temp_dir` argument was not None, DASH and HLS
-  manifests will be stored in it before sending them to `upload_location`.
+class HTTPUploadBase(ThreadedNodeBase):
+  """Runs an HTTP server at `self.server_location` to upload to cloud.
+
+  Subclasses handle upload to specific cloud storage providers.
 
   The local HTTP server at `self.server_location` can only ingest PUT requests.
   """
 
-  def __init__(self, upload_location: str, extra_headers: Dict[str, str],
-               temp_dir: Optional[str],
-               periodic_job_wait_time: float = 3600 * 24 * 365.25):
-
+  def __init__(self) -> None:
     super().__init__(thread_name=self.__class__.__name__,
                      continue_on_exception=True,
-                     sleep_time=periodic_job_wait_time)
+                     sleep_time=3)
 
-    self.temp_dir = temp_dir
-    self.RequestHandlersFactory = RequestHandlersFactory(upload_location,
-                                                         extra_headers,
-                                                         self.temp_dir)
+    handler_factory = (
+        lambda *args, **kwargs: self.create_handler(*args, **kwargs))
 
     # By specifying port 0, a random unused port will be chosen for the server.
-    self.server = ThreadingHTTPServer(('localhost', 0),
-                                      self.RequestHandlersFactory)
+    self.server = ThreadingHTTPServer(('localhost', 0), handler_factory)
 
     self.server_location = 'http://' + self.server.server_name + \
                            ':' + str(self.server.server_port)
@@ -211,155 +185,80 @@ class HTTPUpload(ThreadedNodeBase):
     self.server_thread = threading.Thread(name=self.server_location,
                                           target=self.server.serve_forever)
 
-  def stop(self, status: Optional[ProcessStatus]):
+  @abc.abstractmethod
+  def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
+    """Returns a cloud-provider-specific request handler to upload to cloud."""
+    pass
+
+  def stop(self, status: Optional[ProcessStatus]) -> None:
     self.server.shutdown()
     self.server_thread.join()
     return super().stop(status)
 
-  def start(self):
+  def start(self) -> None:
     self.server_thread.start()
     return super().start()
 
-  def _thread_single_pass(self):
-    return self.periodic_job()
+  def check_status(self) -> ProcessStatus:
+    # This makes sure this node will never prevent the shutdown of the whole
+    # system.  It will be stopped explicitly when ControllerNode tears down.
+    return ProcessStatus.Finished
 
-  def periodic_job(self) -> None:
-    # Ideally, we will have nothing to do periodically after the wait time
-    # which is a very long time by default.  However, this can be overridden
-    # by subclasses and populated with calls to all the functions that need
-    # to be executed periodically.
+  def _thread_single_pass(self) -> None:
+    # Nothing to do here.
     return
 
 
-class GCSUpload(HTTPUpload):
-  """The upload node used when PUT requesting to a GCS bucket.
+class GCSUpload(HTTPUploadBase):
+  """Upload to Google Cloud Storage."""
 
-  It will parse the `upload_location` argument with `gs://` protocol
-  and use the GCP REST API that uses HTTPS protocol instead.
-  """
+  def __init__(self, upload_location: str) -> None:
+    url = urllib.parse.urlparse(upload_location)
+    self._client = gcs.Client()
+    self._bucket = self._client.bucket(url.netloc)
+    # Strip both left and right slashes.  Otherwise, we get a blank folder name.
+    self._base_path = url.path.strip('/')
+    super().__init__()
 
-  def __init__(self, upload_location: str, extra_headers: Dict[str, str],
-               temp_dir: Optional[str]):
-    upload_location = 'https://storage.googleapis.com/' + upload_location[5:]
+  def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
+    """Returns a cloud-provider-specific request handler to upload to cloud."""
+    return GCSHandler(self._bucket, self._base_path, *args, **kwargs)
 
-    # Normalize the extra headers dictionary.
-    for key in list(extra_headers.copy()):
-      extra_headers[key.lower()] = extra_headers.pop(key)
 
-    # We don't have to get a refresh token.  Maybe there is an access token
-    # provided and we won't outlive it anyway, but that's the user's responsibility.
-    self.refresh_token = extra_headers.pop('refresh-token', None)
-    self.client_id = extra_headers.pop('client-id', None)
-    self.client_secret = extra_headers.pop('client-secret', None)
-    # The access token expires after 3600s in GCS.
-    refresh_period = int(extra_headers.pop('refresh-every', None) or 3300)
+class S3Upload(HTTPUploadBase):
+  """Upload to Amazon S3."""
 
-    super().__init__(upload_location, extra_headers, temp_dir, refresh_period)
+  def __init__(self, upload_location: str) -> None:
+    self._upload_location = upload_location
+    super().__init__()
 
-    # We yet don't have an access token, so we need to get a one.
-    self._refresh_access_token()
+  def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
+    """Returns a cloud-provider-specific request handler to upload to cloud."""
+    return S3Handler(self._upload_location, *args, **kwargs)
 
-  def _refresh_access_token(self):
-    if (self.refresh_token is not None
-        and self.client_id is not None
-        and self.client_secret is not None):
-      conn = HTTPSConnection('oauth2.googleapis.com')
-      req_body = {
-        'grant_type': 'refresh_token',
-        'refresh_token': self.refresh_token,
-        'client_id': self.client_id,
-        'client_secret': self.client_secret,
-      }
-      conn.request('POST', '/token', json.dumps(req_body))
-      res = conn.getresponse()
-      if res.status == OK:
-        res_body = json.loads(res.read())
-        # Update the Authorization header that the request factory has.
-        auth = res_body['token_type'] + ' ' + res_body['access_token']
-        self.RequestHandlersFactory.update_headers(Authorization=auth)
-      else:
-        print("Couldn't refresh access token. ErrCode: {}, ErrMst: {!r}".format(
-            res.status, res.read()))
+
+class ProxyNode(object):
+  SUPPORTED_PROTOCOLS = SUPPORTED_PROTOCOLS
+  ALL_SUPPORTED_PROTOCOLS = ALL_SUPPORTED_PROTOCOLS
+
+  @staticmethod
+  def create(upload_location: str) -> HTTPUploadBase:
+    """Creates an upload node based on the protocol used in |upload_location|."""
+    if upload_location.startswith("gs://"):
+      return GCSUpload(upload_location)
+    elif upload_location.startswith("s3://"):
+      return S3Upload(upload_location)
     else:
-      print("Non sufficient info provided to refresh the access token.")
-      print("To refresh access token periodically, 'refresh-token', 'client-id'"
-            " and 'client-secret' headers must be provided.")
-      print("After the current access token expires, the upload will fail.")
+      raise RuntimeError("Protocol of {} isn't supported".format(upload_location))
 
-  def periodic_job(self) -> None:
-    self._refresh_access_token()
+  @staticmethod
+  def is_understood(upload_location: str) -> bool:
+    """Is the URL understood, independent of libraries available?"""
+    url = urllib.parse.urlparse(upload_location)
+    return url.scheme in ALL_SUPPORTED_PROTOCOLS
 
-
-class S3Upload(HTTPUpload):
-  """The upload node used when PUT requesting to a S3 bucket.
-
-  It will parse the `upload_location` argument with `s3://` protocol
-  and use the AWS REST API that uses HTTPS protocol instead.
-  """
-
-  def __init__(self, upload_location: str, extra_headers: Dict[str, str],
-               temp_dir: Optional[str]):
-    raise NotImplementedError("S3 uploads aren't working yet.")
-    url_parts = upload_location[5:].split('/', 1)
-    bucket = url_parts[0]
-    path = '/' + url_parts[1] if len(url_parts) > 1 else ''
-    upload_location = 'https://' + bucket + '.s3.amazonaws.com' + path
-
-    # We don't have to get a refresh token.  Maybe there is an access token
-    # provided and we won't outlive it anyway, but that's the user's responsibility.
-    self.refresh_token = extra_headers.pop('refresh-token', None)
-    self.client_id = extra_headers.pop('client-id', None)
-    # The access token expires after 3600s in S3.
-    refresh_period = int(extra_headers.pop('refresh-every', None) or 3300)
-
-    super().__init__(upload_location, extra_headers, temp_dir, refresh_period)
-
-    # We yet don't have an access token, so we need to get a one.
-    self._refresh_access_token()
-
-  def _refresh_access_token(self):
-    if (self.refresh_token is not None and self.client_id is not None):
-      conn = HTTPSConnection('api.amazon.com')
-      req_body = {
-        'grant_type': 'refresh_token',
-        'refresh_token': self.refresh_token,
-        'client_id': self.client_id,
-      }
-      conn.request('POST', '/auth/o2/token', json.dumps(req_body))
-      res = conn.getresponse()
-      if res.status == OK:
-        res_body = json.loads(res.read())
-        # Update the Authorization header that the request factory has.
-        auth = res_body['token_type'] + ' ' + res_body['access_token']
-        self.RequestHandlersFactory.update_headers(Authorization=auth)
-      else:
-        print("Couldn't refresh access token. ErrCode: {}, ErrMst: {!r}".format(
-            res.status, res.read()))
-    else:
-      print("Non sufficient info provided to refresh the access token.")
-      print("To refresh access token periodically, 'refresh-token'"
-            " and 'client-id' headers must be provided.")
-      print("After the current access token expires, the upload will fail.")
-
-  def periodic_job(self) -> None:
-    self._refresh_access_token()
-
-
-def get_upload_node(upload_location: str, extra_headers: Dict[str, str],
-                    temp_dir: Optional[str] = None) -> HTTPUpload:
-  """Instantiates an appropriate HTTPUpload node based on the protocol
-  used in `upload_location` url.
-  """
-
-  if upload_location.startswith(("http://", "https://")):
-    return HTTPUpload(upload_location, extra_headers, temp_dir)
-  elif upload_location.startswith("gs://"):
-    return GCSUpload(upload_location, extra_headers, temp_dir)
-  elif upload_location.startswith("s3://"):
-    return S3Upload(upload_location, extra_headers, temp_dir)
-  else:
-    raise RuntimeError("Protocol of {} isn't supported".format(upload_location))
-
-def is_supported_protocol(upload_location: str) -> bool:
-  return bool([upload_location.startswith(protocol + '://') for
-               protocol in SUPPORTED_PROTOCOLS].count(True))
+  @staticmethod
+  def is_supported(upload_location: str) -> bool:
+    """Is the URL supported with the libraries available?"""
+    url = urllib.parse.urlparse(upload_location)
+    return url.scheme in SUPPORTED_PROTOCOLS
