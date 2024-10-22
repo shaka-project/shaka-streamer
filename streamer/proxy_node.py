@@ -124,13 +124,13 @@ class GCSHandler(RequestHandlerBase):
   # Can't annotate the bucket here as a parameter if we don't have the library.
   def __init__(self, bucket: Any, base_path: str,
                *args, **kwargs) -> None:
-    self._bucket: gcs.Bucket = bucket
-    self._base_path: str = base_path
-    self._chunked_output: Optional[IO] = None
-
     # The HTTP server passes *args and *kwargs that we need to pass along, but
     # don't otherwise care about.
     super().__init__(*args, **kwargs)
+
+    self._bucket: gcs.Bucket = bucket
+    self._base_path: str = base_path
+    self._chunked_output: Optional[IO] = None
 
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
     full_path = self._base_path + path
@@ -157,6 +157,10 @@ class S3Handler(RequestHandlerBase):
   # Can't annotate the client here as a parameter if we don't have the library.
   def __init__(self, client: Any, bucket_name: str, base_path: str,
                *args, **kwargs) -> None:
+    # The HTTP server passes *args and *kwargs that we need to pass along, but
+    # don't otherwise care about.
+    super().__init__(*args, **kwargs)
+
     self._client: aws.Client = client
     self._bucket_name: str = bucket_name
     self._base_path: str = base_path
@@ -167,10 +171,6 @@ class S3Handler(RequestHandlerBase):
     self._next_part_number: int = 0
     self._part_info: list[dict[str,Any]] = []
     self._data: bytes = b''
-
-    # The HTTP server passes *args and *kwargs that we need to pass along, but
-    # don't otherwise care about.
-    super().__init__(*args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
     full_path = self._base_path + path
@@ -287,12 +287,13 @@ class GCSUpload(HTTPUploadBase):
   """Upload to Google Cloud Storage."""
 
   def __init__(self, upload_location: str) -> None:
+    super().__init__()
+
     url = urllib.parse.urlparse(upload_location)
     self._client = gcs.Client()
     self._bucket = self._client.bucket(url.netloc)
     # Strip both left and right slashes.  Otherwise, we get a blank folder name.
     self._base_path = url.path.strip('/')
-    super().__init__()
 
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
     """Returns a cloud-provider-specific request handler to upload to cloud."""
@@ -303,12 +304,13 @@ class S3Upload(HTTPUploadBase):
   """Upload to Amazon S3."""
 
   def __init__(self, upload_location: str) -> None:
+    super().__init__()
+
     url = urllib.parse.urlparse(upload_location)
     self._client = aws.client('s3')
     self._bucket_name = url.netloc
     # Strip both left and right slashes.  Otherwise, we get a blank folder name.
     self._base_path = url.path.strip('/')
-    super().__init__()
 
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
     """Returns a cloud-provider-specific request handler to upload to cloud."""
