@@ -144,9 +144,11 @@ class GCSHandler(RequestHandlerBase):
     self._chunked_output = blob.open('wb')
 
   def handle_chunk(self, data: bytes) -> None:
+    assert self._chunked_output is not None
     self._chunked_output.write(data)
 
   def end_chunked(self) -> None:
+    assert self._chunked_output is not None
     self._chunked_output.close()
     self._chunked_output = None
 
