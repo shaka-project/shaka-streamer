@@ -160,14 +160,16 @@ class ThreadedNodeBase(NodeBase):
   The thread repeats some callback in a background thread.
   """
 
+  _thread: Optional[threading.Thread]
+
   def __init__(self, thread_name: str, continue_on_exception: bool, sleep_time: float):
     super().__init__()
     self._status = ProcessStatus.Finished
     self._thread_name = thread_name
+    self._thread = None
     self._continue_on_exception = continue_on_exception
     self._sleep_time = sleep_time
     self._sleep_waker_event = threading.Event()
-    self._thread = threading.Thread(target=self._thread_main, name=thread_name)
 
   def _thread_main(self) -> None:
     while self._status == ProcessStatus.Running:
@@ -201,13 +203,15 @@ class ThreadedNodeBase(NodeBase):
 
   def start(self) -> None:
     self._status = ProcessStatus.Running
+    self._thread = threading.Thread(target=self._thread_main, name=thread_name)
     self._thread.start()
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
     self._status = ProcessStatus.Finished
     # If the thread was sleeping, wake it up.
     self._sleep_waker_event.set()
-    self._thread.join()
+    if self._thread:
+      self._thread.join()
 
   def check_status(self) -> ProcessStatus:
     return self._status

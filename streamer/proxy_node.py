@@ -242,6 +242,12 @@ class HTTPUploadBase(ThreadedNodeBase):
                      continue_on_exception=True,
                      sleep_time=3)
 
+  @abc.abstractmethod
+  def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
+    """Returns a cloud-provider-specific request handler to upload to cloud."""
+    pass
+
+  def start(self) -> None:
     handler_factory = (
         lambda *args, **kwargs: self.create_handler(*args, **kwargs))
 
@@ -252,10 +258,11 @@ class HTTPUploadBase(ThreadedNodeBase):
         'http://' + self.server.server_name +
         ':' + str(self.server.server_port))
 
-  @abc.abstractmethod
-  def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
-    """Returns a cloud-provider-specific request handler to upload to cloud."""
-    pass
+    self.server_thread = threading.Thread(
+        name=self.server_location, target=self.server.serve_forever)
+    self.server_thread.start()
+
+    return super().start()
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
     if self.server:
@@ -265,13 +272,6 @@ class HTTPUploadBase(ThreadedNodeBase):
       self.server_thread.join()
       self.server_thread = None
     return super().stop(status)
-
-  def start(self) -> None:
-    if self.server:
-      self.server_thread = threading.Thread(
-          name=self.server_location, target=self.server.serve_forever)
-      self.server_thread.start()
-    return super().start()
 
   def check_status(self) -> ProcessStatus:
     # This makes sure this node will never prevent the shutdown of the whole
