@@ -134,7 +134,8 @@ class GCSHandler(RequestHandlerBase):
     super().__init__(*args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
-    full_path = self._base_path + path
+    # No leading slashes, or we get a blank folder name.
+    full_path = (self._base_path + path).strip('/')
     blob = self._bucket.blob(full_path)
     blob.cache_control = 'no-cache'
 
@@ -142,7 +143,8 @@ class GCSHandler(RequestHandlerBase):
     blob.upload_from_file(file, size=length, retries=3)
 
   def start_chunked(self, path: str) -> None:
-    full_path = self._base_path + path
+    # No leading slashes, or we get a blank folder name.
+    full_path = (self._base_path + path).strip('/')
     blob = self._bucket.blob(full_path)
     blob.cache_control = 'no-cache'
 
@@ -179,13 +181,15 @@ class S3Handler(RequestHandlerBase):
     super().__init__(*args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
-    full_path = self._base_path + path
+    # No leading slashes, or we get a blank folder name.
+    full_path = (self._base_path + path).strip('/')
     # length is unused here.
     self._client.upload_fileobj(file, self._bucket_name, full_path,
                                 ExtraArgs={'CacheControl': 'no-cache'})
 
   def start_chunked(self, path: str) -> None:
-    self._upload_path = self._base_path + path
+    # No leading slashes, or we get a blank folder name.
+    self._upload_path = (self._base_path + path).strip('/')
     response = self._client.create_multipart_upload(
         Bucket=self._bucket_name, Key=self._upload_path,
         CacheControl='no-cache')
