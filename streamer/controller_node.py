@@ -184,6 +184,7 @@ class ControllerNode(object):
             'must be set to True!')
 
       upload_proxy = ProxyNode.create(bucket_url)
+      upload_proxy.start()
 
       # All the outputs now should be sent to the proxy server instead.
       output_location = upload_proxy.server_location

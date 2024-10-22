@@ -254,6 +254,10 @@ class HTTPUploadBase(ThreadedNodeBase):
     pass
 
   def start(self) -> None:
+    # Will be started early to get server location.
+    if self.server is not None:
+      return
+
     handler_factory = (
         lambda *args, **kwargs: self.create_handler(*args, **kwargs))
 
