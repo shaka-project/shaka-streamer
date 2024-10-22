@@ -18,7 +18,7 @@ import abc
 import threading
 import traceback
 import urllib.parse
-from typing import IO, Optional
+from typing import Any, IO, Optional
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
@@ -26,7 +26,7 @@ from streamer.node_base import ProcessStatus, ThreadedNodeBase
 
 HTTP_STATUS_CREATED = 201
 HTTP_STATUS_FAILED = 500
-MAX_CHUNK_SIZE = (1 << 20)  # 1 MB
+MIN_S3_CHUNK_SIZE = (5 << 20)  # 5MB
 
 
 # Supported protocols.  Built based on which optional modules are available for
@@ -109,7 +109,7 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
 
 
 class GCSHandler(RequestHandlerBase):
-  def __init__(self, bucket: gcs.Bucket, base_path: str,
+  def __init__(self, bucket: Any, base_path: str,
                *args, **kwargs) -> None:
     self._bucket = bucket
     self._base_path = base_path
@@ -121,6 +121,7 @@ class GCSHandler(RequestHandlerBase):
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
     full_path = self._base_path + path
     blob = self._bucket.blob(full_path)
+    # If you don't pass size=length, it tries to seek in the file, which fails.
     blob.upload_from_file(file, size=length, retries=3)
 
   def start_chunked(self, path: str) -> None:
@@ -133,31 +134,72 @@ class GCSHandler(RequestHandlerBase):
 
   def end_chunked(self) -> None:
     self._chunk_file.close()
+    self._chunk_file = None
 
 
 class S3Handler(RequestHandlerBase):
-  def __init__(self, upload_location: str, *args, **kwargs) -> None:
-    self._upload_location = upload_location
+  def __init__(self, client: Any, bucket_name: str, base_path: str,
+               *args, **kwargs) -> None:
+    self._client = client
+    self._bucket_name = bucket_name
+    self._base_path = base_path
+    self._upload_id: Optional[str] = None
+    self._upload_path: Optional[str] = None
+    self._next_part_number: int = 0
+    self._part_info: list[dict[str,Any]] = []
 
     # The HTTP server passes *args and *kwargs that we need to pass along, but
     # don't otherwise care about.
     super().__init__(*args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
-    # FIXME: S3 upload
-    pass
+    full_path = self._base_path + path
+    # length is unused here.
+    self._client.upload_fileobj(file, self._bucket_name, full_path)
 
   def start_chunked(self, path: str) -> None:
-    # FIXME: S3 upload
-    pass
+    self._upload_path = self._base_path + path
+    response = self._client.create_multipart_upload(
+        Bucket=self._bucket_name, Key=self._upload_path)
 
-  def handle_chunk(self, data: bytes) -> None:
-    # FIXME: S3 upload
-    pass
+    self._upload_id = response['UploadId']
+    self._part_info = []
+    self._next_part_number = 1
+
+    # Multi-part uploads for S3 can't have chunks smaller than 5MB.
+    # We accumulate data for chunks here.
+    self._data = b''
+
+  def handle_chunk(self, data: bytes, force: bool = False) -> None:
+    # Collect data until we hit the minimum chunk size.
+    self._data += data
+
+    data_len = len(self._data)
+    if data_len >= MIN_S3_CHUNK_SIZE or (data_len and force):
+      response = self._client.upload_part(
+          Bucket=self._bucket_name, Key=self._upload_path,
+          PartNumber=self._next_part_number, UploadId=self._upload_id,
+          Body=self._data)
+      self._part_info.append({
+        'PartNumber': self._next_part_number,
+        'ETag': response['ETag'],
+      })
+      self._next_part_number += 1
+      self._data = b''
 
   def end_chunked(self) -> None:
-    # FIXME: S3 upload
-    pass
+    # Flush the buffer
+    self.handle_chunk(b'', force=True)
+
+    # Complete the upload
+    upload_info = { 'Parts': self._part_info }
+    self._client.complete_multipart_upload(
+        Bucket=self._bucket_name, Key=self._upload_path,
+        UploadId=self._upload_id, MultipartUpload=upload_info)
+    self._upload_id = None
+    self._upload_path = None
+    self._next_part_number = 0
+    self._part_info = []
 
 
 class HTTPUploadBase(ThreadedNodeBase):
@@ -229,12 +271,17 @@ class S3Upload(HTTPUploadBase):
   """Upload to Amazon S3."""
 
   def __init__(self, upload_location: str) -> None:
-    self._upload_location = upload_location
+    url = urllib.parse.urlparse(upload_location)
+    self._client = aws.client('s3')
+    self._bucket_name = url.netloc
+    # Strip both left and right slashes.  Otherwise, we get a blank folder name.
+    self._base_path = url.path.strip('/')
     super().__init__()
 
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
     """Returns a cloud-provider-specific request handler to upload to cloud."""
-    return S3Handler(self._upload_location, *args, **kwargs)
+    return S3Handler(self._client, self._bucket_name, self._base_path,
+                     *args, **kwargs)
 
 
 class ProxyNode(object):
