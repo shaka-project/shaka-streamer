@@ -167,6 +167,7 @@ class ControllerNode(object):
     self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
     if bucket_url is not None:
+      # Check some restrictions and other details on HTTP output.
       if not ProxyNode.is_understood(bucket_url):
         url_prefixes = [
             protocol + '://' for protocol in ProxyNode.ALL_SUPPORTED_PROTOCOLS]
@@ -177,24 +178,22 @@ class ControllerNode(object):
       if not ProxyNode.is_supported(bucket_url):
         raise RuntimeError('Missing libraries for cloud URL: ' + bucket_url)
 
+      if not self._pipeline_config.segment_per_file:
+        raise RuntimeError(
+            'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
+            'must be set to True!')
+
       upload_proxy = ProxyNode.create(bucket_url)
 
       # All the outputs now should be sent to the proxy server instead.
       output_location = upload_proxy.server_location
       self._nodes.append(upload_proxy)
-
-    if not is_url(output_location):
+    else:
       # Check if the directory for outputted Packager files exists, and if it
       # does, delete it and remake a new one.
       if os.path.exists(output_location):
         shutil.rmtree(output_location)
       os.mkdir(output_location)
-    else:
-      # Check some restrictions and other details on HTTP output.
-      if not self._pipeline_config.segment_per_file:
-        raise RuntimeError(
-            'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
-            'must be set to True!')
 
     if self._pipeline_config.low_latency_dash_mode:
       # Check some restrictions on LL-DASH packaging.

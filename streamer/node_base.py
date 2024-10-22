@@ -203,7 +203,7 @@ class ThreadedNodeBase(NodeBase):
 
   def start(self) -> None:
     self._status = ProcessStatus.Running
-    self._thread = threading.Thread(target=self._thread_main, name=thread_name)
+    self._thread = threading.Thread(target=self._thread_main, name=self._thread_name)
     self._thread.start()
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
