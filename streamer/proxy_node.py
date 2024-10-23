@@ -67,14 +67,14 @@ class RateLimiter(object):
   """A rate limiter that tracks which files we have written to recently."""
 
   def __init__(self) -> None:
-    self._reset()
+    self._reset(time.time())
 
   def suppress(self, path) -> bool:
     """Returns true if you should skip this upload."""
 
-    now = self._now()
-    if self._last_check != now:
-      self._reset()
+    now = time.time()
+    if now > self._last_check + RATE_LIMITER_PERIOD_IN_SECONDS:
+      self._reset(now)
 
     if path in self._recent_files:
       return True  # skip
@@ -82,14 +82,13 @@ class RateLimiter(object):
     self._recent_files.add(path)
     return False  # upload
 
-  def _reset(self) -> None:
+  def _reset(self, now: float) -> None:
+    # These files are only valid for RATE_LIMITER_PERIOD_IN_SECONDS.
+    # After that, they get cleared.
     self._recent_files: set[str] = set()
-    self._last_check: int = self._now()
 
-  def _now(self) -> int:
-    """A timestamp used internally to track recency."""
-
-    return int(time.time() // RATE_LIMITER_PERIOD_IN_SECONDS)
+    # The timestamp of the last check; the start of the rate limiter period.
+    self._last_check: float = now
 
 
 class RequestHandlerBase(BaseHTTPRequestHandler):
