@@ -16,16 +16,19 @@
 
 import abc
 import threading
+import time
 import traceback
 import urllib.parse
-from typing import Any, IO, Optional
+
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from typing import Any, BinaryIO, Optional
 
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 
 
 # HTTP status codes
 HTTP_STATUS_CREATED = 201
+HTTP_STATUS_ACCEPTED = 202
 HTTP_STATUS_FAILED = 500
 
 # S3 has a minimum chunk size for multipart uploads.
@@ -38,6 +41,11 @@ SUPPORTED_PROTOCOLS: list[str] = []
 
 # All supported protocols.  Used to provide more useful error messages.
 ALL_SUPPORTED_PROTOCOLS: list[str] = ['gs', 's3']
+
+
+# Don't write the same file more than once per rate limiter period.
+# For live streams, this avoids HTTP 429 "Too many request" errors.
+RATE_LIMITER_PERIOD_IN_SECONDS = 2
 
 
 # Optional: To support GCS, import Google Cloud Storage library.
@@ -55,12 +63,56 @@ except:
   pass
 
 
+class RateLimiter(object):
+  """A rate limiter that tracks which files we have written to recently."""
+
+  def __init__(self) -> None:
+    self._reset(time.time())
+
+  def suppress(self, path) -> bool:
+    """Returns true if you should skip this upload."""
+
+    now = time.time()
+    if now > self._last_check + RATE_LIMITER_PERIOD_IN_SECONDS:
+      self._reset(now)
+
+    if path in self._recent_files:
+      return True  # skip
+
+    self._recent_files.add(path)
+    return False  # upload
+
+  def _reset(self, now: float) -> None:
+    # These files are only valid for RATE_LIMITER_PERIOD_IN_SECONDS.
+    # After that, they get cleared.
+    self._recent_files: set[str] = set()
+
+    # The timestamp of the last check; the start of the rate limiter period.
+    self._last_check: float = now
+
+
 class RequestHandlerBase(BaseHTTPRequestHandler):
   """A request handler that processes the PUT requests coming from
   Shaka Packager and pushes them to the destination.
   """
+  def __init__(self, rate_limiter: RateLimiter, *args, **kwargs):
+    self._rate_limiter: RateLimiter = rate_limiter
+
+    # The HTTP server passes *args and *kwargs that we need to pass along, but
+    # don't otherwise care about.  This must happen last, or somehow our
+    # members never get set.
+    super().__init__(*args, **kwargs)
+
   def do_PUT(self) -> None:
     """Handle the PUT requests coming from Shaka Packager."""
+
+    if self._rate_limiter.suppress(self.path):
+      # Skip this upload.
+      self.rfile.close()
+      self.send_response(HTTP_STATUS_ACCEPTED)
+      self.end_headers()
+      return
+
     try:
       if self.headers.get('Transfer-Encoding', '').lower() == 'chunked':
         # Here we parse the chunked transfer encoding and delegate to the
@@ -100,7 +152,8 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
     self.end_headers()
 
   @abc.abstractmethod
-  def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
+  def handle_non_chunked(self, path: str, length: int,
+                         file: BinaryIO) -> None:
     """Write the non-chunked data stream from |file| to the destination."""
     pass
 
@@ -123,17 +176,18 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
 class GCSHandler(RequestHandlerBase):
   # Can't annotate the bucket here as a parameter if we don't have the library.
   def __init__(self, bucket: Any, base_path: str,
-               *args, **kwargs) -> None:
+               rate_limiter: RateLimiter, *args, **kwargs) -> None:
     self._bucket: gcs.Bucket = bucket
     self._base_path: str = base_path
-    self._chunked_output: Optional[IO] = None
+    self._chunked_output: Optional[BinaryIO] = None
 
     # The HTTP server passes *args and *kwargs that we need to pass along, but
     # don't otherwise care about.  This must happen last, or somehow our
     # members never get set.
-    super().__init__(*args, **kwargs)
+    super().__init__(rate_limiter, *args, **kwargs)
 
-  def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
+  def handle_non_chunked(self, path: str, length: int,
+                         file: BinaryIO) -> None:
     # No leading slashes, or we get a blank folder name.
     full_path = (self._base_path + path).strip('/')
     blob = self._bucket.blob(full_path)
@@ -163,7 +217,7 @@ class GCSHandler(RequestHandlerBase):
 class S3Handler(RequestHandlerBase):
   # Can't annotate the client here as a parameter if we don't have the library.
   def __init__(self, client: Any, bucket_name: str, base_path: str,
-               *args, **kwargs) -> None:
+               rate_limiter: RateLimiter, *args, **kwargs) -> None:
     self._client: aws.Client = client
     self._bucket_name: str = bucket_name
     self._base_path: str = base_path
@@ -178,9 +232,10 @@ class S3Handler(RequestHandlerBase):
     # The HTTP server passes *args and *kwargs that we need to pass along, but
     # don't otherwise care about.  This must happen last, or somehow our
     # members never get set.
-    super().__init__(*args, **kwargs)
+    super().__init__(rate_limiter, *args, **kwargs)
 
-  def handle_non_chunked(self, path: str, length: int, file: IO) -> None:
+  def handle_non_chunked(self, path: str, length: int,
+                         file: BinaryIO) -> None:
     # No leading slashes, or we get a blank folder name.
     full_path = (self._base_path + path).strip('/')
     # length is unused here.
@@ -253,6 +308,7 @@ class HTTPUploadBase(ThreadedNodeBase):
     super().__init__(thread_name=self.__class__.__name__,
                      continue_on_exception=True,
                      sleep_time=3)
+    self._rate_limiter = RateLimiter()
 
   @abc.abstractmethod
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
@@ -313,7 +369,8 @@ class GCSUpload(HTTPUploadBase):
 
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
     """Returns a cloud-provider-specific request handler to upload to cloud."""
-    return GCSHandler(self._bucket, self._base_path, *args, **kwargs)
+    return GCSHandler(self._bucket, self._base_path,
+                      self._rate_limiter, *args, **kwargs)
 
 
 class S3Upload(HTTPUploadBase):
@@ -331,7 +388,7 @@ class S3Upload(HTTPUploadBase):
   def create_handler(self, *args, **kwargs) -> BaseHTTPRequestHandler:
     """Returns a cloud-provider-specific request handler to upload to cloud."""
     return S3Handler(self._client, self._bucket_name, self._base_path,
-                     *args, **kwargs)
+                     self._rate_limiter, *args, **kwargs)
 
 
 class ProxyNode(object):
