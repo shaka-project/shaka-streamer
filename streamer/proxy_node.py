@@ -21,7 +21,7 @@ import traceback
 import urllib.parse
 
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from typing import Any, BinaryIO, Optional
+from typing import Any, BinaryIO, Optional, Union
 
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
 
@@ -108,7 +108,7 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
 
   # NOTE: The default values here for log_request are taken from the base
   # class, and not a design decision of ours.
-  def log_request(self, code: str = '-', size: str = '-') -> None:
+  def log_request(self, code: Union[int, str] = '-', size: Union[int, str] = '-') -> None:
     """Override the request logging feature of the Python HTTP server."""
     try:
       code_int = int(code)
