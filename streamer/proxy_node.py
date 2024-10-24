@@ -103,6 +103,22 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
     # members never get set.
     super().__init__(*args, **kwargs)
 
+  # NOTE: The default values here for log_request are taken from the base
+  # class, and not a design decision of ours.
+  def log_request(self, code: str = '-', size: str = '-') -> None:
+    """Override the request logging feature of the Python HTTP server."""
+    try:
+      code_int = int(code)
+    except:
+      code_int = 0
+
+    if code_int >= 200 and code_int <= 299:
+      # Stub out log_request to avoid creating noise from the HTTP server when
+      # requests are successful.
+      return
+
+    return super().log_request(code, size)
+
   def do_PUT(self) -> None:
     """Handle the PUT requests coming from Shaka Packager."""
 
