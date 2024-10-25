@@ -60,6 +60,7 @@ except:
 # Optional: To support S3, import AWS's boto3 library.
 try:
   import boto3  # type: ignore
+  import botocore.config  # type: ignore
   SUPPORTED_PROTOCOLS.append('s3')
 except:
   pass
@@ -242,7 +243,8 @@ class GCSHandler(RequestHandlerBase):
     blob.cache_control = 'no-cache'
 
     # If you don't pass size=length, it tries to seek in the file, which fails.
-    blob.upload_from_file(file, size=length, retries=3)
+    blob.upload_from_file(file, size=length,
+                          retry=google.cloud.storage.retry.DEFAULT_RETRY)
 
   def start_chunked(self, path: str) -> None:
     # No leading slashes, or we get a blank folder name.
@@ -250,7 +252,8 @@ class GCSHandler(RequestHandlerBase):
     blob = self._bucket.blob(full_path)
     blob.cache_control = 'no-cache'
 
-    self._chunked_output = blob.open('wb')
+    self._chunked_output = blob.open(
+        'wb', retry=google.cloud.storage.retry.DEFAULT_RETRY)
 
   def handle_chunk(self, data: bytes) -> None:
     assert self._chunked_output is not None
@@ -266,7 +269,7 @@ class GCSHandler(RequestHandlerBase):
     full_path = (self._base_path + path).strip('/')
     blob = self._bucket.blob(full_path)
     try:
-      blob.delete()
+      blob.delete(retry=google.cloud.storage.retry.DEFAULT_RETRY)
     except google.api_core.exceptions.NotFound:
       # Some delete calls seem to throw "not found", but the files still get
       # deleted.  So ignore these and don't fail the request.
@@ -277,7 +280,7 @@ class S3Handler(RequestHandlerBase):
   # Can't annotate the client here as a parameter if we don't have the library.
   def __init__(self, client: Any, bucket_name: str, base_path: str,
                rate_limiter: RateLimiter, *args, **kwargs) -> None:
-    self._client: boto3.Client = client
+    self._client: boto3.client = client
     self._bucket_name: str = bucket_name
     self._base_path: str = base_path
 
@@ -443,7 +446,8 @@ class S3Upload(HTTPUploadBase):
     super().__init__()
 
     url = urllib.parse.urlparse(upload_location)
-    self._client = boto3.client('s3')
+    config = botocore.config.Config(retries = {'mode': 'standard'})
+    self._client = boto3.client('s3', config=config)
     self._bucket_name = url.netloc
     # Strip both left and right slashes.  Otherwise, we get a blank folder name.
     self._base_path = url.path.strip('/')
