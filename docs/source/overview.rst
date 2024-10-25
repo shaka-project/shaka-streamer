@@ -159,8 +159,7 @@ loop that input file indefinitely.
 
 If the ``-c`` option is given with a Google Cloud Storage URL, then an
 additional node called ``CloudNode`` is added after ``PackagerNode``. It runs a
-thread which watches the output of the packager and pushes updated files to the
-cloud.
+local webserver which takes the output of packager and pushes to cloud storage.
 
 The pipeline and the nodes in it are constructed by ``ControllerNode`` based on
 your config files. If you want to write your own front-end or interface

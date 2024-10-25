@@ -68,8 +68,7 @@ def main():
   parser.add_argument('-o', '--output',
                       default='output_files',
                       help='The output folder to write files to, or an HTTP ' +
-                           'or HTTPS URL where files will be PUT.' +
-                           'Used even if uploading to cloud storage.')
+                           'or HTTPS URL where files will be PUT.')
   parser.add_argument('--skip-deps-check',
                       action='store_true',
                       help='Skip checks for dependencies and their versions. ' +

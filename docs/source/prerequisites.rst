@@ -119,21 +119,29 @@ Cloud Storage (optional)
 ------------------------
 
 Shaka Streamer can push content directly to a Google Cloud Storage or Amazon S3
-bucket. To use this feature, the Google Cloud SDK is required.
-
-See https://cloud.google.com/sdk/install for details on installing the Google
-Cloud SDK on your platform.
+bucket. To use this feature, additional Python modules are required.
 
 
 Google Cloud Storage
 ~~~~~~~~~~~~~~~~~~~~
 
-If you haven’t already, you will need to initialize your gcloud environment and
-log in through your browser.
+First install the Python module if you haven't yet:
+
+.. code:: sh
+
+   python3 -m pip install google-cloud-storage
+
+To use the default authentication, you will need default application
+credentials installed.  On Linux, these live in
+``~/.config/gcloud/application_default_credentials.json``.
+
+The easiest way to install default credentials is through the Google Cloud SDK.
+See https://cloud.google.com/sdk/docs/install-sdk to install the SDK.  Then run:
 
 .. code:: sh
 
    gcloud init
+   gcloud auth application-default login
 
 Follow the instructions given to you by gcloud to initialize the environment
 and login.
@@ -142,8 +150,18 @@ and login.
 Amazon S3
 ~~~~~~~~~
 
+First install the Python module if you haven't yet:
+
+.. code:: sh
+
+   python3 -m pip install boto3
+
 To authenticate to Amazon S3, you can either add credentials to your `boto
 config file`_ or login interactively using the `AWS CLI`_.
+
+.. code:: sh
+
+   aws configure
 
 
 Test Dependencies (optional)
