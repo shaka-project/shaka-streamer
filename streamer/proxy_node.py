@@ -122,45 +122,56 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
 
     return super().log_request(code, size)
 
+  def _parse_chunked_transfer(self, suppress: bool) -> None:
+    # Here we parse the chunked transfer encoding and delegate to the
+    # subclass's start/chunk/end methods.  If |suppress|, we parse the input
+    # but don't do anything with it.
+    if not suppress:
+      self.start_chunked(self.path)
+
+    while True:
+      # Parse the chunk size
+      chunk_size_line = self.rfile.readline().strip()
+      chunk_size = int(chunk_size_line, 16)
+
+      # Read the chunk and process it
+      if chunk_size != 0:
+        data = self.rfile.read(chunk_size)
+        if not suppress:
+          self.handle_chunk(data)
+
+      self.rfile.readline()  # Read the trailer
+
+      if chunk_size == 0:
+         break  # EOF
+
+    # All done.
+    if not suppress:
+      self.end_chunked()
+
+  def _parse_non_chunked_transfer(self, suppress: bool) -> None:
+    # We have the whole file at once, with a known length.
+    content_length = int(self.headers['Content-Length'])
+
+    if suppress:
+      # If |suppress|, we read the input but don't do anything with it.
+      self.rfile.read(content_length)
+    else:
+      self.handle_non_chunked(self.path, content_length, self.rfile)
+
   def do_PUT(self) -> None:
     """Handle PUT requests coming from Shaka Packager."""
-
-    if self._rate_limiter.suppress(self.path):
-      # Skip this upload.
-      self.rfile.close()
-      self.send_response(HTTP_STATUS_ACCEPTED)
-      self.end_headers()
-      return
+    suppress = self._rate_limiter.suppress(self.path)
 
     try:
       if self.headers.get('Transfer-Encoding', '').lower() == 'chunked':
-        # Here we parse the chunked transfer encoding and delegate to the
-        # subclass's start/chunk/end methods.
-        self.start_chunked(self.path)
-
-        while True:
-          # Parse the chunk size
-          chunk_size_line = self.rfile.readline().strip()
-          chunk_size = int(chunk_size_line, 16)
-
-          # Read the chunk and process it
-          if chunk_size != 0:
-            self.handle_chunk(self.rfile.read(chunk_size))
-          self.rfile.readline()  # Read the trailer
-
-          if chunk_size == 0:
-             break  # EOF
-
-        # All done.
-        self.end_chunked()
+        self._parse_chunked_transfer(suppress)
       else:
-        # We have the whole file at once, with a known length.
-        content_length = int(self.headers['Content-Length'])
-        self.handle_non_chunked(self.path, content_length, self.rfile)
+        self._parse_non_chunked_transfer(suppress)
 
-      # Close the input and respond with "created".
+      # Close the input and respond.
       self.rfile.close()
-      self.send_response(HTTP_STATUS_CREATED)
+      self.send_response(HTTP_STATUS_ACCEPTED if suppress else HTTP_STATUS_CREATED)
     except Exception as ex:
       print('Upload failure: ' + str(ex))
       traceback.print_exc()
