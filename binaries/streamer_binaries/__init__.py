@@ -19,7 +19,8 @@ _os = {
 _cpu = {
   'x86_64': 'x64',  # Linux/Mac report this key
   'AMD64': 'x64',  # Windows reports this key
-  'aarch64': 'arm64',
+  'aarch64': 'arm64',  # Linux reports this key
+  'arm64': 'arm64',  # Mac reports this key
 }[platform.machine()]
 
 # Specific versions of Ubuntu with special builds for hardware-encoding.
