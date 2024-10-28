@@ -158,7 +158,7 @@ All input types are read directly by ``TranscoderNode``. If the input type is
 loop that input file indefinitely.
 
 If the ``-c`` option is given with a Google Cloud Storage URL, then an
-additional node called ``CloudNode`` is added after ``PackagerNode``. It runs a
+additional node called ``ProxyNode`` is added after ``PackagerNode``. It runs a
 local webserver which takes the output of packager and pushes to cloud storage.
 
 The pipeline and the nodes in it are constructed by ``ControllerNode`` based on
