@@ -61,10 +61,8 @@ jobs:
 
       - name: Install Python deps
         run: |
-          python3 -m pip install --upgrade pyyaml sphinx flask mypy==0.812 wheel
-          if [[ '${{ runner.os }}' == 'Windows' ]]; then
-            python3 -m pip install --upgrade pywin32
-          fi
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install -r optional_requirements.txt
 
       - name: Download binaries
         run: |

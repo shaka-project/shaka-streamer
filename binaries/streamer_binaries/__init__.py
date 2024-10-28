@@ -1,4 +1,3 @@
-import distro
 import os
 import platform
 
@@ -41,6 +40,8 @@ packager = os.path.join(_dir_path, 'packager-{}-{}'.format(_os, _cpu))
 # Special overrides for Ubuntu builds with hardware encoding support.
 # These are not static binaries, and so they must be matched to the distro.
 if _os == 'linux':
+  import distro
+
   if distro.id() == 'ubuntu':
     if distro.version() in _ubuntu_versions_with_hw_encoders:
       suffix = '-ubuntu-' + distro.version()

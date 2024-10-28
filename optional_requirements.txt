@@ -1,0 +1,6 @@
+flask>=3,<4
+mypy>=1,<2
+setuptools>=75
+sphinx>=7,<8
+twine>=5,<6
+wheel>=0.44,<1

@@ -44,6 +44,6 @@ setuptools.setup(
   },
   install_requires=[
       # This is only used for Linux, and only supports Linux.
-      'distro;platform_system=="Linux"',
+      'distro>=1.9,<2; platform_system == "Linux"',
   ],
 )
