@@ -229,7 +229,7 @@ class GCSHandler(RequestHandlerBase):
                rate_limiter: RateLimiter, *args, **kwargs) -> None:
     self._bucket: google.cloud.storage.Bucket = bucket
     self._base_path: str = base_path
-    self._chunked_output: Optional[Union[BinaryIO, BufferedIOBase]] = None
+    self._chunked_output: Optional[BinaryIO] = None
 
     # The HTTP server passes *args and *kwargs that we need to pass along, but
     # don't otherwise care about.  This must happen last, or somehow our
