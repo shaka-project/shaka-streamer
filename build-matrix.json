@@ -1,0 +1,49 @@
+{
+  "comment0": "The minimum supported version of Python is currently 3.9.",
+  "pythonVersions": [
+    "3.9",
+    "3.12",
+    "3.13"
+  ],
+
+  "comment1": "runners hosted by GitHub, always enabled",
+  "hosted": [
+    {
+      "os": "ubuntu-24.04",
+      "os_name": "linux",
+      "target_arch": "x64"
+    },
+    {
+      "comment": "Explicit macOS version 13 is required for explicit x64 CPU.",
+      "os": "macos-13",
+      "os_name": "osx",
+      "target_arch": "x64"
+    },
+    {
+      "os": "windows-latest",
+      "os_name": "win",
+      "target_arch": "x64"
+    }
+  ],
+
+  "comment2": "runners hosted by the owner, enabled by the ENABLE_SELF_HOSTED variable being set on the repo",
+  "selfHosted": [
+    {
+      "DISABLED": "Disabled because there is no Chrome build for arm64 Linux to run the test cases.  Need support for another browser through Karma.",
+      "os": "self-hosted-linux-arm64",
+      "os_name": "linux",
+      "target_arch": "arm64"
+    }
+  ],
+
+  "comment3": "runners hosted by GitHub, disabled for now",
+  "hostedDISABLED": [
+    {
+      "comment": "Latest macOS version is arm64 CPU.",
+      "DISABLED": "static-ffmpeg-binaries for macOS-arm64 are crashing right now.",
+      "os": "macos-latest",
+      "os_name": "osx",
+      "target_arch": "arm64"
+    }
+  ]
+}

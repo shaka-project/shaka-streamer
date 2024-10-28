@@ -7,9 +7,8 @@ name: Build and Test PR
 #
 # Can also be run manually for debugging purposes.
 on:
-  # TODO: re-enable pull_request trigger
-  #pull_request:
-  #  types: [opened, synchronize, reopened]
+  pull_request_target:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       ref:
@@ -20,44 +19,95 @@ defaults:
   run:
     shell: bash
 
+# If another instance of this workflow is started for the same PR, cancel the
+# old one.  If a PR is updated and a new test run is started, the old test run
+# will be cancelled automatically to conserve resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
+  # Configure the build matrix based on repo variables.  The list of objects in
+  # the build matrix contents can't be changed by conditionals, but it can be
+  # computed by another job and deserialized.  This uses
+  # vars.ENABLE_SELF_HOSTED to determine the build matrix, based on the
+  # metadata in build-matrix.json.
+  matrix_config:
+    runs-on: ubuntu-latest
+    outputs:
+      MATRIX: ${{ steps.configure.outputs.MATRIX }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: repo-src
+          ref: ${{ inputs.ref || github.event.pull_request.merge_commit_sha || github.event.push.head }}
+
+      - name: Configure Build Matrix
+        id: configure
+        shell: node {0}
+        run: |
+          const fs = require('fs');
+          const enableDebug = "${{ vars.ENABLE_DEBUG }}" != '';
+          const enableSelfHosted = "${{ vars.ENABLE_SELF_HOSTED }}" != '';
+
+          // Use ENABLE_SELF_HOSTED to decide what the build matrix below
+          // should include.
+          const {hosted, selfHosted, pythonVersions} = require("${{ github.workspace }}/repo-src/build-matrix.json");
+          const devices = enableSelfHosted ? hosted.concat(selfHosted) : hosted;
+
+          const matrix = [];
+          for (const device of devices) {
+            for (const version of pythonVersions) {
+              // Clone device, add "python" field, push onto the matrix.
+              matrix.push(Object.assign({}, device, {python_version: version}));
+            }
+          }
+
+          // Output a JSON object consumed by the build matrix below.
+          fs.appendFileSync(
+              process.env['GITHUB_OUTPUT'],
+              `MATRIX=${ JSON.stringify(matrix) }\n`);
+
+          // Output the debug flag directly.
+          fs.appendFileSync(
+              process.env['GITHUB_OUTPUT'],
+              `ENABLE_DEBUG=${ enableDebug }\n`);
+
+          // Log the outputs, for the sake of debugging this script.
+          console.log({enableDebug, enableSelfHosted, matrix});
+
   build_and_test:
+    needs: matrix_config
     strategy:
       # Let other matrix entries complete, so we have all results on failure
       # instead of just the first failure.
       fail-fast: false
       matrix:
-        # TODO: enable arm64
-        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        # Our minimum supported version of Python is currently 3.6.
-        python_version: ["3.6", "3.7", "3.8", "3.9"]
-        include:
-          - os: ubuntu-latest
-            os_name: linux
-            target_arch: x64
-          - os: macos-latest
-            os_name: osx
-            target_arch: x64
-          - os: windows-latest
-            os_name: win
-            target_arch: x64
+        include: ${{ fromJSON(needs.matrix_config.outputs.MATRIX) }}
 
     name: Build and test ${{ matrix.os_name }} ${{ matrix.target_arch }} Python ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.event.pull_request.merge_commit_sha || github.event.push.head }}
 
       - name: Set Python version
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
 
       - name: Debug Python version
         run: python3 --version
+
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt -y install \
+              libva2 libva-drm2 \
+              nodejs npm xvfb
 
       - name: Install Python deps
         run: |
@@ -69,7 +119,8 @@ jobs:
           # Fetch binaries locally instead of installing the release version of
           # the binary package.  This lets us test changes to the binary package
           # before it is released.
-          python3 binaries/build_wheels.py
+          # In case of network flake, try it three times.  This is arbitrary.
+          python3 binaries/build_wheels.py || python3 binaries/build_wheels.py || python3 binaries/build_wheels.py
           if [[ '${{ runner.os }}' == 'Windows' ]]; then
             echo "PYTHONPATH=$GITHUB_WORKSPACE\\binaries;$PYTHONPATH" >> $GITHUB_ENV
           else
@@ -91,6 +142,8 @@ jobs:
           # Use the "spec" reporter for clearer logs in GitHub Actions
           $WRAPPER python3 run_end_to_end_tests.py --reporters spec
 
-      #- name: Debug on failure
-      #  uses: mxschmitt/action-tmate@v3
-      #  if: ${{ failure() }}
+      - name: Debug on failure
+        uses: mxschmitt/action-tmate@v3.6
+        with:
+          limit-access-to-actor: true
+        if: failure() && vars.ENABLE_DEBUG != ''
