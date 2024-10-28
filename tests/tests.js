@@ -28,9 +28,16 @@ jasmineEnv.execute = () => {
   // all.
   const filterText = __karma__.config.filter || '';
   const filterRegExp = new RegExp(filterText);
+  const configSeed = parseInt(__karma__.config.seed);
+
+  // If the user gave a seed, use it, and set random = true.
+  const seed = isNaN(configSeed) ? undefined : configSeed;
+  const random = isNaN(configSeed) ? false : true;
 
   // Set jasmine config.
   jasmineEnv.configure({
+    random,
+    seed,
     specFilter: (spec) => spec.getFullName().includes(filterText) ||
                           filterRegExp.test(spec.getFullName()),
   });
