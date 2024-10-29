@@ -18,6 +18,11 @@ defaults:
   run:
     shell: bash
 
+# If another instance of this workflow is started, cancel the old one.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   build_docs:
     name: Build docs
