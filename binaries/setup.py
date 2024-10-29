@@ -29,6 +29,7 @@ setuptools.setup(
   description='A package containing FFmpeg, FFprobe, and Shaka Packager static builds.',
   long_description=('An auxiliary package that provides platform-specific'
                     ' binaries used by Shaka Streamer.'),
+  long_description_content_type='text/plain',
   url='https://github.com/shaka-project/shaka-streamer/tree/main/binaries',
   packages=[streamer_binaries.__name__,],
   classifiers=[

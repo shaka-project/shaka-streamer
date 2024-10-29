@@ -1,10 +1,12 @@
-## 0.5.1 (2021-10-14)
+# Changelog
+
+## [0.5.1](https://github.com/shaka-project/shaka-streamer/compare/v0.5.0...v0.5.1) (2021-10-14)
 
  - Require Shaka Packager v2.6.1+, to fix segfault in Linux binaries
    (https://github.com/shaka-project/shaka-packager/issues/996)
 
 
-## 0.5.0 (2021-10-01)
+## [0.5.0](https://github.com/shaka-project/shaka-streamer/compare/v0.4.0...v0.5.0) (2021-10-01)
 
  - Command-line argument style changed (dashes instead of underscores)
  - Multi period support for DASH
@@ -39,7 +41,7 @@
    (https://github.com/shaka-project/shaka-streamer/pull/95)
 
 
-## 0.4.0 (2021-08-26)
+## [0.4.0](https://github.com/shaka-project/shaka-streamer/compare/v0.3.0...v0.4.0) (2021-08-26)
 
  - Fix shutdown of cloud upload
  - Improve the formatting of minimum version errors
@@ -94,7 +96,7 @@
  - Fix accidental live-type DASH output in VOD mode
 
 
-## 0.3.0 (2019-10-18)
+## [0.3.0](https://github.com/shaka-project/shaka-streamer/compare/v0.2.0...v0.3.0) (2019-10-18)
 
  - Added autodetection of frame rate, resolution, interlacing, track numbers
  - Added support for custom resolutions and bitrates
@@ -125,7 +127,7 @@
    (https://github.com/shaka-project/shaka-streamer/issues/36)
 
 
-## 0.2.0 (2019-10-14)
+## [0.2.0](https://github.com/shaka-project/shaka-streamer/compare/v0.1.0...v0.2.0) (2019-10-14)
 
  - Comprehensive docs now on GitHub Pages: https://shaka-project.github.io/shaka-streamer/
    (https://github.com/shaka-project/shaka-streamer/issues/22)
