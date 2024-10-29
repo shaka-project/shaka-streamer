@@ -1,0 +1,67 @@
+# A workflow to publish the docs to GitHub Pages.
+name: Publish Docs
+
+# Runs on push to main.
+# Can also be run manually for debugging purposes.
+on:
+  push:
+    branches:
+      - main
+  # For manual debugging:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The ref to build docs from."
+        required: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build_docs:
+    name: Build docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.push.head }}
+
+      - name: Set Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      - name: Install Python deps
+        run: |
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install -r optional_requirements.txt
+
+      - name: Build docs
+        run: ./docs/build.sh
+
+      - name: Upload docs artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/
+
+  publish_docs:
+    name: Publish updated docs
+    needs: build_docs
+    runs-on: ubuntu-latest
+
+    # Grant GITHUB_TOKEN the permissions required to deploy to Pages
+    permissions:
+      pages: write
+      id-token: write
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
