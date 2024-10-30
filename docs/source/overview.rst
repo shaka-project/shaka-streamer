@@ -38,7 +38,7 @@ See also the more detailed list of :ref:`Features` below.
 Getting started
 ---------------
 
-Shaka Streamer requires `Python 3.6+`_.  Release versions of Shaka Streamer can
+Shaka Streamer requires `Python 3.9+`_.  Release versions of Shaka Streamer can
 be installed or upgraded through ``pip3`` with:
 
 .. code:: sh
@@ -167,9 +167,7 @@ the ``shaka-streamer`` script as an example of how to do this.  See also
 
 
 .. _config_files/: https://github.com/shaka-project/shaka-streamer/tree/main/config_files
-.. _issue #8: https://github.com/shaka-project/shaka-streamer/issues/8
 .. _issue #17: https://github.com/shaka-project/shaka-streamer/issues/17
-.. _issue #23: https://github.com/shaka-project/shaka-streamer/issues/23
-.. _Python 3.6+: https://www.python.org/downloads/
+.. _Python 3.9+: https://www.python.org/downloads/
 .. _Shaka Packager: https://github.com/shaka-project/shaka-packager
 .. _FFmpeg: https://ffmpeg.org/

@@ -246,7 +246,7 @@ class Field(Generic[FieldType]):
     # is something like "str" or "int" instead of "typing.List" or
     # "typing.Dict".
     if hasattr(typing, 'get_args'):
-      args = typing.get_args(type)  # type: ignore
+      args = typing.get_args(type)
     elif hasattr(type, '__args__'):
       # Before Python 3.8, you can use this undocumented attribute to get the
       # type parameters.  If this doesn't exist, you are probably dealing with a
@@ -256,9 +256,9 @@ class Field(Generic[FieldType]):
       args = ()
 
     underlying = Field.get_underlying_type(type)
-    if underlying in [dict, Dict]:
+    if underlying is dict:
       return cast(Tuple[Optional[Type], Optional[Type]], args)
-    if underlying in [list, List]:
+    if underlying is list:
       return (None, args[0])
     return (None, None)
 
@@ -272,11 +272,11 @@ class Field(Generic[FieldType]):
     if type is str:
       # Call it a string, not a "str".
       return 'string'
-    elif type in [list, List]:
+    elif type is list:
       # Mention the subtype.
       return 'list of {}'.format(
           Field.get_type_name_static(subtype, None, None))
-    elif type in [dict, Dict]:
+    elif type is dict:
       # Mention the subtype.
       return 'dictionary of {} to {}'.format(
           Field.get_type_name_static(keytype, None, None),
@@ -372,7 +372,7 @@ class Base(object):
 
     # For lists, check the type of the value itself, then check the subtype of
     # the list items.
-    if field.type in [list, List]:
+    if field.type is list:
       if not isinstance(value, list):
         raise WrongType(self.__class__, key, field)
 
@@ -389,7 +389,7 @@ class Base(object):
 
     # For dictionaries, check the type of the value itself, then check the
     # type of the dictionary keys, then the type of the dictionary values.
-    if field.type in [dict, Dict]:
+    if field.type is dict:
       if not isinstance(value, dict):
         raise WrongType(self.__class__, key, field)
 

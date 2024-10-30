@@ -41,6 +41,6 @@ setuptools.setup(
       'Operating System :: MacOS :: MacOS X',
       'Operating System :: Microsoft :: Windows',
   ],
-  # Python 3.6 tested in GitHub Actions CI
-  python_requires='>=3.6',
+  # Python 3.9+ tested in GitHub Actions CI
+  python_requires='>=3.9',
 )
