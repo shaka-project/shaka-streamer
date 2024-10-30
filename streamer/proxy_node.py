@@ -21,6 +21,7 @@ import traceback
 import urllib.parse
 
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from io import BufferedIOBase
 from typing import Any, BinaryIO, Optional, Union
 
 from streamer.node_base import ProcessStatus, ThreadedNodeBase
@@ -198,7 +199,7 @@ class RequestHandlerBase(BaseHTTPRequestHandler):
 
   @abc.abstractmethod
   def handle_non_chunked(self, path: str, length: int,
-                         file: BinaryIO) -> None:
+                         file: Union[BinaryIO, BufferedIOBase]) -> None:
     """Write the non-chunked data stream from |file| to the destination."""
     pass
 
@@ -236,7 +237,7 @@ class GCSHandler(RequestHandlerBase):
     super().__init__(rate_limiter, *args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int,
-                         file: BinaryIO) -> None:
+                         file: Union[BinaryIO, BufferedIOBase]) -> None:
     # No leading slashes, or we get a blank folder name.
     full_path = (self._base_path + path).strip('/')
     blob = self._bucket.blob(full_path)
@@ -297,7 +298,7 @@ class S3Handler(RequestHandlerBase):
     super().__init__(rate_limiter, *args, **kwargs)
 
   def handle_non_chunked(self, path: str, length: int,
-                         file: BinaryIO) -> None:
+                         file: Union[BinaryIO, BufferedIOBase]) -> None:
     # No leading slashes, or we get a blank folder name.
     full_path = (self._base_path + path).strip('/')
     # length is unused here.
