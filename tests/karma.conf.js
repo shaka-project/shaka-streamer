@@ -20,6 +20,7 @@ module.exports = function(config) {
     client: {
       captureConsole: true,
       filter: config.filter,
+      seed: config.seed,
     },
     frameworks: ['jasmine'],
     files: [
