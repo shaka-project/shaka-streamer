@@ -16,29 +16,56 @@
 Installing Prerequisites
 ========================
 
-Yaml Module (required for development only)
--------------------------------------------
+TL;DR
+-----
 
-We use the `Python "yaml" module`_ to parse config files.  If you install Shaka
-Streamer via ``pip3``, then this dependency will be installed for you
-automatically.  If you got Shaka Streamer source from GitHub, you will need to
-install the module separately.
-
-To install it on Ubuntu:
+If you installed Shaka Streamer via pip, you already have the necessary Python
+dependencies.  If you don't want to use your own FFmpeg and Shaka Packager,
+install our prebuilt binaries with:
 
 .. code:: sh
 
-  sudo apt -y install python3-yaml
+  pip3 install shaka-streamer-binaries
 
-This can also be installed via ``pip3`` on any platform:
+The rest of this document only matters for development setup if you plan to
+make changes to Shaka Streamer.
+
+
+Required runtime modules
+------------------------
+
+To install required modules via Ubuntu or Debian packages:
 
 .. code:: sh
 
-  # To install/upgrade globally (drop the "sudo" for Windows):
-  sudo pip3 install --upgrade pyyaml
+  sudo apt -y install python3-yaml python3-distro
 
-  # To install/upgrade per-user:
-  pip3 install --user --upgrade pyyaml
+
+For any platform, you can install them via pip:
+
+.. code:: sh
+
+  pip3 install -r requirements.txt
+
+
+Development modules
+-------------------
+
+To install development modules via Ubuntu or Debian packages:
+
+.. code:: sh
+
+  sudo apt -y install \
+      python3-flask python3-mypy python3-setuptools \
+      python3-sphinx python3-wheel
+
+
+For any platform, you can install them via pip:
+
+.. code:: sh
+
+  pip3 install -r optional_requirements.txt
+
 
 
 Shaka Streamer Binaries package (recommended)
@@ -167,31 +194,19 @@ config file`_ or login interactively using the `AWS CLI`_.
 Test Dependencies (optional)
 ----------------------------
 
-To run the end-to-end tests, you must install Flask and NPM. In Ubuntu 19.04+:
+To run the end-to-end tests, you must also install nodejs and NPM.
+
+To install these via Ubuntu or Debian packages:
 
 .. code:: sh
 
-  sudo apt -y install python3-flask nodejs npm
-  # Upgrade to a recent npm, which is not packaged:
-  sudo npm install -g npm
-
-Flask can also be installed via ``pip3`` on any platform:
-
-.. code:: sh
-
-  # To install/upgrade globally (drop the "sudo" for Windows):
-  sudo pip3 install --upgrade flask
-
-  # To install/upgrade per-user:
-  pip3 install --user --upgrade flask
-
+  sudo apt -y install nodejs npm
 
 To install Node.js and NPM on any other platform, you can try one of these:
 
 * https://github.com/nodesource/distributions
 * https://nodejs.org/en/download/
 
-.. _Python "yaml" module: https://pyyaml.org/
 .. _Shaka Packager: https://github.com/shaka-project/shaka-packager
 .. _FFmpeg: https://ffmpeg.org/
 .. _Homebrew: https://brew.sh/
