@@ -21,6 +21,7 @@ from . import input_configuration
 from . import node_base
 from . import pipeline_configuration
 
+from streamer.input_configuration import MediaType
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import EncryptionMode, PipelineConfig
 from streamer.util import is_url
@@ -126,7 +127,6 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         stdout=stdout)
 
   def _setup_stream(self, stream: OutputStream) -> str:
-
     dict = {
         'in': stream.ipc_pipe.read_end(),
         'stream': stream.type.value,
@@ -134,6 +134,9 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
 
     if stream.input.skip_encryption:
       dict['skip_encryption'] = str(stream.input.skip_encryption)
+
+    if stream.type == MediaType.AUDIO:
+      dict['hls_group_id'] = str(stream.codec.value)
 
     if stream.input.drm_label:
       dict['drm_label'] = stream.input.drm_label
