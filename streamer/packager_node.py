@@ -245,6 +245,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       '--protection_scheme',
       encryption.protection_scheme.value,
       '--clear_lead', str(encryption.clear_lead),
+      '--create_session_keys',
     ])
 
     if encryption.protection_systems:
