@@ -87,6 +87,12 @@ https://github.com/shaka-project/static-ffmpeg-binaries
 The static Shaka Packager builds are pulled from here:
 https://github.com/shaka-project/shaka-packager
 
+FFmpeg builds for Ubuntu require you to install vaapi packages:
+
+.. code:: sh
+
+  sudo apt -y install libva2 libva-drm2
+
 
 Shaka Packager (manual installation, not recommended)
 -----------------------------------------------------
