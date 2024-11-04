@@ -199,6 +199,11 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
           '--hls_master_playlist_output',
           build_path(self.output_location, self._pipeline_config.hls_output),
       ]
+
+    # Common arguments
+    args.extend([
+      '--use_dovi_supplemental_codecs',
+    ])
     return args
 
   def _setup_encryption_keys(self) -> List[str]:
