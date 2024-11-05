@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      patch: ${{ steps.release.outputs.patch }}
+
+    steps:
+      # Create/update release PR
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Make sure we create the PR against the correct branch.
+          target-branch: ${{ github.ref_name }}
+          # Use a special shaka-bot access token for releases.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          # See also settings in these files:
+          manifest-file: .release-please-manifest.json
+          config-file: .release-please-config.json
+
+  # The jobs below are all conditional on a release having been created by
+  # someone merging the release PR.  They all run in parallel.
+
+  pypi:
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.release_created
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      - name: Install Python deps
+        run: |
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install -r optional_requirements.txt
+
+      - name: Build modules
+        run: |
+          # Clean everything.  Doesn't matter in a workflow, but if you're
+          # running this locally...
+          rm -rf build dist binaries/dist
+          rm -rf *.egg-info binaries/*.egg-info
+          rm -f binaries/streamer_binaries/{ffmpeg-*,ffprobe-*,packager-*}
+          # Build everything.
+          python3 setup.py sdist bdist_wheel
+          python3 binaries/build_wheels.py
+          # Put all the build outputs into one folder for upload together.
+          cp binaries/dist/* dist/
+
+      - name: Check modules
+        run: |
+          python3 -m twine check --strict dist/*
+
+      - name: Attach modules to the release
+        uses: svenstaro/upload-release-action@84f3aed82331a2c0c665cf8e9707228f766aba9d
+        with:
+          repo_token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          tag: ${{ needs.release.outputs.tag_name }}
+          file: dist/*
+          file_glob: true
+          overwrite: true
+
+      # This uses PyPi's trusted publishing config.  It can see and verify that
+      # the publication request comes from this repo and this exact workflow,
+      # and this repo and workflow are allow-listed for publication without a
+      # token.
+      - name: Publish modules
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          attestations: true
