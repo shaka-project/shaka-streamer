@@ -41,6 +41,7 @@ class AudioCodec(enum.Enum):
   OPUS: str = 'opus'
   AC3: str = 'ac3'
   EAC3: str = 'eac3'
+  FLAC: str = 'flac'
 
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
@@ -60,7 +61,7 @@ class AudioCodec(enum.Enum):
   def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
     # TODO(#31): add support for configurable output format per-codec
-    if (self == AudioCodec.OPUS) or (self == AudioCodec.AAC) or (self == AudioCodec.AC3) or (self == AudioCodec.EAC3):
+    if self in {AudioCodec.OPUS, AudioCodec.AAC, AudioCodec.AC3, AudioCodec.EAC3, AudioCodec.FLAC}:
       return 'mp4'
     else:
       assert False, 'No mapping for output format for codec {}'.format(
@@ -154,6 +155,7 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
       'opus': '32k',
       'ac3': '96k',
       'eac3': '48k',
+      'flac': '705k',
     },
   }),
   'stereo': AudioChannelLayout({
@@ -163,6 +165,7 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
       'opus': '64k',
       'ac3': '192k',
       'eac3': '96k',
+      'flac': '1410k',
     },
   }),
   'surround': AudioChannelLayout({
@@ -172,6 +175,7 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
       'opus': '128k',
       'ac3': '384k',
       'eac3': '192k',
+      'flac': '4230K',
     },
   }),
 }
