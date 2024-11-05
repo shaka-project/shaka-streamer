@@ -1,4 +1,4 @@
-name: Build and Test PR
+name: Build and Test
 
 # Builds and tests on all combinations of OS and python version.
 # Also builds the docs.
@@ -13,7 +13,10 @@ on:
     inputs:
       ref:
         description: "The ref to build and test."
-        required: False
+        required: false
+  schedule:
+    # Run every night at midnight PST / 8am UTC, testing against the main branch.
+    - cron: '0 8 * * *'
 
 defaults:
   run:
