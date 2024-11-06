@@ -26,7 +26,7 @@ defaults:
 # old one.  If a PR is updated and a new test run is started, the old test run
 # will be cancelled automatically to conserve resources.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event.number || inputs.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: repo-src
-          ref: ${{ inputs.ref || github.event.pull_request.merge_commit_sha || github.event.push.head }}
+          ref: inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number))
 
       - name: Configure Build Matrix
         id: configure
@@ -95,7 +95,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || github.event.pull_request.merge_commit_sha || github.event.push.head }}
+          ref: inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number))
 
       - name: Set Python version
         uses: actions/setup-python@v5
