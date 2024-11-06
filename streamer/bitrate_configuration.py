@@ -175,7 +175,7 @@ DEFAULT_AUDIO_CHANNEL_LAYOUTS = {
       'opus': '128k',
       'ac3': '384k',
       'eac3': '192k',
-      'flac': '4230K',
+      'flac': '4230k',
     },
   }),
 }
