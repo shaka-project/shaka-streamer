@@ -51,11 +51,12 @@ PACKAGER_DL_PREFIX = 'https://github.com/shaka-project/shaka-packager/releases/d
 # The download links to each binary.  These download links aren't complete.
 # They are missing the platfrom-specific suffix and optional distro-specific
 # suffix (Linux only).
-FFMPEG_BINARIES_DL = [
+DISTRO_BINARIES_DL = [
     FFMPEG_DL_PREFIX + '/ffmpeg',
-    FFMPEG_DL_PREFIX + '/ffprobe',
 ]
-PACKAGER_BINARIES_DL = [
+# These don't have distro-specific suffixes on Linux.
+NON_DISTRO_BINARIES_DL = [
+    FFMPEG_DL_PREFIX + '/ffprobe',
     PACKAGER_DL_PREFIX + '/packager',
 ]
 # Important: wrap map() in list(), because map returns an iterator, and we need
@@ -123,15 +124,15 @@ def main():
 
     # Use the suffix specific to this platfrom to construct the full download
     # link for each binary.
-    for binary_dl in PACKAGER_BINARIES_DL:
+    for binary_dl in NON_DISTRO_BINARIES_DL:
       download_link = binary_dl + suffix
       binary_name = download_binary(download_url=download_link,
                                     download_dir=download_dir)
       binaries_to_include.append(binary_name)
 
-    # FFmpeg binaries are like packager binaries, except we have extra variants
-    # for Ubuntu Linux to support hardware encoding.
-    for binary_dl in FFMPEG_BINARIES_DL:
+    # FFmpeg binaries have extra variants for Ubuntu Linux to support hardware
+    # encoding.
+    for binary_dl in DISTRO_BINARIES_DL:
       download_link = binary_dl + suffix
       binary_name = download_binary(download_url=download_link,
                                     download_dir=download_dir)

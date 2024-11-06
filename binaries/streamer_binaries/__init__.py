@@ -47,4 +47,3 @@ if _os == 'linux':
     if distro.version() in _ubuntu_versions_with_hw_encoders:
       suffix = '-ubuntu-' + distro.version()
       ffmpeg += suffix
-      ffprobe += suffix
