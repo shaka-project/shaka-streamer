@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: repo-src
-          ref: inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number))
+          ref: ${{ inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number)) }}
 
       - name: Configure Build Matrix
         id: configure
@@ -95,7 +95,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number))
+          ref: ${{ inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number)) }}
 
       - name: Set Python version
         uses: actions/setup-python@v5
