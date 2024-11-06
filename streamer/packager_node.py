@@ -21,11 +21,12 @@ from . import input_configuration
 from . import node_base
 from . import pipeline_configuration
 
+from streamer.bitrate_configuration import AudioCodec
 from streamer.input_configuration import MediaType
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import EncryptionMode, PipelineConfig
 from streamer.util import is_url
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
 # Alias a few classes to avoid repeating namespaces later.
 ManifestFormat = pipeline_configuration.ManifestFormat
@@ -136,7 +137,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       dict['skip_encryption'] = str(stream.input.skip_encryption)
 
     if stream.type == MediaType.AUDIO:
-      dict['hls_group_id'] = str(stream.codec.value)
+      dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
 
     if stream.input.drm_label:
       dict['drm_label'] = stream.input.drm_label
