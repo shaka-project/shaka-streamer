@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/shaka-project/shaka-streamer/compare/v1.0.0...v1.0.1) (2024-11-06)
+
+
+### Bug Fixes
+
+* **binaries:** Bring PyPi package size under the limit ([#192](https://github.com/shaka-project/shaka-streamer/issues/192)) ([3de6706](https://github.com/shaka-project/shaka-streamer/commit/3de6706240d6059b270c18bc9e79804ccb172350))
+
 ## [1.0.0](https://github.com/shaka-project/shaka-streamer/compare/v0.5.1...v1.0.0) (2024-11-06)
 
 
