@@ -31,7 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || github.event.push.head }}
+          ref: ${{ inputs.ref || github.ref }}
 
       - name: Set Python version
         uses: actions/setup-python@v5
