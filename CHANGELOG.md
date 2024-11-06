@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.0.0](https://github.com/shaka-project/shaka-streamer/compare/v0.5.1...v1.0.0) (2024-11-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* Bump minimum Python version to 3.9 ([#171](https://github.com/shaka-project/shaka-streamer/issues/171))
+
+### Features
+
+* Add OPUS mp4 support ([#143](https://github.com/shaka-project/shaka-streamer/issues/143)) ([2f38022](https://github.com/shaka-project/shaka-streamer/commit/2f38022a2708dfd29e5c6f51cd7a34c1f8478004))
+* Add support for FLAC codec ([#187](https://github.com/shaka-project/shaka-streamer/issues/187)) ([2edfefe](https://github.com/shaka-project/shaka-streamer/commit/2edfefe43179d97ebe64d0c72ef3d43ce9499f0b))
+* Always use HLS session keys to improve player startup performance ([#181](https://github.com/shaka-project/shaka-streamer/issues/181)) ([dc56dee](https://github.com/shaka-project/shaka-streamer/commit/dc56dee91f32752667ce161604ade2f8553a739b))
+* Bump minimum Python version to 3.9 ([#171](https://github.com/shaka-project/shaka-streamer/issues/171)) ([6b4b761](https://github.com/shaka-project/shaka-streamer/commit/6b4b7610cf6c311048943b5b9461bc99755873fc))
+* **cloud:** Add cloud delete support ([#164](https://github.com/shaka-project/shaka-streamer/issues/164)) ([aa1f4e7](https://github.com/shaka-project/shaka-streamer/commit/aa1f4e793750573079a71bdacd11a64cf43d5730))
+* **cloud:** Upload through HTTP proxy node ([#103](https://github.com/shaka-project/shaka-streamer/issues/103)) ([20c2704](https://github.com/shaka-project/shaka-streamer/commit/20c2704deacb402e39640408ac6157e94a5f78ba)), closes [#47](https://github.com/shaka-project/shaka-streamer/issues/47)
+* Expand binary platforms and hardware encoding ([#161](https://github.com/shaka-project/shaka-streamer/issues/161)) ([0c4b529](https://github.com/shaka-project/shaka-streamer/commit/0c4b529d56555ad249246cd2a8c5ea935ca9edbe))
+* Use modern Dolby signaling instead of duplicate representations ([#182](https://github.com/shaka-project/shaka-streamer/issues/182)) ([db55cc6](https://github.com/shaka-project/shaka-streamer/commit/db55cc651ac85bca9757c1f1c34846e0e7820bc4))
+
+
+### Bug Fixes
+
+* **cloud:** Avoid rate limit issues on live streams ([#162](https://github.com/shaka-project/shaka-streamer/issues/162)) ([1231502](https://github.com/shaka-project/shaka-streamer/commit/1231502c068e15c6e10b856520d5fc891a5bcc20))
+* **cloud:** Fix write failures from Packager ([#167](https://github.com/shaka-project/shaka-streamer/issues/167)) ([791e39f](https://github.com/shaka-project/shaka-streamer/commit/791e39f0a9ecb12252eb6ed08155653f6614c5ab))
+* **cloud:** Quiet the HTTP server log ([#163](https://github.com/shaka-project/shaka-streamer/issues/163)) ([4170d21](https://github.com/shaka-project/shaka-streamer/commit/4170d218dc834f9b174019287320de64e596e54c))
+* **cloud:** Retry on all failures ([#165](https://github.com/shaka-project/shaka-streamer/issues/165)) ([7bb46d4](https://github.com/shaka-project/shaka-streamer/commit/7bb46d446ae645ab0fbe471bf59ff3091a87c6e7))
+* Fix frame-rate and resolution auto-detection edge case ([#129](https://github.com/shaka-project/shaka-streamer/issues/129)) ([f42188e](https://github.com/shaka-project/shaka-streamer/commit/f42188e9bb93af1e27116b42a759a8e49587f7a9)), closes [#127](https://github.com/shaka-project/shaka-streamer/issues/127)
+* Fix framerate autodetection edge case ([#128](https://github.com/shaka-project/shaka-streamer/issues/128)) ([aacabdc](https://github.com/shaka-project/shaka-streamer/commit/aacabdc9bb4b82331d49e91ca41abfbb889cb49e)), closes [#127](https://github.com/shaka-project/shaka-streamer/issues/127)
+* Fix typing of log_request ([#166](https://github.com/shaka-project/shaka-streamer/issues/166)) ([c38d7e9](https://github.com/shaka-project/shaka-streamer/commit/c38d7e9f4ba0962c5c9b186bc3ed13f6a747903e))
+* **HLS:** Fix audio grouping by codec ([#185](https://github.com/shaka-project/shaka-streamer/issues/185)) ([7f07eec](https://github.com/shaka-project/shaka-streamer/commit/7f07eec9042ae62a1e1c6719c0ad4f8fffc2775f))
+* only use the first line of ffprobe's output ([#120](https://github.com/shaka-project/shaka-streamer/issues/120)) ([4d7d077](https://github.com/shaka-project/shaka-streamer/commit/4d7d077e270474f99a2c6851133e8b97b738e990)), closes [#119](https://github.com/shaka-project/shaka-streamer/issues/119)
+
+
+### Documentation
+
+* Update cloud upload docs ([#168](https://github.com/shaka-project/shaka-streamer/issues/168)) ([fddf413](https://github.com/shaka-project/shaka-streamer/commit/fddf4139800c27c16433033c7c920daa13a0f900))
+
 ## [0.5.1](https://github.com/shaka-project/shaka-streamer/compare/v0.5.0...v0.5.1) (2021-10-14)
 
  - Require Shaka Packager v2.6.1+, to fix segfault in Linux binaries
