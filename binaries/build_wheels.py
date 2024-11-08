@@ -39,8 +39,8 @@ PLATFORM_SUFFIXES = {
     'manylinux2014_aarch64': '-linux-arm64',
     # macOS x64 with 10.9 SDK
     'macosx_10_9_x86_64': '-osx-x64',
-    # macOS arm64 with 10.9 SDK
-    'macosx_10_9_arm64': '-osx-arm64',
+    # macOS arm64 with 11.0 SDK
+    'macosx_11_0_arm64': '-osx-arm64',
     # Windows x64
     'win_amd64': '-win-x64.exe',
 }
