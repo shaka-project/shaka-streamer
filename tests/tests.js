@@ -35,7 +35,7 @@ jasmineEnv.execute = () => {
   const random = isNaN(configSeed) ? false : true;
 
   // If the user asked us to debug, we can print manifest/playlist contents.
-  doDebug = !!__karma__.config.debug;
+  doDebug = __karma__.config.debug;
 
   // Set jasmine config.
   jasmineEnv.configure({
