@@ -21,6 +21,7 @@ module.exports = function(config) {
       captureConsole: true,
       filter: config.filter,
       seed: config.seed,
+      debug: !!config.debug,
     },
     frameworks: ['jasmine'],
     files: [
