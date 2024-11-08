@@ -22,6 +22,7 @@ module.exports = function(config) {
       filter: config.filter,
       seed: config.seed,
       debug: !!config.debug,
+      testWidevine: !!config.testWidevine,
     },
     frameworks: ['jasmine'],
     files: [

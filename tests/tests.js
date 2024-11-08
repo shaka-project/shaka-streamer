@@ -20,6 +20,7 @@ const TEST_DIR = 'test_assets/';
 let player;
 let video;
 let doDebug = false;
+let testWidevine = true;
 
 const jasmineEnv = jasmine.getEnv();
 const originalJasmineExecute = jasmineEnv.execute.bind(jasmineEnv);
@@ -36,6 +37,9 @@ jasmineEnv.execute = () => {
 
   // If the user asked us to debug, we can print manifest/playlist contents.
   doDebug = __karma__.config.debug;
+
+  // True if we're testing Widevine (the default).
+  testWidevine = __karma__.config.testWidevine;
 
   // Set jasmine config.
   jasmineEnv.configure({
@@ -558,12 +562,15 @@ function liveTests(manifestUrl, format) {
 }
 
 function drmTests(manifestUrl, format) {
-  it('has widevine encryption enabled ' + format, async () => {
+  it('has Widevine encryption enabled ' + format, async () => {
     if (manifestUrl.includes('hls.m3u8')) {
       // https://github.com/shaka-project/shaka-packager/issues/1439
       // Inappropriate key material in HLS outputs causes this test to fail.
       // Until this bug is resolved, skip this test for HLS.
       pending('Skipped due to shaka-packager#1439');
+    }
+    if (!testWidevine) {
+      pending('Skipped due to command line flag');
     }
 
     const inputConfigDict = {

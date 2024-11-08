@@ -322,6 +322,12 @@ def main():
                       help='Random seed to reproduce failures')
   parser.add_argument('--filter',
                       help='Plain text or regex filter for test cases')
+  parser.add_argument('--test-widevine', default=True,
+                      action='store_true',
+                      help='Test Widevine (the default)')
+  parser.add_argument('--no-test-widevine', dest='test_widevine',
+                      action='store_false',
+                      help='Do not test Widevine')
   parser.add_argument('--debug',
                       action='store_true',
                       help='Dump information about the configs and the ' +
@@ -378,6 +384,8 @@ def main():
     test_args += [ '--seed', args.seed ]
   if args.debug:
     test_args += [ '--debug', 'true' ]
+  if args.test_widevine:
+    test_args += [ '--testWidevine', 'true' ]
 
   for i in range(trials):
     # If the exit code was not 0, the tests in karma failed or crashed.

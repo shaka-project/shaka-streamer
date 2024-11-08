@@ -29,7 +29,6 @@
   "comment2": "runners hosted by the owner, enabled by the ENABLE_SELF_HOSTED variable being set on the repo",
   "selfHosted": [
     {
-      "DISABLED": "Disabled because there is no Chrome build for arm64 Linux to run the test cases.  Need support for another browser through Karma.",
       "os": "self-hosted-linux-arm64",
       "os_name": "linux",
       "target_arch": "arm64"
