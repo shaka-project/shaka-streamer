@@ -51,6 +51,7 @@ os.chdir(BASE_DIR)
 controller = None
 use_system_binaries = False
 do_cleanup = True
+do_debug = False
 
 # Flask was unable to autofind the root_path correctly after an os.chdir() from another directory
 # Dunno why,refer to https://stackoverflow.com/questions/35864584/error-no-such-file-or-directory-when-using-os-chdir-in-flask
@@ -168,6 +169,15 @@ def start():
   # Enforce quiet mode without needing it specified in every test.
   configs['pipeline_config']['quiet'] = True
 
+  if do_debug:
+    print('')
+    print('')
+    print('Configs passed to controller:')
+    print(json.dumps(configs, indent=2))
+    print('')
+    print('')
+    print('')
+
   controller = ControllerNode()
   try:
     controller.start(configs['output_location'],
@@ -280,6 +290,19 @@ def fetch_cloud_assets():
                                             file,
                                             TEST_DIR + file)
 
+
+def run_karma(extra_args):
+  basic_karma_args = [
+      'node',
+      'node_modules/karma/bin/karma',
+      'start',
+      'tests/karma.conf.js',
+      '--single-run',
+  ]
+  karma_args = basic_karma_args + extra_args
+  return subprocess.call(karma_args)
+
+
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--runs', default=1, type=int,
@@ -299,6 +322,10 @@ def main():
                       help='Random seed to reproduce failures')
   parser.add_argument('--filter',
                       help='Plain text or regex filter for test cases')
+  parser.add_argument('--debug',
+                      action='store_true',
+                      help='Dump information about the configs and the ' +
+                           'resulting manifests to help debug failures')
 
   args = parser.parse_args()
 
@@ -307,6 +334,9 @@ def main():
 
   global do_cleanup
   do_cleanup = args.cleanup
+
+  global do_debug
+  do_debug = args.debug
 
   # Do static type checking on the project first.
   type_check_result = mypy_api.run(['streamer/'])
@@ -335,31 +365,23 @@ def main():
   trials = args.runs
   print('Running', trials, 'trials')
 
+  # Set up Karma args.
+  test_args = [
+    '--browsers', 'Chrome',
+  ]
+  if args.reporters:
+    converted_string = ','.join(args.reporters)
+    test_args += [ '--reporters', converted_string ]
+  if args.filter:
+    test_args += [ '--filter', args.filter ]
+  if args.seed:
+    test_args += [ '--seed', args.seed ]
+  if args.debug:
+    test_args += [ '--debug', 'true' ]
+
   for i in range(trials):
-    # Start up karma.
-    karma_args = [
-        'node',
-        'node_modules/karma/bin/karma',
-        'start',
-        'tests/karma.conf.js',
-        # DRM currently is not compatible with headless, so it's run in Chrome.
-        # Linux: If you want to run tests as "headless", wrap it with "xvfb-run -a".
-        '--browsers', 'Chrome',
-        '--single-run',
-      ]
-
-    if args.reporters:
-      converted_string = ','.join(args.reporters)
-      karma_args += [ '--reporters', converted_string ]
-
-    if args.filter:
-      karma_args += [ '--filter', args.filter ]
-
-    if args.seed:
-      karma_args += [ '--seed', args.seed ]
-
     # If the exit code was not 0, the tests in karma failed or crashed.
-    if subprocess.call(karma_args) != 0:
+    if run_karma(test_args) != 0:
       fails += 1
 
   print('\n\nNumber of failures:', fails, '\nNumber of trials:', trials)

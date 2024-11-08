@@ -19,6 +19,7 @@ const OUTPUT_DIR = 'output_files/'
 const TEST_DIR = 'test_assets/';
 let player;
 let video;
+let doDebug = false;
 
 const jasmineEnv = jasmine.getEnv();
 const originalJasmineExecute = jasmineEnv.execute.bind(jasmineEnv);
@@ -32,6 +33,9 @@ jasmineEnv.execute = () => {
   // If the user gave a seed, use it, and set random = true.
   const seed = isNaN(configSeed) ? undefined : configSeed;
   const random = isNaN(configSeed) ? false : true;
+
+  // If the user asked us to debug, we can print manifest/playlist contents.
+  doDebug = !!__karma__.config.debug;
 
   // Set jasmine config.
   jasmineEnv.configure({
@@ -59,6 +63,17 @@ async function fetchRetry(url, options) {
       // Wait 3s between retries.
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
+  }
+}
+
+async function debugManifest(url) {
+  if (doDebug) {
+    const response = await fetchRetry(url);
+    const bodyText = await response.text();
+
+    console.log('Manifest text:\n\n');
+    console.log(bodyText);
+    console.log('\n\n');
   }
 }
 
@@ -463,7 +478,9 @@ function resolutionTests(manifestUrl, format) {
         '144p',
       ],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     const trackList = player.getVariantTracks();
@@ -486,7 +503,7 @@ function outputFramerateTests(manifestUrl, format) {
           // Keep this test short by only encoding 1s of content.
           'end_time': '0:01',
         },
-      ]
+      ],
     };
     const bitrateConfigDict = {
       video_resolutions: {
@@ -495,24 +512,24 @@ function outputFramerateTests(manifestUrl, format) {
           max_height: 144,
           max_frame_rate: 25,
           bitrates: {
-            h264: '108k'
-          }
-        }
-      }
+            h264: '108k',
+          },
+        },
+      },
     };
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': [
-        'very_small'
+        'very_small',
       ],
     };
 
     await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     const trackList = player.getVariantTracks();
     expect(trackList[0].frameRate).toBe(25);
-
   });
 }
 
@@ -531,8 +548,11 @@ function liveTests(manifestUrl, format) {
       'streaming_mode': 'live',
       'resolutions': ['144p'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     expect(player.isLive()).toBe(true);
   });
 }
@@ -565,7 +585,9 @@ function drmTests(manifestUrl, format) {
         'clear_lead': 0,
       },
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
 
     // The Player should raise an error and not load because the media is
     // encrypted and the player doesn't have a license server.
@@ -617,6 +639,7 @@ function drmTests(manifestUrl, format) {
     };
 
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
 
     if (manifestUrl.includes('hls.m3u8')) {
       // The Player has the keys in the manifest, so this should load.
@@ -672,7 +695,9 @@ function drmTests(manifestUrl, format) {
         'clear_lead': 0,
       },
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
 
     if (manifestUrl.includes('hls.m3u8')) {
       // The Player has the keys in the manifest, so this should load.
@@ -717,6 +742,8 @@ function codecTests(manifestUrl, format) {
       codecs = audioCodecList.concat(videoCodecList);
     });
 
+    await debugManifest(manifestUrl);
+
     try {
       await player.load(manifestUrl);
     } catch (error) {
@@ -752,6 +779,7 @@ function codecTests(manifestUrl, format) {
         },
       ],
     };
+
     const pipelineConfigDict = {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
@@ -856,7 +884,9 @@ function autoDetectionTests(manifestUrl) {
       'streaming_mode': 'vod',
       'channel_layouts': ['stereo'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     const trackList = player.getVariantTracks();
@@ -884,9 +914,11 @@ function autoDetectionTests(manifestUrl) {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
     };
-    await startStreamer(inputConfigDict, pipelineConfigDict);
 
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     const trackList = player.getVariantTracks();
     expect(trackList[0].frameRate).toBe(30);
   });
@@ -917,9 +949,11 @@ function autoDetectionTests(manifestUrl) {
         '720p',
       ],
     };
-    await startStreamer(inputConfigDict, pipelineConfigDict);
 
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     const trackList = player.getVariantTracks();
     expect(trackList.length).toBe(1);
   });
@@ -964,7 +998,7 @@ function autoDetectionTests(manifestUrl) {
             h264: '1M',
           },
         },
-      }
+      },
     };
 
     const pipelineConfigDict = {
@@ -977,8 +1011,9 @@ function autoDetectionTests(manifestUrl) {
     };
 
     await startStreamer(inputConfigDict, pipelineConfigDict, bitrateConfigDict);
-
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     const trackList = player.getVariantTracks();
 
     // If the input is correctly detected as the higher resolution, this will
@@ -1008,7 +1043,9 @@ function languageTests(manifestUrl, format) {
       'streaming_mode': 'vod',
       'channel_layouts': ['stereo'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     const trackList = player.getVariantTracks();
@@ -1056,7 +1093,9 @@ function textTracksTests(manifestUrl, format) {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     const trackList = player.getTextTracks();
@@ -1084,8 +1123,11 @@ function vodTests(manifestUrl, format) {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     expect(player.isLive()).toBe(false);
   });
 }
@@ -1108,8 +1150,11 @@ function channelsTests(manifestUrl, channel_layouts, expected_channel_count, for
       'streaming_mode': 'vod',
       'channel_layouts': channel_layouts,
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     const trackList = player.getVariantTracks();
     expect(trackList.length).toBe(1);
     expect(trackList[0].channelsCount).toBe(expected_channel_count);
@@ -1160,8 +1205,11 @@ function delayTests(manifestUrl, format) {
       'resolutions': ['144p'],
       'presentation_delay': 100,
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     delay = player.getManifest().presentationTimeline.getDelay();
     expect(delay).toBe(100);
   });
@@ -1212,8 +1260,11 @@ function durationTests(manifestUrl, format) {
       'streaming_mode': 'vod',
       'resolutions': ['144p'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
+
     // We took from 2-5, so the output should be about 3 seconds long.
     expect(video.duration).toBeCloseTo(3, 1 /* decimal points to check */);
   });
@@ -1248,7 +1299,9 @@ function mapTests(manifestUrl, format) {
       'resolutions': ['144p'],
       'channel_layouts': ['stereo'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     // The failure would happen at the ffmpeg level, so we can be sure now that
@@ -1292,7 +1345,9 @@ function filterTests(manifestUrl, format) {
       'resolutions': ['144p'],
       'channel_layouts': ['stereo'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     const trackList = player.getVariantTracks();
@@ -1357,6 +1412,7 @@ function customBitrateTests() {
     ]);
 
     await startStreamer(minimalInputConfig, pipelineConfig, bitrateConfig);
+    await debugManifest(dashManifestUrl);
     await player.load(dashManifestUrl);
 
     const trackList = player.getVariantTracks();
@@ -1423,7 +1479,9 @@ function muxedTextTests(manifestUrl, format) {
       'audio_codecs': ['aac'],
       'video_codecs': ['h264'],
     };
+
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     const trackList = player.getTextTracks();
@@ -1461,6 +1519,7 @@ function multiPeriodTests(manifestUrl, format) {
     };
 
     await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
     await player.load(manifestUrl);
 
     // Since we processed only 0:01s, the total duration shoud be 2s.
@@ -1496,9 +1555,10 @@ function lowLatencyDashTests(manifestUrl, format) {
         },
       ],
     };
-    await startStreamer(inputConfigDict, pipelineConfigDict);
 
-    // TODO(CaitlinO'Callaghan): fix so player loads and test passes
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
+
     player.configure({
       streaming: {
         lowLatencyMode: true,
