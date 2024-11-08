@@ -120,9 +120,10 @@ jobs:
           sudo apt -y install chromium
 
           # Running inside a Docker container, we need to kill the sandbox.
+          # Heredocs interpolate variables, so escape the dollar sign below.
           cat >/usr/local/bin/chromium <<EOF
           #!/bin/bash
-          exec /usr/bin/chromium --no-sandbox "$@"
+          exec /usr/bin/chromium --no-sandbox "\$@"
           EOF
 
           chmod 755 /usr/local/bin/chromium
