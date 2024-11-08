@@ -118,7 +118,15 @@ jobs:
           sudo add-apt-repository ppa:xtradeb/apps -y
           sudo apt update
           sudo apt -y install chromium
-          echo "CHROME_BIN=chromium" >> $GITHUB_ENV
+
+          # Running inside a Docker container, we need to kill the sandbox.
+          cat >/usr/local/bin/chromium <<EOF
+          #!/bin/bash
+          exec /usr/bin/chromium --no-sandbox "$@"
+          EOF
+
+          chmod 755 /usr/local/bin/chromium
+          echo "CHROME_BIN=/usr/local/bin/chromium" >> $GITHUB_ENV
 
       - name: Install Python deps
         run: |
