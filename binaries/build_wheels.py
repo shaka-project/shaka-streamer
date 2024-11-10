@@ -26,7 +26,7 @@ import streamer_binaries
 
 # Version constants.
 # Change to download different versions.
-FFMPEG_VERSION = 'n7.1-1'
+FFMPEG_VERSION = 'n7.1-2'
 PACKAGER_VERSION = 'v3.3.0'
 
 # A map of suffixes that will be combined with the binary download links
