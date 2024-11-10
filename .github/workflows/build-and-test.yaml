@@ -134,22 +134,36 @@ jobs:
           python3 -m pip install -r requirements.txt
           python3 -m pip install -r optional_requirements.txt
 
-      - name: Download binaries
+      - name: Download and install binaries
         run: |
           # Fetch binaries locally instead of installing the release version of
           # the binary package.  This lets us test changes to the binary package
           # before it is released.
           # In case of network flake, try it three times.  This is arbitrary.
           python3 binaries/build_wheels.py || python3 binaries/build_wheels.py || python3 binaries/build_wheels.py
+
+          # Make sure the locally-created binary package for each platform can
+          # be locally installed, so we know they are correctly formatted/named.
+          # This also makes these binaries available for the test run.
           if [[ '${{ runner.os }}' == 'Windows' ]]; then
-            echo "PYTHONPATH=$GITHUB_WORKSPACE\\binaries;$PYTHONPATH" >> $GITHUB_ENV
-          else
-            echo "PYTHONPATH=$GITHUB_WORKSPACE/binaries:$PYTHONPATH" >> $GITHUB_ENV
+            python3 -m pip install binaries/dist/shaka_streamer_binaries*win*amd64.whl
+          elif [[ '${{ runner.os }}' == 'Linux' ]]; then
+            if [[ '${{ matrix.target_arch }}' == 'x64' ]]; then
+              python3 -m pip install binaries/dist/shaka_streamer_binaries*linux*x86_64.whl
+            elif [[ '${{ matrix.target_arch }}' == 'arm64' ]]; then
+              python3 -m pip install binaries/dist/shaka_streamer_binaries*linux*aarch64.whl
+            fi
+          elif [[ '${{ runner.os }}' == 'macOS' ]]; then
+            if [[ '${{ matrix.target_arch }}' == 'x64' ]]; then
+              python3 -m pip install binaries/dist/shaka_streamer_binaries*mac*x86_64.whl
+            elif [[ '${{ matrix.target_arch }}' == 'arm64' ]]; then
+              python3 -m pip install binaries/dist/shaka_streamer_binaries*mac*arm64.whl
+            fi
           fi
 
       - name: Build docs (Linux only)
-        run: bash docs/build.sh
         if: runner.os == 'Linux'
+        run: bash docs/build.sh
 
       - name: Run tests
         run: |
