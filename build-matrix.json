@@ -20,6 +20,12 @@
       "target_arch": "x64"
     },
     {
+      "comment": "Latest macOS version is arm64 CPU.",
+      "os": "macos-latest",
+      "os_name": "osx",
+      "target_arch": "arm64"
+    },
+    {
       "os": "windows-latest",
       "os_name": "win",
       "target_arch": "x64"
@@ -31,17 +37,6 @@
     {
       "os": "self-hosted-linux-arm64",
       "os_name": "linux",
-      "target_arch": "arm64"
-    }
-  ],
-
-  "comment3": "runners hosted by GitHub, disabled for now",
-  "hostedDISABLED": [
-    {
-      "comment": "Latest macOS version is arm64 CPU.",
-      "DISABLED": "static-ffmpeg-binaries for macOS-arm64 are crashing right now.",
-      "os": "macos-latest",
-      "os_name": "osx",
       "target_arch": "arm64"
     }
   ]
