@@ -112,6 +112,23 @@ jobs:
               libva2 libva-drm2 \
               nodejs npm xvfb
 
+      - name: Install Chromium (non-Snap, arm64 Linux only)
+        if: runner.os == 'Linux' && matrix.target_arch == 'arm64'
+        run: |
+          sudo add-apt-repository ppa:xtradeb/apps -y
+          sudo apt update
+          sudo apt -y install chromium
+
+          # Running inside a Docker container, we need to kill the sandbox.
+          # Heredocs interpolate variables, so escape the dollar sign below.
+          cat >/usr/local/bin/chromium <<EOF
+          #!/bin/bash
+          exec /usr/bin/chromium --no-sandbox "\$@"
+          EOF
+
+          chmod 755 /usr/local/bin/chromium
+          echo "CHROME_BIN=/usr/local/bin/chromium" >> $GITHUB_ENV
+
       - name: Install Python deps
         run: |
           python3 -m pip install -r requirements.txt
@@ -142,8 +159,20 @@ jobs:
           else
             WRAPPER=""
           fi
+
+          if [[ '${{ runner.os }}' == 'Linux' && '${{ matrix.target_arch }}' == 'arm64' ]]; then
+            # There is no Widevine CDM for Linux arm64 at this time.
+            # By setting this here instead of probing during the test, we can
+            # be sure to notice failures if Widevine disappears from our
+            # testing environment on platforms where this would not be
+            # expected.
+            EXTRA_ARGS="--no-test-widevine"
+          else
+            EXTRA_ARGS=""
+          fi
+
           # Use the "spec" reporter for clearer logs in GitHub Actions
-          $WRAPPER python3 run_end_to_end_tests.py --reporters spec
+          $WRAPPER python3 run_end_to_end_tests.py --reporters spec $EXTRA_ARGS
 
       - name: Debug on failure
         uses: mxschmitt/action-tmate@v3.6
