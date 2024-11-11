@@ -88,6 +88,14 @@ class OutputStream(object):
     path_templ = SINGLE_SEGMENT[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
+  def get_identification(self) -> str:
+    SINGLE_SEGMENT = {
+      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_{format}',
+      MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_{format}',
+      MediaType.TEXT: 'text_{language}_{format}',
+    }
+    return SINGLE_SEGMENT[self.type].format(**self.features)
+
 
 class AudioOutputStream(OutputStream):
 
