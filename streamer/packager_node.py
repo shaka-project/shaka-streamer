@@ -109,6 +109,10 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
           # Number of seconds between manifest updates.
           '--minimum_update_period',
           str(self._pipeline_config.update_period),
+          # Ignore HTTP output failures so that the pipeline doesn't stop if we
+          # fail to upload one segment.  Only enable this for live streams,
+          # since for VOD, we really should signal that failure to the user.
+          '--ignore_http_output_failures',
       ]
 
     args += self._setup_manifest_format()
