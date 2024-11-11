@@ -89,6 +89,8 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     args += [
         # Segment duration given in seconds.
         '--segment_duration', str(self._pipeline_config.segment_size),
+        # Signal DolbyVision using the modern supplemental codecs approach
+        '--use_dovi_supplemental_codecs',
     ]
 
     if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
@@ -169,6 +171,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
 
   def _setup_manifest_format(self) -> List[str]:
     args: List[str] = []
+
     if ManifestFormat.DASH in self._pipeline_config.manifest_format:
       if self._pipeline_config.utc_timings:
         args += [
@@ -176,19 +179,23 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
             ','.join(timing.scheme_id_uri + '=' +
                      timing.value for timing in self._pipeline_config.utc_timings)
         ]
+
       if self._pipeline_config.low_latency_dash_mode:
         args += [
             '--low_latency_dash_mode=true',
         ]
+
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
         args += [
             '--generate_static_live_mpd',
         ]
+
       args += [
           # Generate DASH manifest file.
           '--mpd_output',
           build_path(self.output_location, self._pipeline_config.dash_output),
       ]
+
     if ManifestFormat.HLS in self._pipeline_config.manifest_format:
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
         args += [
@@ -198,16 +205,13 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         args += [
             '--hls_playlist_type', 'VOD',
         ]
+
       args += [
           # Generate HLS playlist file(s).
           '--hls_master_playlist_output',
           build_path(self.output_location, self._pipeline_config.hls_output),
       ]
 
-    # Common arguments
-    args.extend([
-      '--use_dovi_supplemental_codecs',
-    ])
     return args
 
   def _setup_encryption_keys(self) -> List[str]:
