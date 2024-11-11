@@ -175,7 +175,7 @@ def get_channel_layout(input: Input) -> Optional[AudioChannelLayoutName]:
   return None
 
 def get_forced_subttitle(input: Input) -> bool:
-  """Returns the autodetected channel count of the input."""
+  """Returns the forced subtitle value of the input."""
 
   forced_subttitle_string = _probe(input, 'disposition=forced')
 
