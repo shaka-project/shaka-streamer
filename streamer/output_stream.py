@@ -36,7 +36,6 @@ class OutputStream(object):
     self.input: Input = input
     self.features: Dict[str, str] = {}
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
-    self.forced_subtitle = False;
 
     if self.skip_transcoding:
       # If skip_transcoding is specified, let the Packager read from a plain
@@ -155,8 +154,6 @@ class TextOutputStream(OutputStream):
 
     super().__init__(MediaType.TEXT, input, codec, pipe_dir,
                      skip_transcoding, pipe_suffix='.vtt')
-
-    self.forced_subtitle = input.forced_subtitle
 
     # The features that will be used to generate the output filename.
     self.features = {

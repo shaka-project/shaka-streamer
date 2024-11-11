@@ -144,7 +144,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     if stream.input.drm_label:
       dict['drm_label'] = stream.input.drm_label
 
-    if stream.type == MediaType.TEXT and stream.forced_subtitle:
+    if stream.input.forced_subtitle:
       dict['forced_subtitle'] = '1'
 
     # Note: Shaka Packager will not accept 'und' as a language, but Shaka
