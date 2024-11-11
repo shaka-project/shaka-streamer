@@ -1066,6 +1066,7 @@ function textTracksTests(manifestUrl, format) {
           'name': TEST_DIR + 'Sintel.2010.Arabic.vtt',
           'media_type': 'text',
           'language': 'ar',
+          'forced_subtitle': true,
         },
       ],
     };
@@ -1084,6 +1085,8 @@ function textTracksTests(manifestUrl, format) {
     const languageList = trackList.map(track => track.language);
     languageList.sort();
     expect(languageList).toEqual(['ar', 'en', 'eo', 'es']);
+    const arTrack = trackList.find(track => track.language == 'ar');
+    expect(arTrack.forced).toBeTruthy();
   });
 }
 

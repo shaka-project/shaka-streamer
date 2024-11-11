@@ -144,6 +144,9 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     if stream.input.drm_label:
       dict['drm_label'] = stream.input.drm_label
 
+    if stream.input.forced_subtitle:
+      dict['forced_subtitle'] = '1'
+
     # Note: Shaka Packager will not accept 'und' as a language, but Shaka
     # Player will fill that in if the language metadata is missing from the
     # manifest/playlist.

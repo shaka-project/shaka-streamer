@@ -173,3 +173,13 @@ def get_channel_layout(input: Input) -> Optional[AudioChannelLayoutName]:
       return bucket.get_key()
 
   return None
+
+def get_forced_subttitle(input: Input) -> bool:
+  """Returns the forced subtitle value of the input."""
+
+  forced_subttitle_string = _probe(input, 'disposition=forced')
+
+  if forced_subttitle_string is None:
+    return False
+
+  return bool(forced_subttitle_string)

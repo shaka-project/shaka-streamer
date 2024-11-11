@@ -211,6 +211,12 @@ class Input(configuration.Base):
   Not supported with media_type of 'text'.
   """
 
+  forced_subtitle = configuration.Field(bool).cast()
+  """Indicates that the subtitle is forced.
+
+  Only supported with media_type of 'text'.
+  """
+
 
   def __init__(self, *args) -> None:
     super().__init__(*args)
@@ -264,6 +270,8 @@ class Input(configuration.Base):
         reason = 'text streams are not supported in input_type "{}"'.format(
             self.input_type.value)
         disallow_field('input_type', reason)
+      if self.forced_subtitle is None:
+        self.forced_subtitle = autodetect.get_forced_subttitle(self)
 
       # These fields are not supported with text, because we don't process or
       # transcode it.
