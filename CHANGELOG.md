@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/shaka-project/shaka-streamer/compare/v1.0.1...v1.0.2) (2024-11-11)
+
+
+### Bug Fixes
+
+* **binaries:** Fix arm64 mac binary tags ([#196](https://github.com/shaka-project/shaka-streamer/issues/196)) ([f06e010](https://github.com/shaka-project/shaka-streamer/commit/f06e010975d5ba267600e7d95076d547a177488c)), closes [#194](https://github.com/shaka-project/shaka-streamer/issues/194)
+* **binaries:** Fix macOS arm64 ffmpeg crash ([#202](https://github.com/shaka-project/shaka-streamer/issues/202)) ([53c4eb6](https://github.com/shaka-project/shaka-streamer/commit/53c4eb6a85be144a69db5e462c4b155b15524be4))
+
 ## [1.0.1](https://github.com/shaka-project/shaka-streamer/compare/v1.0.0...v1.0.1) (2024-11-06)
 
 
