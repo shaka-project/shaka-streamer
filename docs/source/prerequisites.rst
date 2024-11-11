@@ -154,47 +154,7 @@ Cloud Storage (optional)
 Shaka Streamer can push content directly to a Google Cloud Storage or Amazon S3
 bucket. To use this feature, additional Python modules are required.
 
-
-Google Cloud Storage
-~~~~~~~~~~~~~~~~~~~~
-
-First install the Python module if you haven't yet:
-
-.. code:: sh
-
-   python3 -m pip install google-cloud-storage
-
-To use the default authentication, you will need default application
-credentials installed.  On Linux, these live in
-``~/.config/gcloud/application_default_credentials.json``.
-
-The easiest way to install default credentials is through the Google Cloud SDK.
-See https://cloud.google.com/sdk/docs/install-sdk to install the SDK.  Then run:
-
-.. code:: sh
-
-   gcloud init
-   gcloud auth application-default login
-
-Follow the instructions given to you by gcloud to initialize the environment
-and login.
-
-
-Amazon S3
-~~~~~~~~~
-
-First install the Python module if you haven't yet:
-
-.. code:: sh
-
-   python3 -m pip install boto3
-
-To authenticate to Amazon S3, you can either add credentials to your `boto
-config file`_ or login interactively using the `AWS CLI`_.
-
-.. code:: sh
-
-   aws configure
+See :doc:`cloud_storage` for details.
 
 
 Test Dependencies (optional)
@@ -213,8 +173,7 @@ To install Node.js and NPM on any other platform, you can try one of these:
 * https://github.com/nodesource/distributions
 * https://nodejs.org/en/download/
 
+
 .. _Shaka Packager: https://github.com/shaka-project/shaka-packager
 .. _FFmpeg: https://ffmpeg.org/
 .. _Homebrew: https://brew.sh/
-.. _boto config file: http://boto.cloudhackers.com/en/latest/boto_config_tut.html
-.. _AWS CLI: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html

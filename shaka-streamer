@@ -48,7 +48,12 @@ def main():
   description = __doc__.format(version=streamer.__version__)
 
   parser = argparse.ArgumentParser(description=description,
-                                   formatter_class=CustomArgParseFormatter)
+                                   formatter_class=CustomArgParseFormatter,
+                                   epilog="""
+The output location can be a local filsystem folder.  It will be created if it
+does not exist.  It can also be an HTTP or HTTPS URL, or a cloud storage URL.
+See docs: https://shaka-project.github.io/shaka-streamer/cloud_storage.html
+""")
 
   parser.add_argument('-i', '--input-config',
                       required=True,
@@ -64,11 +69,11 @@ def main():
   parser.add_argument('-c', '--cloud-url',
                       default=None,
                       help='The Google Cloud Storage or Amazon S3 URL to ' +
-                           'upload to.  (Starts with gs:// or s3://)')
+                           'upload to.  (Starts with gs:// or s3://) (DEPRECATED, use -o)')
   parser.add_argument('-o', '--output',
                       default='output_files',
-                      help='The output folder to write files to, or an HTTP ' +
-                           'or HTTPS URL where files will be PUT.')
+                      help='The output folder or URL to write files to.  See ' +
+                           'below for details.')
   parser.add_argument('--skip-deps-check',
                       action='store_true',
                       help='Skip checks for dependencies and their versions. ' +
@@ -96,8 +101,13 @@ def main():
       bitrate_config_dict = yaml.safe_load(f)
 
   try:
+    if args.cloud_url:
+      print('Warning: -c/--cloud-url is deprecated; use -o/--output instead',
+            file=sys.stderr)
+      args.output = args.cloud_url
+
     with controller.start(args.output, input_config_dict, pipeline_config_dict,
-                          bitrate_config_dict, args.cloud_url,
+                          bitrate_config_dict,
                           not args.skip_deps_check,
                           not args.use_system_binaries):
       # Sleep so long as the pipeline is still running.

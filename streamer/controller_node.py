@@ -43,7 +43,7 @@ from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
 from streamer.proxy_node import ProxyNode
 import streamer.subprocessWindowsPatch  # side-effects only
-from streamer.util import is_url
+from streamer.util import is_http_url, is_url
 from streamer.pipe import Pipe
 
 
@@ -75,7 +75,6 @@ class ControllerNode(object):
             input_config_dict: Dict[str, Any],
             pipeline_config_dict: Dict[str, Any],
             bitrate_config_dict: Dict[Any, Any] = {},
-            bucket_url: Union[str, None] = None,
             check_deps: bool = True,
             use_hermetic: bool = True) -> 'ControllerNode':
     """Create and start all other nodes.
@@ -166,24 +165,28 @@ class ControllerNode(object):
     self._input_config = InputConfig(input_config_dict)
     self._pipeline_config = PipelineConfig(pipeline_config_dict)
 
-    if bucket_url is not None:
-      # Check some restrictions and other details on HTTP output.
-      if not ProxyNode.is_understood(bucket_url):
+    if is_http_url(output_location):
+      if not self._pipeline_config.segment_per_file:
+        raise RuntimeError(
+            'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
+            'must be set to True!')
+    elif is_url(output_location):
+      if not ProxyNode.is_understood(output_location):
         url_prefixes = [
             protocol + '://' for protocol in ProxyNode.ALL_SUPPORTED_PROTOCOLS]
         raise RuntimeError(
             'Invalid cloud URL!  Only these are supported: ' +
             ', '.join(url_prefixes))
 
-      if not ProxyNode.is_supported(bucket_url):
-        raise RuntimeError('Missing libraries for cloud URL: ' + bucket_url)
+      if not ProxyNode.is_supported(output_location):
+        raise RuntimeError('Missing libraries for cloud URL: ' + output_location)
 
       if not self._pipeline_config.segment_per_file:
         raise RuntimeError(
-            'For HTTP PUT uploads, the pipeline segment_per_file setting ' +
+            'For cloud uploads, the pipeline segment_per_file setting ' +
             'must be set to True!')
 
-      upload_proxy = ProxyNode.create(bucket_url)
+      upload_proxy = ProxyNode.create(output_location)
       upload_proxy.start()
 
       # All the outputs now should be sent to the proxy server instead.
@@ -213,9 +216,9 @@ class ControllerNode(object):
                                          output_location)
     else:
       # InputConfig contains multiperiod_inputs_list only.
-      if bucket_url:
+      if is_url(output_location):
         raise RuntimeError(
-            'Direct cloud upload is incompatible with multiperiod support.')
+            'Direct cloud/HTTP upload is incompatible with multiperiod support.')
 
       # Create one Transcoder node and one Packager node for each period.
       for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
@@ -315,7 +318,7 @@ class ControllerNode(object):
     
     # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
     # and put that period in it.
-    if period_dir:
+    if period_dir and not is_url(output_location):
       output_location = os.path.join(output_location, period_dir)
       os.mkdir(output_location)
 

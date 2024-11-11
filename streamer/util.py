@@ -14,7 +14,13 @@
 
 """Utility functions used by multiple modules."""
 
+import urllib.parse
+
 def is_url(output_location: str) -> bool:
   """Returns True if the output location is a URL."""
-  return (output_location.startswith('http:') or
-      output_location.startswith('https:'))
+  return urllib.parse.urlparse(output_location).scheme != ''
+
+def is_http_url(output_location: str) -> bool:
+  """Returns True if the output location is a URL."""
+  scheme = urllib.parse.urlparse(output_location).scheme
+  return scheme in ['http', 'https']
