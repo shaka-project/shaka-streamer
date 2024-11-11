@@ -846,32 +846,6 @@ function codecTests(manifestUrl, format) {
     codecList = codecList.map((x) => x.replace('hvc1', 'hev1'));
     expect(codecList).toEqual(['hev1.1.6.L60.90']);
   });
-
-  it('appropriately filters WebM formats ' + format, async () => {
-    const inputConfigDict = {
-      'inputs': [
-        {
-          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
-          'media_type': 'video',
-          // Keep this test short by only encoding 1s of content.
-          'end_time': '0:01',
-        },
-      ],
-    };
-    const pipelineConfigDict = {
-      'streaming_mode': 'vod',
-      'resolutions': ['144p'],
-      'video_codecs': ['h264', 'vp9'],
-    };
-    await startStreamer(inputConfigDict, pipelineConfigDict);
-
-    let codecList = await getAudioAndVideoCodecs(manifestUrl);
-    if (manifestUrl == hlsManifestUrl) {
-      expect(codecList).not.toContain(jasmine.stringMatching('vp09.*'));
-    } else if (manifestUrl == dashManifestUrl) {
-      expect(codecList).toContain(jasmine.stringMatching('vp09.*'));
-    }
-  })
 }
 
 function autoDetectionTests(manifestUrl) {

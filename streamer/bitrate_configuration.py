@@ -109,13 +109,8 @@ class VideoCodec(enum.Enum):
 
   def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
-    # TODO: consider VP9 in mp4 by default
-    # TODO(#31): add support for configurable output format per-codec
-    if self == VideoCodec.VP9:
-      return 'webm'
-    elif self in {VideoCodec.H264, VideoCodec.HEVC}:
-      return 'mp4'
-    elif self == VideoCodec.AV1:
+    # TODO(#31): add support for configurable output format per-codec (mp4 or webm)
+    if self in {VideoCodec.H264, VideoCodec.VP9, VideoCodec.HEVC, VideoCodec.AV1}:
       return 'mp4'
     else:
       assert False, 'No mapping for output format for codec {}'.format(
