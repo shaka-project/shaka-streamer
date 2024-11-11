@@ -124,12 +124,13 @@ describe('Shaka Streamer', () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 400 * 1000;
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     video = document.createElement('video');
     video.muted = true;
     document.body.appendChild(video);
 
-    player = new shaka.Player(video);
+    player = new shaka.Player();
+    await player.attach(video);
     const retryParameters = {
       maxAttempts: 5,
       timeout: 90e3,
