@@ -305,8 +305,7 @@ class ControllerNode(object):
 
         outputs.append(TextOutputStream(input,
                                         self._temp_dir,
-                                        skip_transcoding,
-                                        input.forced_subtitle))
+                                        skip_transcoding))
 
     self._nodes.append(TranscoderNode(inputs,
                                       self._pipeline_config,
