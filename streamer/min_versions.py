@@ -16,4 +16,4 @@
 
 # These are minimum semantic versions expressed as tuples of ints.
 FFMPEG = (7, 1)
-PACKAGER = (3, 2, 0)
+PACKAGER = (3, 4, 0)
