@@ -90,9 +90,9 @@ class OutputStream(object):
 
   def get_identification(self) -> str:
     SINGLE_SEGMENT = {
-      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_{format}',
-      MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_{format}',
-      MediaType.TEXT: 'text_{language}_{format}',
+      MediaType.AUDIO: '{language}_{channels}c_{bitrate}_{codec}_{format}',
+      MediaType.VIDEO: '{resolution_name}_{bitrate}_{codec}_{format}',
+      MediaType.TEXT: '{language}_{format}',
     }
     return SINGLE_SEGMENT[self.type].format(**self.features)
 

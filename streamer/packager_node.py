@@ -142,7 +142,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
 
     if stream.type == MediaType.VIDEO and self._pipeline_config.generate_iframe_playlist:
-      dict['iframe_playlist_name'] =  stream.get_identification() + '.m3u8'
+      dict['iframe_playlist_name'] = 'iframe_' + stream.get_identification() + '.m3u8'
 
     if stream.input.drm_label:
       dict['drm_label'] = stream.input.drm_label
