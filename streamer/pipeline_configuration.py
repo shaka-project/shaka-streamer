@@ -307,6 +307,9 @@ class PipelineConfig(configuration.Base):
   Must be true for live content.
   """
 
+  generate_iframe_playlist = configuration.Field(bool, default=False).cast()
+  """If true, the iFrame playlist will be generated."""
+
   availability_window = configuration.Field(int, default=300).cast()
   """The number of seconds a segment remains available."""
 

@@ -21,7 +21,7 @@ from . import input_configuration
 from . import node_base
 from . import pipeline_configuration
 
-from streamer.bitrate_configuration import AudioCodec
+from streamer.bitrate_configuration import AudioCodec, VideoCodec
 from streamer.input_configuration import MediaType
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import EncryptionMode, PipelineConfig
@@ -140,6 +140,9 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
 
     if stream.type == MediaType.AUDIO:
       dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
+
+    if stream.type == MediaType.VIDEO and self._pipeline_config.generate_iframe_playlist:
+      dict['iframe_playlist_name'] = 'iframe_' + stream.get_identification() + '.m3u8'
 
     if stream.input.drm_label:
       dict['drm_label'] = stream.input.drm_label
