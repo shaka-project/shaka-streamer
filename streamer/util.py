@@ -21,6 +21,6 @@ def is_url(output_location: str) -> bool:
   return urllib.parse.urlparse(output_location).scheme != ''
 
 def is_http_url(output_location: str) -> bool:
-  """Returns True if the output location is a URL."""
+  """Returns True if the output location is an HTTP/HTTPS URL."""
   scheme = urllib.parse.urlparse(output_location).scheme
   return scheme in ['http', 'https']
