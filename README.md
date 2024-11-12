@@ -12,13 +12,14 @@ Sample configs can be found in the [`config_files/`] folder in the repo.
 
 [`config_files/`]: https://github.com/shaka-project/shaka-streamer/tree/main/config_files
 
-Release versions of Shaka Streamer can be installed or upgraded through `pip3`
-with:
+Install or upgrade Shaka Streamer and its [binaries][] through `pip3` with:
 
 ```sh
 # To install globally (drop the "sudo" for Windows):
-sudo pip3 install --upgrade shaka-streamer
+sudo pip3 install --upgrade shaka-streamer shaka-streamer-binaries
 
 # To install per-user:
-pip3 install --user --upgrade shaka-streamer
+pip3 install --user --upgrade shaka-streamer shaka-streamer-binaries
 ```
+
+[binaries]: https://pypi.org/project/shaka-streamer-binaries/

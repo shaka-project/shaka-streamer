@@ -22,14 +22,16 @@ separator_index = sys.argv.index('--')
 platform_binaries = sys.argv[separator_index + 1:]
 sys.argv = sys.argv[:separator_index]
 
+with open('README.md', 'r') as f:
+  long_description = f.read()
+
 setuptools.setup(
   name='shaka-streamer-binaries',
   version=streamer_binaries.__version__,
   author='Google',
   description='A package containing FFmpeg, FFprobe, and Shaka Packager static builds.',
-  long_description=('An auxiliary package that provides platform-specific'
-                    ' binaries used by Shaka Streamer.'),
-  long_description_content_type='text/plain',
+  long_description=long_description,
+  long_description_content_type='text/markdown',
   url='https://github.com/shaka-project/shaka-streamer/tree/main/binaries',
   packages=[streamer_binaries.__name__,],
   classifiers=[
