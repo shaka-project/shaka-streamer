@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0](https://github.com/shaka-project/shaka-streamer/compare/v1.0.2...v1.1.0) (2024-11-12)
+
+
+### Features
+
+* Add generate_iframe_playlist option ([#205](https://github.com/shaka-project/shaka-streamer/issues/205)) ([071396b](https://github.com/shaka-project/shaka-streamer/commit/071396b4f27c85716675e3653e435635c43c2c9e))
+* Add support for forced subtitles ([#208](https://github.com/shaka-project/shaka-streamer/issues/208)) ([96ae67a](https://github.com/shaka-project/shaka-streamer/commit/96ae67a1d657c0cd4d8d1991742cf5f7dd553d29))
+* Recover from upload failures ([#211](https://github.com/shaka-project/shaka-streamer/issues/211)) ([278d775](https://github.com/shaka-project/shaka-streamer/commit/278d775272d56ec4eccc437de76c002aac2b8317)), closes [#195](https://github.com/shaka-project/shaka-streamer/issues/195)
+* Restore HTTP output (not cloud storage) ([#212](https://github.com/shaka-project/shaka-streamer/issues/212)) ([1a4c7c2](https://github.com/shaka-project/shaka-streamer/commit/1a4c7c21ba772378e364030ac8f3a6cb62849cbf)), closes [#210](https://github.com/shaka-project/shaka-streamer/issues/210)
+* Use by default VP9 with mp4 ([#206](https://github.com/shaka-project/shaka-streamer/issues/206)) ([2ac830b](https://github.com/shaka-project/shaka-streamer/commit/2ac830b9caaf6e64f55824edfeb03b445b6e3b3c))
+
 ## [1.0.2](https://github.com/shaka-project/shaka-streamer/compare/v1.0.1...v1.0.2) (2024-11-11)
 
 
