@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/shaka-project/shaka-streamer/compare/v1.1.0...v1.1.1) (2024-11-12)
+
+
+### Bug Fixes
+
+* **docs:** Improve READMEs and pypi docs for binaries ([#214](https://github.com/shaka-project/shaka-streamer/issues/214)) ([4dd6fa4](https://github.com/shaka-project/shaka-streamer/commit/4dd6fa4f4bddc8398b86784535ffd042174595dc))
+
 ## [1.1.0](https://github.com/shaka-project/shaka-streamer/compare/v1.0.2...v1.1.0) (2024-11-12)
 
 
