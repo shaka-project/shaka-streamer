@@ -31,6 +31,7 @@ Shaka Streamer documentation
 
    overview
    prerequisites
+   cloud_storage
    hardware_encoding
    configuration_fields
    module_api

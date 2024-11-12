@@ -64,25 +64,6 @@ downloaded individually over HTTPS or all at once through gsutil:
 
    gsutil -m cp gs://shaka-streamer-assets/sample-inputs/* .
 
-Example command-line for live streaming to Google Cloud Storage:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: sh
-
-   python3 shaka-streamer \
-     -i config_files/input_looped_file_config.yaml \
-     -p config_files/pipeline_live_config.yaml \
-     -c gs://my_gcs_bucket/folder/
-
-Example command-line for live streaming to Amazon S3:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: sh
-
-   python3 shaka-streamer \
-     -i config_files/input_looped_file_config.yaml \
-     -p config_files/pipeline_live_config.yaml \
-     -c s3://my_s3_bucket/folder/
 
 
 Features
@@ -95,6 +76,8 @@ Features
   * VOD multi-period DASH (and equivalent HLS output)
   * Clear or encrypted output
   * Hardware encoding (if available from the platform)
+  * Output to HTTP/HTTPS server or cloud storage provider (see
+    :doc:`cloud_storage`)
 
 * Lots of options for input
 
@@ -154,7 +137,7 @@ All input types are read directly by ``TranscoderNode``. If the input type is
 ``looped_file``, then ``TranscoderNode`` will add additional FFmpeg options to
 loop that input file indefinitely.
 
-If the ``-c`` option is given with a Google Cloud Storage URL, then an
+If the ``-o`` option is given with a Google Cloud Storage URL, then an
 additional node called ``ProxyNode`` is added after ``PackagerNode``. It runs a
 local webserver which takes the output of packager and pushes to cloud storage.
 
