@@ -55,7 +55,8 @@ jobs:
 
           // Use ENABLE_SELF_HOSTED to decide what the build matrix below
           // should include.
-          const {hosted, selfHosted, pythonVersions} = require("${{ github.workspace }}/repo-src/build-matrix.json");
+          const buildMatrix = JSON.parse(fs.readFileSync("${{ github.workspace }}/repo-src/build-matrix.json"));
+          const {hosted, selfHosted, pythonVersions} = buildMatrix;
           const devices = enableSelfHosted ? hosted.concat(selfHosted) : hosted;
 
           const matrix = [];
