@@ -42,7 +42,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: repo-src
           ref: ${{ inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number)) }}
 
       - name: Configure Build Matrix
@@ -55,7 +54,7 @@ jobs:
 
           // Use ENABLE_SELF_HOSTED to decide what the build matrix below
           // should include.
-          const buildMatrix = JSON.parse(fs.readFileSync("${{ github.workspace }}/repo-src/build-matrix.json"));
+          const buildMatrix = JSON.parse(fs.readFileSync("${{ github.workspace }}/build-matrix.json"));
           const {hosted, selfHosted, pythonVersions} = buildMatrix;
           const devices = enableSelfHosted ? hosted.concat(selfHosted) : hosted;
 
