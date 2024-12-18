@@ -43,6 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number)) }}
+          persist-credentials: false
 
       - name: Configure Build Matrix
         id: configure
@@ -96,6 +97,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || (github.event.number && format('refs/pull/{0}/merge', github.event.number)) }}
+          persist-credentials: false
 
       - name: Set Python version
         uses: actions/setup-python@v5

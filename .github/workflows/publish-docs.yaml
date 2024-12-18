@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
 
       - name: Set Python version
         uses: actions/setup-python@v5
