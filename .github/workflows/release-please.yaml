@@ -70,13 +70,10 @@ jobs:
           python3 -m twine check --strict dist/*
 
       - name: Attach modules to the release
-        uses: svenstaro/upload-release-action@84f3aed82331a2c0c665cf8e9707228f766aba9d
-        with:
-          repo_token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          tag: ${{ needs.release.outputs.tag_name }}
-          file: dist/*
-          file_glob: true
-          overwrite: true
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          gh release upload --clobber "${{ needs.release.outputs.tag_name }}" dist/*
 
       # This uses PyPi's trusted publishing config.  It can see and verify that
       # the publication request comes from this repo and this exact workflow,
