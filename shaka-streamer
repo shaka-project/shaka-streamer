@@ -26,6 +26,7 @@ https://shaka-project.github.io/shaka-streamer/
 """
 
 import argparse
+import json
 import sys
 import time
 import yaml
@@ -84,6 +85,12 @@ See docs: https://shaka-project.github.io/shaka-streamer/cloud_storage.html
                       help='Use FFmpeg, FFprobe and Shaka Packager binaries ' +
                            'found in PATH instead of the ones offered by ' +
                            'Shaka Streamer.')
+  parser.add_argument('--log-configs',
+                      action='store_true',
+                      help='Log simplified versions of the config files to ' +
+                           'stderr. May be useful in services, to look at ' +
+                           'logs later to understand when configs changed, ' +
+                           'and how they may have impacted performance.')
 
   args = parser.parse_args()
 
@@ -99,6 +106,14 @@ See docs: https://shaka-project.github.io/shaka-streamer/cloud_storage.html
   if args.bitrate_config:
     with open(args.bitrate_config) as f:
       bitrate_config_dict = yaml.safe_load(f)
+
+  if args.log_configs:
+    configs = {
+      'input': input_config_dict,
+      'pipeline': pipeline_config_dict,
+      'bitrate': bitrate_config_dict,
+    }
+    print('Configs: {}'.format(json.dumps(configs)), file=sys.stderr)
 
   try:
     if args.cloud_url:
