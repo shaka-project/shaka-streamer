@@ -345,7 +345,7 @@ def main():
   do_debug = args.debug
 
   # Do static type checking on the project first.
-  type_check_result = mypy_api.run(['streamer/'])
+  type_check_result = mypy_api.run(['streamer/', 'shaka-streamer'])
   if type_check_result[2] != 0:
     print('The type checker found the following errors: ')
     print(type_check_result[0])

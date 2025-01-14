@@ -28,7 +28,7 @@ https://shaka-project.github.io/shaka-streamer/
 import argparse
 import sys
 import time
-import yaml
+import yaml  # type: ignore
 
 import streamer
 

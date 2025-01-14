@@ -186,7 +186,20 @@ class ControllerNode(object):
             'For cloud uploads, the pipeline segment_per_file setting ' +
             'must be set to True!')
 
-      upload_proxy = ProxyNode.create(output_location)
+      # These are estimates.  Without constructing the pipeline nodes, we don't
+      # know precisely how many output streams there will be.  This is a good
+      # guess, though.
+      num_video_streams = (
+          len(self._pipeline_config.resolutions) *
+          len(self._pipeline_config.video_codecs))
+      num_audio_streams = (
+          len(self._pipeline_config.channel_layouts) *
+          len(self._pipeline_config.audio_codecs))
+      # Cap the upload pool size at the number of CPUs.
+      ideal_pool_size = num_video_streams + num_audio_streams
+      max_pool_size = os.cpu_count() or 1  # technically can return None
+      pool_size = min(max_pool_size, ideal_pool_size)
+      upload_proxy = ProxyNode(output_location, pool_size)
       upload_proxy.start()
 
       # All the outputs now should be sent to the proxy server instead.
@@ -315,7 +328,7 @@ class ControllerNode(object):
                                       outputs,
                                       index,
                                       self.hermetic_ffmpeg))
-    
+
     # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
     # and put that period in it.
     if period_dir and not is_url(output_location):
