@@ -125,7 +125,7 @@ class PeriodConcatNode(ThreadedNodeBase):
       self._pipeline_config.dash_output)).getroot()
 
     # Get the default namespace.
-    namespace_matches = re.search('\{([^}]*)\}', concat_mpd.tag)
+    namespace_matches = re.search(r'\{([^}]*)\}', concat_mpd.tag)
     assert namespace_matches is not None, 'Unable to find the default namespace.'
     default_dash_namespace = namespace_matches.group(1)
 
