@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/shaka-project/shaka-streamer/compare/v1.1.1...v1.2.0) (2025-01-15)
+
+
+### Features
+
+* Log configs ([#225](https://github.com/shaka-project/shaka-streamer/issues/225)) ([c2244c0](https://github.com/shaka-project/shaka-streamer/commit/c2244c060d33d09405d636bac803863681a59be5))
+
+
+### Performance Improvements
+
+* Use a process pool to improve cloud upload performance ([#227](https://github.com/shaka-project/shaka-streamer/issues/227)) ([f542acd](https://github.com/shaka-project/shaka-streamer/commit/f542acd43e518986bdb5a2b7e74d200d0f29e977))
+
 ## [1.1.1](https://github.com/shaka-project/shaka-streamer/compare/v1.1.0...v1.1.1) (2024-11-12)
 
 
