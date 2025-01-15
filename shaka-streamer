@@ -29,7 +29,7 @@ import argparse
 import json
 import sys
 import time
-import yaml
+import yaml  # type: ignore
 
 import streamer
 
