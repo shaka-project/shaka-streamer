@@ -42,49 +42,49 @@ video_resolutions:
     max_frame_rate: 30
     bitrates:
       h264: '145k'
-      h265: '100k'
+      hevc: '100k'
   fourth-hd:
     max_width: 640
     max_height: 360
     max_frame_rate: 30
     bitrates:
       h264: '365k'
-      h265: '145k'
+      hevc: '145k'
   third-hd:
     max_width: 768
     max_height: 432
     max_frame_rate: 30
     bitrates:
       h264: '1.1M'
-      h265: '300k'
+      hevc: '300k'
   quarter-fhd:
     max_width: 960
     max_height: 540
     bitrates:
       h264: '2M'
-      h265: '1.6M'
+      hevc: '1.6M'
   hd:
     max_width: 1280
     max_height: 720
     bitrates:
       h264: '4.5M'
-      h265: '3.4M'
+      hevc: '3.4M'
   full-hd:
     max_width: 1920
     max_height: 1080
     bitrates:
       h264: '7.8M'
-      h265: '5.8M'
+      hevc: '5.8M'
   quad-hd:
     max_width: 2560
     max_height: 1440
     bitrates:
       h264: '16M'
-      h265: '8.1M'
+      hevc: '8.1M'
   ultra-hd:
     max_width: 3840
     max_height: 2160
     bitrates:
       h264: '34M'
-      h265: '16.8M'
+      hevc: '16.8M'
 
