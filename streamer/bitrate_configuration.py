@@ -36,12 +36,11 @@ class BitrateString(configuration.ValidatingType, str):
 
 
 class AudioCodec(enum.Enum):
-
-  AAC: str = 'aac'
-  OPUS: str = 'opus'
-  AC3: str = 'ac3'
-  EAC3: str = 'eac3'
-  FLAC: str = 'flac'
+  AAC = 'aac'
+  OPUS = 'opus'
+  AC3 = 'ac3'
+  EAC3 = 'eac3'
+  FLAC = 'flac'
 
   def is_hardware_accelerated(self) -> bool:
     """Returns True if this codec is hardware accelerated."""
