@@ -23,7 +23,10 @@ from typing import Optional
 from typing_extensions import Self
 
 import multiprocessing
-from multiprocessing.connection import Connection
+# On Windows, we get multiprocessing.connection.PipeConnection.
+# On Linux/macOS, we get multiprocessing.connection.Connection.
+# Both inherit from multiprocessing.connection._ConnectionBase.
+from multiprocessing.connection import _ConnectionBase
 
 from streamer.cloud.base import CloudUploaderBase
 import streamer.cloud.uploader as Uploader
@@ -79,7 +82,7 @@ class Message(object):
     return Message(MessageType.RESET)
 
 
-def worker_target(upload_location: str, reader: Connection):
+def worker_target(upload_location: str, reader: _ConnectionBase):
   """Target for multiprocessing.Process.
 
   This is the entry point for every worker subprocess.
@@ -120,7 +123,7 @@ class WorkerProcess(object):
   """A worker process and the write end of its pipe."""
 
   def __init__(self, process: multiprocessing.Process,
-               writer: Connection) -> None:
+               writer: _ConnectionBase) -> None:
     self.process = process
     self.writer = writer
 
