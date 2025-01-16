@@ -122,9 +122,14 @@ jobs:
           sudo apt -y install chromium
 
           # Running inside a Docker container, we need to kill the sandbox.
+          # We also need to set these XDG environment variables, or else we get
+          # errors like "chrome_crashpad_handler: --database is required".
+          # See https://github.com/hardkoded/puppeteer-sharp/issues/2633
           # Heredocs interpolate variables, so escape the dollar sign below.
           cat >/usr/local/bin/chromium <<EOF
           #!/bin/bash
+          export XDG_CONFIG_HOME=/tmp/.chromium
+          export XDG_CACHE_HOME=/tmp/.chromium
           exec /usr/bin/chromium --no-sandbox "\$@"
           EOF
 
