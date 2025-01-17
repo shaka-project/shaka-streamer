@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.1](https://github.com/shaka-project/shaka-streamer/compare/v1.2.0...v1.2.1) (2025-01-17)
+
+
+### Bug Fixes
+
+* Add missing dependency on typing_extensions ([#231](https://github.com/shaka-project/shaka-streamer/issues/231)) ([cd49911](https://github.com/shaka-project/shaka-streamer/commit/cd499114787107d2fb199d7521939cc840d772e6))
+
+
+### Documentation
+
+* Fix HEVC sample config ([#229](https://github.com/shaka-project/shaka-streamer/issues/229)) ([b22b8c5](https://github.com/shaka-project/shaka-streamer/commit/b22b8c5cd1ad262652586b15baed4d47ac012017))
+
 ## [1.2.0](https://github.com/shaka-project/shaka-streamer/compare/v1.1.1...v1.2.0) (2025-01-15)
 
 
