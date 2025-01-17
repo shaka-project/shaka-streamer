@@ -7,7 +7,7 @@ name: Build and Test
 #
 # Can also be run manually for debugging purposes.
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
@@ -30,12 +30,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Configure the build matrix based on repo variables.  The list of objects in
-  # the build matrix contents can't be changed by conditionals, but it can be
-  # computed by another job and deserialized.  This uses
-  # vars.ENABLE_SELF_HOSTED to determine the build matrix, based on the
-  # metadata in build-matrix.json.
+  settings:
+    name: Settings
+    uses: ./.github/workflows/settings.yaml
+
+  # Configure the build matrix based on inputs.  The list of objects in the
+  # build matrix contents can't be changed by conditionals, but it can be
+  # computed by another job and deserialized.
   matrix_config:
+    needs: settings
     runs-on: ubuntu-latest
     outputs:
       MATRIX: ${{ steps.configure.outputs.MATRIX }}
@@ -50,11 +53,11 @@ jobs:
         shell: node {0}
         run: |
           const fs = require('fs');
-          const enableDebug = "${{ vars.ENABLE_DEBUG }}" != '';
-          const enableSelfHosted = "${{ vars.ENABLE_SELF_HOSTED }}" != '';
+          const enableDebug = '${{ needs.settings.debug }}' != '';
+          const enableSelfHosted = '${{ needs.settings.self_hosted }}' != '';
 
-          // Use ENABLE_SELF_HOSTED to decide what the build matrix below
-          // should include.
+          // Use enableSelfHosted to decide what the build matrix below should
+          // include.
           const buildMatrix = JSON.parse(fs.readFileSync("${{ github.workspace }}/build-matrix.json"));
           const {hosted, selfHosted, pythonVersions} = buildMatrix;
           const devices = enableSelfHosted ? hosted.concat(selfHosted) : hosted;
@@ -72,16 +75,11 @@ jobs:
               process.env['GITHUB_OUTPUT'],
               `MATRIX=${ JSON.stringify(matrix) }\n`);
 
-          // Output the debug flag directly.
-          fs.appendFileSync(
-              process.env['GITHUB_OUTPUT'],
-              `ENABLE_DEBUG=${ enableDebug }\n`);
-
           // Log the outputs, for the sake of debugging this script.
           console.log({enableDebug, enableSelfHosted, matrix});
 
   build_and_test:
-    needs: matrix_config
+    needs: [settings, matrix_config]
     strategy:
       # Let other matrix entries complete, so we have all results on failure
       # instead of just the first failure.
@@ -199,4 +197,4 @@ jobs:
         uses: mxschmitt/action-tmate@v3.6
         with:
           limit-access-to-actor: true
-        if: failure() && vars.ENABLE_DEBUG != ''
+        if: failure() && needs.settings.debug != ''
