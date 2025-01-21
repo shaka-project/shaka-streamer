@@ -1,3 +1,3 @@
-__version__ = '1.2.1'  # x-release-please-version
+__version__ = '1.2.2'  # x-release-please-version
 
 from . import controller_node

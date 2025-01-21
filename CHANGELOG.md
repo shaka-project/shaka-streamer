@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/shaka-project/shaka-streamer/compare/v1.2.1...v1.2.2) (2025-01-21)
+
+
+### Bug Fixes
+
+* Fix missing cloud/ subfolder ([#235](https://github.com/shaka-project/shaka-streamer/issues/235)) ([ad0b869](https://github.com/shaka-project/shaka-streamer/commit/ad0b8698f84a0d09c0e196e107437b0b3e51f3fe)), closes [#234](https://github.com/shaka-project/shaka-streamer/issues/234)
+
 ## [1.2.1](https://github.com/shaka-project/shaka-streamer/compare/v1.2.0...v1.2.1) (2025-01-17)
 
 
