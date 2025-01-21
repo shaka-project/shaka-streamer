@@ -7,7 +7,7 @@
 
 * Fix missing cloud/ subfolder ([#235](https://github.com/shaka-project/shaka-streamer/issues/235)) ([ad0b869](https://github.com/shaka-project/shaka-streamer/commit/ad0b8698f84a0d09c0e196e107437b0b3e51f3fe)), closes [#234](https://github.com/shaka-project/shaka-streamer/issues/234)
 
-## [1.2.1](https://github.com/shaka-project/shaka-streamer/compare/v1.2.0...v1.2.1) (2025-01-17)
+## [1.2.1](https://github.com/shaka-project/shaka-streamer/compare/v1.2.0...v1.2.1) (2025-01-17 - **UNUSABLE - YANKED from PyPI**)
 
 
 ### Bug Fixes
@@ -19,7 +19,7 @@
 
 * Fix HEVC sample config ([#229](https://github.com/shaka-project/shaka-streamer/issues/229)) ([b22b8c5](https://github.com/shaka-project/shaka-streamer/commit/b22b8c5cd1ad262652586b15baed4d47ac012017))
 
-## [1.2.0](https://github.com/shaka-project/shaka-streamer/compare/v1.1.1...v1.2.0) (2025-01-15)
+## [1.2.0](https://github.com/shaka-project/shaka-streamer/compare/v1.1.1...v1.2.0) (2025-01-15 - **UNUSABLE - YANKED from PyPI**)
 
 
 ### Features
