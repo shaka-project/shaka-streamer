@@ -108,6 +108,7 @@ jobs:
       - name: Install Linux deps
         if: runner.os == 'Linux'
         run: |
+          sudo apt -y update
           sudo apt -y install \
               libva2 libva-drm2 \
               nodejs npm xvfb
