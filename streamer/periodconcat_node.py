@@ -123,6 +123,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     concat_mpd = ElementTree.ElementTree(file=os.path.join(
       self._packager_nodes[0].output_location,
       self._pipeline_config.dash_output)).getroot()
+    assert concat_mpd is not None, 'Failed to parse MPD'
 
     # Get the default namespace.
     namespace_matches = re.search(r'\{([^}]*)\}', concat_mpd.tag)
@@ -138,6 +139,7 @@ class PeriodConcatNode(ThreadedNodeBase):
       mpd = ElementTree.ElementTree(file=os.path.join(
         packager_node.output_location,
         self._pipeline_config.dash_output)).getroot()
+      assert mpd is not None, 'Failed to parse subsequent MPD'
       period = find(mpd, 'Period')
       period.attrib['duration'] = mpd.attrib['mediaPresentationDuration']
 
