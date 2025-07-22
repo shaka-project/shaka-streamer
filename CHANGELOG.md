@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/shaka-project/shaka-streamer/compare/v1.2.2...v1.3.0) (2025-07-22)
+
+
+### Features
+
+* Add configuration option for "hls_key_uri" ([#239](https://github.com/shaka-project/shaka-streamer/issues/239)) ([28033ec](https://github.com/shaka-project/shaka-streamer/commit/28033ecc0e4714c08bed9d4a191404dc74c1a75f))
+
 ## [1.2.2](https://github.com/shaka-project/shaka-streamer/compare/v1.2.1...v1.2.2) (2025-01-21)
 
 
