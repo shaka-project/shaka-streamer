@@ -184,6 +184,9 @@ class EncryptionConfig(configuration.Base):
   Defaults to the Widevine test account's IV.
   """
 
+  hls_key_uri = configuration.Field(str).cast()
+  """The URI of the key for HLS."""
+
   protection_scheme = configuration.Field(ProtectionScheme,
                                           default=ProtectionScheme.CENC).cast()
   """The protection scheme (cenc or cbcs) to use when encrypting."""
