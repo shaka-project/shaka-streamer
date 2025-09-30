@@ -69,8 +69,8 @@ See docs: https://shaka-project.github.io/shaka-streamer/cloud_storage.html
                            'config_files/bitrate_config.yaml)')
   parser.add_argument('-c', '--cloud-url',
                       default=None,
-                      help='The Google Cloud Storage or Amazon S3 URL to ' +
-                           'upload to.  (Starts with gs:// or s3://) (DEPRECATED, use -o)')
+                      help='The Google Cloud Storage or Amazon S3 or Azure Blob Storage URL to ' +
+                           'upload to.  (Starts with gs:// or s3:// or azure://) (DEPRECATED, use -o)')
   parser.add_argument('-o', '--output',
                       default='output_files',
                       help='The output folder or URL to write files to.  See ' +

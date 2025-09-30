@@ -23,7 +23,7 @@ SUPPORTED_PROTOCOLS: list[str] = []
 
 
 # All supported protocols.  Used to provide more useful error messages.
-ALL_SUPPORTED_PROTOCOLS: list[str] = ['gs', 's3']
+ALL_SUPPORTED_PROTOCOLS: list[str] = ['gs', 's3', 'azure']
 
 
 # Try to load the GCS (Google Cloud Storage) uploader.  If we can, the user has
@@ -44,6 +44,15 @@ except:
   pass
 
 
+# Try to load the Azure Blob Storage uploader.  If we can, the user has
+# the libraries needed for Azure support.
+try:
+  from streamer.cloud.azure import AzureStorageUploader
+  SUPPORTED_PROTOCOLS.append('azure')
+except:
+  pass
+
+
 def create(upload_location: str) -> CloudUploaderBase:
   """Create an uploader appropriate to the upload location URL."""
 
@@ -51,5 +60,7 @@ def create(upload_location: str) -> CloudUploaderBase:
     return GCSUploader(upload_location)
   elif upload_location.startswith("s3://"):
     return S3Uploader(upload_location)
+  elif upload_location.startswith("azure://"):
+    return AzureStorageUploader(upload_location)
   else:
     raise RuntimeError("Protocol of {} isn't supported".format(upload_location))
