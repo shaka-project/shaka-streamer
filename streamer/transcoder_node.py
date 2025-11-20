@@ -20,7 +20,7 @@ from streamer.bitrate_configuration import AudioCodec, VideoCodec
 from streamer.input_configuration import Input, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
-from streamer.pipeline_configuration import PipelineConfig, StreamingMode
+from streamer.pipeline_configuration import LimitResolutionMode, PipelineConfig, StreamingMode
 from typing import List, Union, Optional
 
 class TranscoderNode(PolitelyWaitOnFinish):
@@ -220,9 +220,15 @@ class TranscoderNode(PolitelyWaitOnFinish):
       # These filters are specific to Linux's vaapi.
       filters.append('format=nv12')
       filters.append('hwupload')
-      filters.append('scale_vaapi=-2:{0}'.format(stream.resolution.max_height))
+      if self._pipeline_config.limit_resolution_by == LimitResolutionMode.WIDTH:
+        filters.append('scale_vaapi={0}:-2'.format(stream.resolution.max_width))
+      else:
+        filters.append('scale_vaapi=-2:{0}'.format(stream.resolution.max_height))
     else:
-      filters.append('scale=-2:{0}'.format(stream.resolution.max_height))
+      if self._pipeline_config.limit_resolution_by == LimitResolutionMode.WIDTH:
+        filters.append('scale={0}:-2'.format(stream.resolution.max_width))
+      else:
+        filters.append('scale=-2:{0}'.format(stream.resolution.max_height))
 
     # To avoid weird rounding errors in Sample Aspect Ratio, set it explicitly
     # to 1:1.  Without this, you wind up with SAR set to weird values in DASH

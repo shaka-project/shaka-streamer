@@ -51,6 +51,13 @@ class StreamingMode(enum.Enum):
   VOD = 'vod'
   """Indicates a video-on-demand (VOD) stream, which is finite."""
 
+class LimitResolutionMode(enum.Enum):
+  WIDTH = 'width'
+  """Limit resolution by width, not height."""
+
+  HEIGHT = 'height'
+  """Limit resolution by height, not width.  (This is the default.)"""
+
 class ManifestFormat(enum.Enum):
   DASH = 'dash'
   HLS = 'hls'
@@ -223,6 +230,12 @@ class PipelineConfig(configuration.Base):
 
   streaming_mode = configuration.Field(StreamingMode, required=True).cast()
   """The streaming mode, which can be either 'vod' or 'live'."""
+
+  limit_resolution_by = configuration.Field(LimitResolutionMode, default=LimitResolutionMode.HEIGHT).cast()
+  """Should the resolution be limited by height or width?
+
+  (Default is height.)
+  """
 
   quiet = configuration.Field(bool, default=False).cast()
   """If true, reduce the level of output.
