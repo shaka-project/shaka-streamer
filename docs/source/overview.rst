@@ -62,7 +62,7 @@ downloaded individually over HTTPS or all at once through gsutil:
 
 .. code:: sh
 
-   gsutil -m cp gs://shaka-streamer-assets/sample-inputs/* .
+   gcloud storage cp gs://shaka-streamer-assets/sample-inputs/* .
 
 
 
