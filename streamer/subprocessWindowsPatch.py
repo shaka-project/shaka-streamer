@@ -82,16 +82,20 @@ def resolve(exe):
 real_Popen = subprocess.Popen
 
 
-def Popen(args, *more_args, **kwargs):
+# Important note: If any other component tries to wrap Popen (such as asyncio
+# on Windows), it is CRITICAL that this monkey-patch be a class, not a
+# function.
+class Popen(real_Popen):  # type: ignore
   """A patch to install over subprocess.Popen."""
 
-  # If the first argument is a list, resolve the command name, which is the
-  # first item in the list.
-  if isinstance(args, list):
-    args[0] = resolve(args[0])
+  def __init__(self, args, *more_args, **kwargs):
+    # If the first argument is a list, resolve the command name, which is the
+    # first item in the list.
+    if isinstance(args, list):
+      args[0] = resolve(args[0])
 
-  # Delegate to the real Popen implementation.
-  return real_Popen(args, *more_args, **kwargs)
+    # Delegate to the real Popen implementation.
+    super().__init__(args, *more_args, **kwargs)
 
 
 # Only patch win32, but not cygwin.  Cygwin works correctly already.
