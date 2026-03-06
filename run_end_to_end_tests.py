@@ -344,6 +344,11 @@ def main():
   global do_debug
   do_debug = args.debug
 
+  # FIXME: trying to fix mypy
+  if sys.platform == 'win32':
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
   # Do static type checking on the project first.
   type_check_result = mypy_api.run(['streamer/', 'shaka-streamer'])
   if type_check_result[2] != 0:
