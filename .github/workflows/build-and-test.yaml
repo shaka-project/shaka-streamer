@@ -101,6 +101,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
+          architecture: ${{ matrix.target_arch }}
 
       - name: Debug Python version
         run: python3 --version
