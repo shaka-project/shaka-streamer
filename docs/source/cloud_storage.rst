@@ -25,9 +25,10 @@ https://localhost:8080/foo/bar/dash.mpd to write the manifest (with default
 settings).
 
 Cloud storage URLs can be either Google Cloud Storage URLs (beginning with
-gs://) or Amazon S3 URLs (beginning with s3://).  Like the HTTP support
-described above, these are a base URL.  If you ask for output to gs://foo/bar/,
-Streamer will write to gs://foo/bar/dash.mpd (with default settings).
+gs://), Amazon S3 URLs (beginning with s3://), or Azure Blob Storage URLs
+(beginning with azure://).  Like the HTTP support described above, these are
+a base URL.  If you ask for output to gs://foo/bar/, Streamer will write to
+gs://foo/bar/dash.mpd (with default settings).
 
 Cloud storage output uses the storage provider's Python libraries.  Find more
 details on setup and authentication below.
@@ -91,6 +92,40 @@ Example command-line for live streaming to Amazon S3:
      -i config_files/input_looped_file_config.yaml \
      -p config_files/pipeline_live_config.yaml \
      -o s3://my_s3_bucket/folder/
+
+
+Azure Blob Storage Setup
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Install the Python modules if you haven't yet:
+
+.. code:: sh
+
+   python3 -m pip install azure-storage-blob azure-identity
+
+Azure Blob Storage support uses append blobs for efficient streaming uploads,
+making it ideal for live streaming scenarios where data is written sequentially.
+Authentication is handled by Azure's DefaultAzureCredential, which automatically
+tries multiple authentication methods in order.
+
+The most common authentication methods are:
+
+1. **Azure CLI**: Login using ``az login`` (recommended for development)
+2. **Managed Identity**: Automatic when running on Azure resources
+3. **Service Principal**: Set ``AZURE_CLIENT_ID``, ``AZURE_CLIENT_SECRET``,
+   and ``AZURE_TENANT_ID`` environment variables
+4. **Interactive Browser**: Fallback authentication method
+
+The Azure URL format is: ``azure://storageaccount.blob.core.windows.net/container/path/``
+
+Example command-line for live streaming to Azure Blob Storage:
+
+.. code:: sh
+
+   python3 shaka-streamer \
+     -i config_files/input_looped_file_config.yaml \
+     -p config_files/pipeline_live_config.yaml \
+     -o azure://mystorageaccount.blob.core.windows.net/mycontainer/folder/
 
 
 .. _boto config file: http://boto.cloudhackers.com/en/latest/boto_config_tut.html

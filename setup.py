@@ -30,7 +30,7 @@ setuptools.setup(
   url='https://github.com/shaka-project/shaka-streamer',
   packages=setuptools.find_packages(),
   install_requires=[
-      'pywin32>=308; platform_system == "Windows"',
+      'pywin32>=311; platform_system == "Windows"',
       'pyyaml>=6,<7',
       'setproctitle>=1,<2',
       'typing_extensions>=4,<5',
