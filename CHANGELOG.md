@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.0](https://github.com/shaka-project/shaka-streamer/compare/v1.3.0...v1.4.0) (2026-03-11)
+
+
+### Features
+
+* Add option to limit resolution by width ([#245](https://github.com/shaka-project/shaka-streamer/issues/245)) ([ba8dcf6](https://github.com/shaka-project/shaka-streamer/commit/ba8dcf68f46edc3dc0bcdb97191edf74100c0084))
+* Add support to upload to Azure blob storage. ([#243](https://github.com/shaka-project/shaka-streamer/issues/243)) ([9201a5b](https://github.com/shaka-project/shaka-streamer/commit/9201a5b50696ab3001e2d2bfa2319dcbfee339bd))
+* Bump FFmpeg & Packager versions ([#257](https://github.com/shaka-project/shaka-streamer/issues/257)) ([6bfd484](https://github.com/shaka-project/shaka-streamer/commit/6bfd484ff8d1e5bb9cdd8d7ef8a4a74c5c40f946))
+
+
+### Bug Fixes
+
+* Fix exception in test runner on Windows ([#254](https://github.com/shaka-project/shaka-streamer/issues/254)) ([6f15951](https://github.com/shaka-project/shaka-streamer/commit/6f15951683ef218915f901af895f277b3fe2270c))
+* Update build matrix and bump dependencies ([#255](https://github.com/shaka-project/shaka-streamer/issues/255)) ([4c9f9ab](https://github.com/shaka-project/shaka-streamer/commit/4c9f9ab9ee3658cebde9e570297afd2166fd2e97))
+
 ## [1.3.0](https://github.com/shaka-project/shaka-streamer/compare/v1.2.2...v1.3.0) (2025-07-22)
 
 
