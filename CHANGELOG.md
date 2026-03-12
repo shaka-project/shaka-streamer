@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/shaka-project/shaka-streamer/compare/v1.4.0...v1.4.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* **ci:** Fix outdated release infrastructure ([#258](https://github.com/shaka-project/shaka-streamer/issues/258)) ([af7e92d](https://github.com/shaka-project/shaka-streamer/commit/af7e92d9064f90b2965e993f08c95010abe42137))
+
 ## [1.4.0](https://github.com/shaka-project/shaka-streamer/compare/v1.3.0...v1.4.0) (2026-03-11)
 
 
