@@ -27,7 +27,7 @@ import sys
 import time
 import threading
 import traceback
-import urllib
+import urllib.request
 
 from mypy import api as mypy_api
 from streamer import node_base
