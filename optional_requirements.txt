@@ -1,5 +1,6 @@
 flask>=3,<4
 mypy>=1,<2
+pylint>=3,<4
 setuptools>=82
 sphinx>=7,<8
 twine>=6.2.0

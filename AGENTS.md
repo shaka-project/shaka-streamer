@@ -61,7 +61,8 @@ python3 binaries/build_wheels.py
 
 | Task | Command |
 |------|---------|
-| Type check | `python3 -m mypy streamer/` |
+| Type check | `python3 -m mypy shaka-streamer streamer/` |
+| Lint | `python3 -m pylint *.py shaka-streamer streamer/ binaries/ docs/` |
 | Run tests (Linux) | `xvfb-run -a python3 run_end_to_end_tests.py` |
 | Run tests (other) | `python3 run_end_to_end_tests.py` |
 | Build docs | `bash docs/build.sh` |
@@ -142,8 +143,9 @@ Study `node_base.py` before changing how any node starts or terminates.
 - **Follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).**
   This is the project's aspiration; existing code may not yet fully conform,
   but new code should.
-- There is currently no automated style linter beyond mypy. Use your judgment
-  and match the surrounding code's conventions.
+- **pylint** is enforced via `.pylintrc` (Google style, 2-space indent override).
+  Run `python3 -m pylint *.py shaka-streamer streamer/ binaries/ docs/`
+  and fix all violations before submitting.
 - **Type annotations are required** on all new functions and methods. mypy
   must pass cleanly.
 - **Do not suppress type errors** with `# type: ignore` unless there is no
@@ -155,7 +157,8 @@ Study `node_base.py` before changing how any node starts or terminates.
 
 Before considering a change ready for review:
 
-- [ ] `python3 -m mypy streamer/` passes with no new errors
+- [ ] `python3 -m mypy shaka-streamer streamer/` passes with no new errors
+- [ ] `python3 -m pylint *.py shaka-streamer streamer/ binaries/ docs/` passes with no messages
 - [ ] Tests pass: `xvfb-run -a python3 run_end_to_end_tests.py` (Linux) or
       `python3 run_end_to_end_tests.py` (other)
 - [ ] Tests updated to cover changed behavior; new tests added for new
