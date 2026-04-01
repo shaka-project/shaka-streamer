@@ -47,22 +47,19 @@ class UnrecognizedField(ConfigError):
   """An error raised when an unrecognized field is encountered in the input."""
 
   def __str__(self):
-    return '{} contains unrecognized field: {}'.format(
-        self.class_name, self.field_name)
+    return f'{self.class_name} contains unrecognized field: {self.field_name}'
 
 class WrongType(ConfigError):
   """An error raised when a field in the input has the wrong type."""
 
   def __str__(self):
-    return 'In {}, {} field requires a {}'.format(
-        self.class_name, self.field_name, self.field.get_type_name())
+    return f'In {self.class_name}, {self.field_name} field requires a {self.field.get_type_name()}'
 
 class MissingRequiredField(ConfigError):
   """An error raised when a required field is missing from the input."""
 
   def __str__(self):
-    return '{} is missing a required field: {}, a {}'.format(
-        self.class_name, self.field_name, self.field.get_type_name())
+    return f'{self.class_name} is missing a required field: {self.field_name}, a {self.field.get_type_name()}'
 
 class MalformedField(ConfigError):
   """An error raised when a field is malformed."""
@@ -72,8 +69,7 @@ class MalformedField(ConfigError):
     self.reason = reason
 
   def __str__(self):
-    return 'In {}, {} field is malformed: {}'.format(
-        self.class_name, self.field_name, self.reason)
+    return f'In {self.class_name}, {self.field_name} field is malformed: {self.reason}'
 
 class ConflictingFields(ConfigError):
   """An error raised when multiple fields are given and only one of them is allowed at a time."""
@@ -86,12 +82,11 @@ class ConflictingFields(ConfigError):
     super().__init__(class_ref, field1_name, class_ref.__dict__[field1_name])
 
   def __str__(self):
-    return """In {}, these fields are conflicting:
-    {} a {}
-    and
-    {} a {}\n  consider using only one of them.""".format(self.class_name,
-                      self.field1_name, self.field1_type,
-                      self.field2_name, self.field2_type)
+    return (f'In {self.class_name}, these fields are conflicting:\n'
+            f'    {self.field1_name} a {self.field1_type}\n'
+            f'    and\n'
+            f'    {self.field2_name} a {self.field2_type}\n'
+            '  consider using only one of them.')
 
 class MissingRequiredExclusiveFields(ConfigError):
   """An error raised when one of an exclusively required fields is missing."""
@@ -104,11 +99,10 @@ class MissingRequiredExclusiveFields(ConfigError):
     super().__init__(class_ref, field1_name, class_ref.__dict__[field1_name])
 
   def __str__(self):
-    return """{} is missing a required field. Use exactly one of these fields:
-    {} a {}
-    or
-    {} a {}""".format(self.class_name, self.field1_name, self.field1_type,
-                      self.field2_name, self.field2_type)
+    return (f'{self.class_name} is missing a required field. Use exactly one of these fields:\n'
+            f'    {self.field1_name} a {self.field1_type}\n'
+            f'    or\n'
+            f'    {self.field2_name} a {self.field2_type}')
 
 class ValidatingType(metaclass=abc.ABCMeta):
   """A base wrapper type that validates the input against a limited range.
@@ -274,20 +268,17 @@ class Field(Generic[FieldType]):
       return 'string'
     elif type is list:
       # Mention the subtype.
-      return 'list of {}'.format(
-          Field.get_type_name_static(subtype, None, None))
+      return f'list of {Field.get_type_name_static(subtype, None, None)}'
     elif type is dict:
       # Mention the subtype.
-      return 'dictionary of {} to {}'.format(
-          Field.get_type_name_static(keytype, None, None),
-          Field.get_type_name_static(subtype, None, None))
+      return f'dictionary of {Field.get_type_name_static(keytype, None, None)} to {Field.get_type_name_static(subtype, None, None)}'
     elif type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'
     elif issubclass(type, enum.Enum):
       # Get the list of valid options as quoted strings.
       options = [repr(str(member.value)) for member in type]
-      return '{} (one of {})'.format(type.__name__, ', '.join(options))
+      return f'{type.__name__} (one of {", ".join(options)})'
     elif issubclass(type, ValidatingType):
       return type.name()
 
@@ -358,7 +349,7 @@ class Base(object):
 
     # For fields containing other config objects, specially check and convert
     # them.
-    assert field.type is not None, 'No type info for Field {}'.format(key)
+    assert field.type is not None, f'No type info for Field {key}'
     if issubclass(field.type, Base):
       # A config object at this stage should be a dictionary.
       if not isinstance(value, dict):
@@ -526,7 +517,7 @@ class RuntimeMap(Generic[RuntimeMapSubclass], Base):
       return cls._map[key]
     except KeyError:
       raise ValueError(
-          '{} is not a valid {}'.format(key, cls.__name__)) from None
+          f'{key} is not a valid {cls.__name__}') from None
 
   @classmethod
   def keys(cls):
@@ -553,8 +544,7 @@ class RuntimeMapKeyValidator(ValidatingType, str):
   @classmethod
   def name(cls) -> str:
     options = [repr(str(key)) for key in cls.map_class.keys()]
-    return '{} name (one of {})'.format(
-        cls.map_class.__name__, ', '.join(options))
+    return f'{cls.map_class.__name__} name (one of {", ".join(options)})'
 
   @classmethod
   def validate(cls, key):
@@ -563,5 +553,5 @@ class RuntimeMapKeyValidator(ValidatingType, str):
 
     if key not in cls.map_class.keys():
       raise ValueError(
-          '{} is not a valid {}'.format(key, cls.name()))
+          f'{key} is not a valid {cls.name()}')
 

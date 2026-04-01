@@ -63,8 +63,7 @@ class AudioCodec(enum.Enum):
     if self in {AudioCodec.OPUS, AudioCodec.AAC, AudioCodec.AC3, AudioCodec.EAC3, AudioCodec.FLAC}:
       return 'mp4'
     else:
-      assert False, 'No mapping for output format for codec {}'.format(
-          self.value)
+      assert False, f'No mapping for output format for codec {self.value}'
 
 
 class VideoCodec(enum.Enum):
@@ -112,8 +111,7 @@ class VideoCodec(enum.Enum):
     if self in {VideoCodec.H264, VideoCodec.VP9, VideoCodec.HEVC, VideoCodec.AV1}:
       return 'mp4'
     else:
-      assert False, 'No mapping for output format for codec {}'.format(
-          self.value)
+      assert False, f'No mapping for output format for codec {self.value}'
 
 
 class AudioChannelLayout(configuration.RuntimeMap):

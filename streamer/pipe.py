@@ -101,7 +101,7 @@ class Pipe:
     elif mode == 'r':
       pipe._write_pipe_name = path
     else:
-      raise RuntimeError("'{}' is not a valid mode for a Pipe.".format(mode))
+      raise RuntimeError(f"'{mode}' is not a valid mode for a Pipe.")
     return pipe
 
   @staticmethod

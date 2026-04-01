@@ -125,7 +125,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       # system in ffmpeg, this will stop any Packager output from getting to
       # the screen.
       packager_log_file = 'PackagerNode-' + str(self._index) + '.log'
-      stdout = open(packager_log_file, 'w')
+      stdout = open(packager_log_file, 'w', encoding='utf-8')
 
     self._process: subprocess.Popen = self._create_process(
         args,

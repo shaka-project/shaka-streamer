@@ -22,7 +22,7 @@ separator_index = sys.argv.index('--')
 platform_binaries = sys.argv[separator_index + 1:]
 sys.argv = sys.argv[:separator_index]
 
-with open('README.md', 'r') as f:
+with open('README.md', 'r', encoding='utf-8') as f:
   long_description = f.read()
 
 setuptools.setup(

@@ -121,7 +121,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
           # is the input file number, and "input.get_stream_specifier()" builds
           # the stream specifier for this input.  The output stream for this
           # input is implied by where we are in the ffmpeg argument list.
-          '-map', '{0}:{1}'.format(i, input.get_stream_specifier()),
+          '-map', f'{i}:{input.get_stream_specifier()}',
       ]
 
       for output_stream in self._outputs:
@@ -152,7 +152,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
       # Use this environment variable to turn on ffmpeg's logging.  This is
       # independent of the -loglevel switch above.
       ffmpeg_log_file = 'TranscoderNode-' + str(self._index) + '.log'
-      env['FFREPORT'] = 'file={}:level=32'.format(ffmpeg_log_file)
+      env['FFREPORT'] = f'file={ffmpeg_log_file}:level=32'
 
     self._process = self._create_process(args, env)
 
@@ -221,14 +221,14 @@ class TranscoderNode(PolitelyWaitOnFinish):
       filters.append('format=nv12')
       filters.append('hwupload')
       if self._pipeline_config.limit_resolution_by == LimitResolutionMode.WIDTH:
-        filters.append('scale_vaapi={0}:-2'.format(stream.resolution.max_width))
+        filters.append(f'scale_vaapi={stream.resolution.max_width}:-2')
       else:
-        filters.append('scale_vaapi=-2:{0}'.format(stream.resolution.max_height))
+        filters.append(f'scale_vaapi=-2:{stream.resolution.max_height}')
     else:
       if self._pipeline_config.limit_resolution_by == LimitResolutionMode.WIDTH:
-        filters.append('scale={0}:-2'.format(stream.resolution.max_width))
+        filters.append(f'scale={stream.resolution.max_width}:-2')
       else:
-        filters.append('scale=-2:{0}'.format(stream.resolution.max_height))
+        filters.append(f'scale=-2:{stream.resolution.max_height}')
 
     # To avoid weird rounding errors in Sample Aspect Ratio, set it explicitly
     # to 1:1.  Without this, you wind up with SAR set to weird values in DASH

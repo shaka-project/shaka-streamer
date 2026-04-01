@@ -95,7 +95,7 @@ def dashStreamsReady(manifest_path):
 
   # Waiting until every Representation has a segment.
   pattern = re.compile(r'<Representation.*?((\n).*?)*?Representation>')
-  with open(manifest_path) as manifest_file:
+  with open(manifest_path, encoding='utf-8') as manifest_file:
     for representation in pattern.finditer(manifest_file.read()):
       if controller.is_low_latency_dash_mode():
         # LL-DASH manifests do not contain the segment reference tag <S>.
@@ -125,7 +125,7 @@ def hlsStreamsReady(master_playlist_path):
 
   # Parsing master playlist to see how many media playlists there are.
   # Do this every time, since the master playlist contents may change.
-  with open(master_playlist_path) as hls_file:
+  with open(master_playlist_path, encoding='utf-8') as hls_file:
     contents = hls_file.read()
     media_playlist_list = re.findall(r'^.*\.m3u8$', contents, re.MULTILINE)
     media_playlist_count = len(media_playlist_list)
@@ -145,7 +145,7 @@ def hlsStreamsReady(master_playlist_path):
       # Skip the master playlist
       continue
 
-    with open(playlist_path) as playlist_file:
+    with open(playlist_path, encoding='utf-8') as playlist_file:
       if '#EXTINF' not in playlist_file.read():
         # This doesn't have segments yet.
         return False

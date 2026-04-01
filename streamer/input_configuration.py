@@ -30,11 +30,8 @@ class InputNotFound(configuration.ConfigError):
     self.input = input
 
   def __str__(self):
-    return ('In {}, {} track #{} was'
-            ' not found in "{}"').format(self.class_name,
-                                         self.input.media_type.value,
-                                         self.input.track_num,
-                                         self.input.name)
+    return (f'In {self.class_name}, {self.input.media_type.value} track #{self.input.track_num} was'
+            f' not found in "{self.input.name}"')
 
 class InputType(enum.Enum):
   FILE = 'file'
@@ -267,8 +264,7 @@ class Input(configuration.Base):
         self.language = autodetect.get_language(self) or 'und'
       # Text streams are only supported in plain file inputs.
       if self.input_type != InputType.FILE:
-        reason = 'text streams are not supported in input_type "{}"'.format(
-            self.input_type.value)
+        reason = f'text streams are not supported in input_type "{self.input_type.value}"'
         disallow_field('input_type', reason)
       if self.forced_subtitle is None:
         self.forced_subtitle = autodetect.get_forced_subttitle(self)
@@ -305,11 +301,11 @@ class Input(configuration.Base):
     """
 
     if self.media_type == MediaType.VIDEO:
-      return 'v:{}'.format(self.track_num)
+      return f'v:{self.track_num}'
     elif self.media_type == MediaType.AUDIO:
-      return 'a:{}'.format(self.track_num)
+      return f'a:{self.track_num}'
     elif self.media_type == MediaType.TEXT:
-      return 's:{}'.format(self.track_num)
+      return f's:{self.track_num}'
 
     assert False, 'Unrecognized media_type!  This should not happen.'
 
@@ -363,7 +359,7 @@ class Input(configuration.Base):
       return []
 
     args = args_for_input_type.get(platform.system())
-    assert args, '{} is not supported on this platform!'.format(self.input_type.value)
+    assert args, f'{self.input_type.value} is not supported on this platform!'
 
     return args
 

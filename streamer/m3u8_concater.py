@@ -79,7 +79,7 @@ class MediaPlaylist:
     media_playlist_file = os.path.join(dir_name,
                                        _unquote(self.stream_info['URI']))
 
-    with open(media_playlist_file) as media_playlist:
+    with open(media_playlist_file, encoding='utf-8') as media_playlist:
       line = media_playlist.readline()
       while line:
         if line.startswith('#EXTINF'):
@@ -178,7 +178,7 @@ class MediaPlaylist:
     """
 
     file_path = os.path.join(dir_name, _unquote(self.stream_info['URI']))
-    with open(file_path, 'w') as media_playlist_file:
+    with open(file_path, 'w', encoding='utf-8') as media_playlist_file:
       content = media_playlist_header
       content += '#EXT-X-TARGETDURATION:' + str(self.target_duration) + '\n\n'
       content += self.content
@@ -193,7 +193,7 @@ class MediaPlaylist:
     """
 
     header = ''
-    with open(file_path, 'r') as media_playlist:
+    with open(file_path, 'r', encoding='utf-8') as media_playlist:
       line = media_playlist.readline()
       while line:
         # Capture the M3U tag, PlaylistType, and ExtVersion.
@@ -735,7 +735,7 @@ class MasterPlaylist:
 
     dir_name = os.path.dirname(file_name)
 
-    with open(file_name, 'r') as master_playlist:
+    with open(file_name, 'r', encoding='utf-8') as master_playlist:
       line = master_playlist.readline()
       while line:
         if line.startswith('#EXT-X-MEDIA'):
@@ -764,7 +764,7 @@ class MasterPlaylist:
     """
 
     dir_name = os.path.dirname(file)
-    with open(file, 'w') as master_playlist:
+    with open(file, 'w', encoding='utf-8') as master_playlist:
       content = master_playlist_header
       content += comment
       # Write #EXT-X-MEDIA media playlists first.
@@ -796,7 +796,7 @@ class MasterPlaylist:
     """
 
     header = ''
-    with open(file_path, 'r') as master_playlist_file:
+    with open(file_path, 'r', encoding='utf-8') as master_playlist_file:
       line = master_playlist_file.readline()
       # Store each line in header until one of these tags is encountered.
       while line and not line.startswith(('#EXT-X-MEDIA', '#EXT-X-STREAM-INF')):
@@ -863,7 +863,7 @@ class MasterPlaylist:
           var_playlists.append(media_playlist)
         else:
           # TODO: We need a case for CLOSED-CAPTIONS(CC).
-          raise RuntimeError("TYPE={} is not recognized".format(stream_type))
+          raise RuntimeError(f'TYPE={stream_type} is not recognized')
 
       all_txt_playlists.append(txt_playlists)
       all_aud_playlists.append(aud_playlists)

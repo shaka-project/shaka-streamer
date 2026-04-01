@@ -29,13 +29,13 @@ _ubuntu_versions_with_hw_encoders = (
 )
 
 # Module level variables.
-ffmpeg = os.path.join(_dir_path, 'ffmpeg-{}-{}'.format(_os, _cpu))
+ffmpeg = os.path.join(_dir_path, f'ffmpeg-{_os}-{_cpu}')
 """The path to the installed FFmpeg binary."""
 
-ffprobe = os.path.join(_dir_path, 'ffprobe-{}-{}'.format(_os, _cpu))
+ffprobe = os.path.join(_dir_path, f'ffprobe-{_os}-{_cpu}')
 """The path to the installed FFprobe binary."""
 
-packager = os.path.join(_dir_path, 'packager-{}-{}'.format(_os, _cpu))
+packager = os.path.join(_dir_path, f'packager-{_os}-{_cpu}')
 """The path to the installed Shaka Packager binary."""
 
 # Special overrides for Ubuntu builds with hardware encoding support.

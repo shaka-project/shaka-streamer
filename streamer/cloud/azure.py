@@ -36,24 +36,24 @@ class AzureStorageUploader(CloudUploaderBase):
     # Expected format: azure://storageaccount.blob.core.windows.net/container/path
     url = urllib.parse.urlparse(upload_location)
     if not url.netloc:
-      raise ValueError(f"Invalid Azure storage URL format: {upload_location}")
+      raise ValueError(f'Invalid Azure storage URL format: {upload_location}')
 
     # Extract storage account from the netloc
     # netloc format: storageaccount.blob.core.windows.net
-    account_url = f"https://{url.netloc}"
+    account_url = f'https://{url.netloc}'
 
     # Initialize the BlobServiceClient with DefaultAzureCredential
     try:
       credential = DefaultAzureCredential()
       self._blob_service_client = BlobServiceClient(account_url=account_url, credential=credential)
     except Exception as e:
-      raise RuntimeError(f"Failed to initialize Azure credentials for {account_url}: {e}")
+      raise RuntimeError(f'Failed to initialize Azure credentials for {account_url}: {e}')
 
     # Extract container name and base path from the URL path
     # First part of path is container, everything after is base path
     path_parts = url.path.strip('/').split('/', 1)
     if not path_parts or not path_parts[0]:
-      raise ValueError(f"Container name not found in URL: {upload_location}")
+      raise ValueError(f'Container name not found in URL: {upload_location}')
 
     self._container_name = path_parts[0]
     # Base path within the container (everything after container name)
@@ -95,7 +95,7 @@ class AzureStorageUploader(CloudUploaderBase):
   def write_chunk(self, data: bytes, force: bool = False) -> None:
     """Handle a single chunk of data."""
     if not self._blob_client:
-      raise RuntimeError("start_chunked() must be called before write_chunk()")
+      raise RuntimeError('start_chunked() must be called before write_chunk()')
 
     # Accumulate data in buffer
     self._data_buffer += data
@@ -114,7 +114,7 @@ class AzureStorageUploader(CloudUploaderBase):
   def end_chunked(self) -> None:
     """End the chunked transfer."""
     if not self._blob_client:
-      raise RuntimeError("start_chunked() must be called before end_chunked()")
+      raise RuntimeError('start_chunked() must be called before end_chunked()')
 
     # Upload any remaining data in the buffer
     self.write_chunk(b'', force=True)
@@ -152,6 +152,6 @@ class AzureStorageUploader(CloudUploaderBase):
     if self._base_path:
       # Ensure proper path separation
       base = self._base_path.rstrip('/')
-      return f"{base}/{clean_path}" if clean_path else base
+      return f'{base}/{clean_path}' if clean_path else base
     else:
       return clean_path

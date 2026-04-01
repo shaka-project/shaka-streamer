@@ -56,11 +56,11 @@ except:
 def create(upload_location: str) -> CloudUploaderBase:
   """Create an uploader appropriate to the upload location URL."""
 
-  if upload_location.startswith("gs://"):
+  if upload_location.startswith('gs://'):
     return GCSUploader(upload_location)
-  elif upload_location.startswith("s3://"):
+  elif upload_location.startswith('s3://'):
     return S3Uploader(upload_location)
-  elif upload_location.startswith("azure://"):
+  elif upload_location.startswith('azure://'):
     return AzureStorageUploader(upload_location)
   else:
-    raise RuntimeError("Protocol of {} isn't supported".format(upload_location))
+    raise RuntimeError(f"Protocol of {upload_location} isn't supported")

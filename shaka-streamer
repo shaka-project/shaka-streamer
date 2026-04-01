@@ -97,14 +97,14 @@ See docs: https://shaka-project.github.io/shaka-streamer/cloud_storage.html
 
   controller = streamer.controller_node.ControllerNode()
 
-  with open(args.input_config) as f:
+  with open(args.input_config, encoding='utf-8') as f:
     input_config_dict = yaml.safe_load(f)
-  with open(args.pipeline_config) as f:
+  with open(args.pipeline_config, encoding='utf-8') as f:
     pipeline_config_dict = yaml.safe_load(f)
 
   bitrate_config_dict = {}
   if args.bitrate_config:
-    with open(args.bitrate_config) as f:
+    with open(args.bitrate_config, encoding='utf-8') as f:
       bitrate_config_dict = yaml.safe_load(f)
 
   if args.log_configs:
@@ -113,7 +113,7 @@ See docs: https://shaka-project.github.io/shaka-streamer/cloud_storage.html
       'pipeline': pipeline_config_dict,
       'bitrate': bitrate_config_dict,
     }
-    print('Configs: {}'.format(json.dumps(configs)), file=sys.stderr)
+    print(f'Configs: {json.dumps(configs)}', file=sys.stderr)
 
   try:
     if args.cloud_url:

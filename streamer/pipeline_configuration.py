@@ -212,8 +212,7 @@ class EncryptionConfig(configuration.Base):
       for field_name in field_names:
         if getattr(self, field_name):
           field = getattr(self.__class__, field_name)
-          reason = 'cannot be set when encryption_mode is "%s"' % \
-                   self.encryption_mode
+          reason = f'cannot be set when encryption_mode is "{self.encryption_mode}"'
           raise configuration.MalformedField(
             self.__class__, field_name, field, reason)
     elif self.encryption_mode == EncryptionMode.RAW:

@@ -192,7 +192,7 @@ class ProxyNode(ThreadedNodeBase):
                      continue_on_exception=True,
                      sleep_time=3)
     if not ProxyNode.is_supported(upload_location):
-      raise RuntimeError("Protocol of {} isn't supported".format(upload_location))
+      raise RuntimeError(f"Protocol of {upload_location} isn't supported")
 
     self._upload_location = upload_location
     self._rate_limiter = RateLimiter()

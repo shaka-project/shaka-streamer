@@ -125,14 +125,13 @@ class ControllerNode(object):
           # version of streamer itself.  This is much easier to do in nodejs
           # dependencies, because you can use a specifier like "1.2.x", but in
           # Python, you have to use a specifier like ">=1.2,<1.3".
-          pip_command = "pip3 install 'shaka-streamer-binaries>={},<{}'".format(
-              streamer_short_version, next_short_version(__version__))
+          pip_command = f"pip3 install 'shaka-streamer-binaries>={streamer_short_version},<{next_short_version(__version__)}'"
 
           raise VersionError(
               'shaka-streamer-binaries', 'version does not match',
               streamer_short_version,
               exact_match=True,
-              addendum='Install with: {}'.format(pip_command))
+              addendum=f'Install with: {pip_command}')
       else:
         # Check the ffmpeg version.
         _check_command_version('FFmpeg', ['ffmpeg', '-version'],
@@ -391,8 +390,7 @@ class VersionError(Exception):
                exact_match: bool = False,
                addendum: str = ''):
     or_higher = '' if exact_match else ' or higher'
-    message = '{0} {1}! Please install version {2}{3} of {0}.'.format(
-        name, problem, required_version, or_higher)
+    message = f'{name} {problem}! Please install version {required_version}{or_higher} of {name}.'
     if addendum:
       message += '\n' + addendum
     super().__init__(message)
