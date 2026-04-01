@@ -116,7 +116,7 @@ class VideoCodec(enum.Enum):
 
 class AudioChannelLayout(configuration.RuntimeMap):
 
-  max_channels = configuration.Field(type=int, required=True).cast()
+  max_channels = configuration.Field(field_type=int, required=True).cast()
   """The maximum number of channels in this layout.
 
   For example, the maximum number of channels for stereo is 2.
@@ -180,13 +180,13 @@ class AudioChannelLayoutName(configuration.RuntimeMapKeyValidator):
 
 class VideoResolution(configuration.RuntimeMap):
 
-  max_width = configuration.Field(type=int, required=True).cast()
+  max_width = configuration.Field(field_type=int, required=True).cast()
   """The maximum width in pixels for this named resolution."""
 
-  max_height = configuration.Field(type=int, required=True).cast()
+  max_height = configuration.Field(field_type=int, required=True).cast()
   """The maximum height in pixels for this named resolution."""
 
-  max_frame_rate = configuration.Field(type=float, default=math.inf).cast()
+  max_frame_rate = configuration.Field(field_type=float, default=math.inf).cast()
   """The maximum frame rate in frames per second for this named resolution.
 
   By default, the max frame rate is unlimited.

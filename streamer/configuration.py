@@ -184,7 +184,7 @@ class Field(Generic[FieldType]):
     class property.  For example:
 
     class FooConfig(configuration.Base):
-      name = configuration.Field(type=str, default="Susan").cast()
+      name = configuration.Field(field_type=str, default="Susan").cast()
 
     At the class level, configuration fields are all Field instances.  At the
     instance level, the configuration Base class constructor sets all the fields
