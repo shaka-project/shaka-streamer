@@ -42,7 +42,7 @@ from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, Stre
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
 from streamer.proxy_node import ProxyNode
-import streamer.subprocessWindowsPatch  # side-effects only  # pylint: disable=unused-import
+import streamer.subprocess_windows_patch  # side-effects only  # pylint: disable=unused-import
 from streamer.util import is_http_url, is_url
 from streamer.pipe import Pipe
 
@@ -266,48 +266,48 @@ class ControllerNode(object):
     """
 
     outputs: List[OutputStream] = []
-    for input in inputs:
+    for media_input in inputs:
       # External command inputs need to be processed by an additional node
       # before being transcoded.  In this case, the input doesn't have a
       # filename that FFmpeg can read, so we generate an intermediate pipe for
       # that node to write to.  TranscoderNode will then instruct FFmpeg to
       # read from that pipe for this input.
-      if input.input_type == InputType.EXTERNAL_COMMAND:
+      if media_input.input_type == InputType.EXTERNAL_COMMAND:
         command_output = Pipe.create_ipc_pipe(self._temp_dir)
         self._nodes.append(ExternalCommandNode(
-            input.name, command_output.write_end()))
+            media_input.name, command_output.write_end()))
         # reset the name of the input to be the output pipe path - which the
         # transcoder node will read from - instead of a shell command.
-        input.reset_name(command_output.read_end())
+        media_input.reset_name(command_output.read_end())
 
-      if input.media_type == MediaType.AUDIO:
+      if media_input.media_type == MediaType.AUDIO:
         for audio_codec in self._pipeline_config.audio_codecs:
           for output_channel_layout in self._pipeline_config.get_channel_layouts():
             # We won't upmix a lower channel count input to a higher one.
             # Skip channel counts greater than the input channel count.
-            if input.get_channel_layout() < output_channel_layout:
+            if media_input.get_channel_layout() < output_channel_layout:
               continue
 
-            outputs.append(AudioOutputStream(input,
+            outputs.append(AudioOutputStream(media_input,
                                              self._temp_dir,
                                              audio_codec,
                                              output_channel_layout))
 
-      elif input.media_type == MediaType.VIDEO:
+      elif media_input.media_type == MediaType.VIDEO:
         for video_codec in self._pipeline_config.video_codecs:
           for output_resolution in self._pipeline_config.get_resolutions():
             # Only going to output lower or equal resolution videos.
             # Upscaling is costly and does not do anything.
-            if input.get_resolution() < output_resolution:
+            if media_input.get_resolution() < output_resolution:
               continue
 
-            outputs.append(VideoOutputStream(input,
+            outputs.append(VideoOutputStream(media_input,
                                              self._temp_dir,
                                              video_codec,
                                              output_resolution))
 
-      elif input.media_type == MediaType.TEXT:
-        if input.name.endswith('.vtt') or input.name.endswith('.ttml'):
+      elif media_input.media_type == MediaType.TEXT:
+        if media_input.name.endswith('.vtt') or media_input.name.endswith('.ttml'):
           # If the input is a VTT or TTML file, pass it directly to the packager
           # without any intermediate processing or any named pipe.
           # TODO: Test TTML inputs
@@ -318,7 +318,7 @@ class ControllerNode(object):
           # pipe to the packager.
           skip_transcoding = False
 
-        outputs.append(TextOutputStream(input,
+        outputs.append(TextOutputStream(media_input,
                                         self._temp_dir,
                                         skip_transcoding))
 
@@ -348,7 +348,7 @@ class ControllerNode(object):
     If there are no nodes, this returns Finished.
     """
     if not self._nodes:
-      return ProcessStatus.Finished
+      return ProcessStatus.FINISHED
 
     value = max(node.check_status().value for node in self._nodes)
     return ProcessStatus(value)

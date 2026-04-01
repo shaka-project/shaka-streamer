@@ -82,9 +82,9 @@ class PeriodConcatNode(ThreadedNodeBase):
 
     for i, packager_node in enumerate(self._packager_nodes):
       status = packager_node.check_status()
-      if status == ProcessStatus.Running:
+      if status == ProcessStatus.RUNNING:
         return
-      elif status == ProcessStatus.Errored:
+      elif status == ProcessStatus.ERRORED:
         raise RuntimeError(
           f'Concatenation is stopped due to an error in PackagerNode#{i + 1}.')
 
@@ -97,7 +97,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     if ManifestFormat.HLS in self._pipeline_config.manifest_format:
       self._hls_concat()
 
-    self._status = ProcessStatus.Finished
+    self._status = ProcessStatus.FINISHED
 
   def _dash_concat(self) -> None:
     """Concatenates multiple single-period DASH manifests into one multi-period DASH manifest."""

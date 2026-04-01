@@ -74,7 +74,7 @@ def cleanup():
   if not os.path.exists(OUTPUT_DIR):
     os.mkdir(OUTPUT_DIR)
 
-def createCrossOriginResponse(body=None, status=200, mimetype='text/plain'):
+def create_cross_origin_response(body=None, status=200, mimetype='text/plain'):
   # Enable CORS because karma and flask are cross-origin.
   resp = flask.Response(response=body, status=status)
   resp.headers.add('Content-Type', mimetype)
@@ -82,7 +82,7 @@ def createCrossOriginResponse(body=None, status=200, mimetype='text/plain'):
   resp.headers.add('Access-Control-Allow-Methods', 'GET,POST')
   return resp
 
-def dashStreamsReady(manifest_path):
+def dash_streams_ready(manifest_path):
   """Wait for DASH streams to be ready.
 
   Return True if the DASH manifest exists and each Representation has at least
@@ -111,7 +111,7 @@ def dashStreamsReady(manifest_path):
 
   return True
 
-def hlsStreamsReady(master_playlist_path):
+def hls_streams_ready(master_playlist_path):
   """Wait for HLS streams to be ready.
 
   Return True if the HLS master playlist exists, and all of the media playlists
@@ -156,7 +156,7 @@ def hlsStreamsReady(master_playlist_path):
 def start():
   global controller
   if controller is not None:
-    return createCrossOriginResponse(
+    return create_cross_origin_response(
         status=403, body='Instance already running!')
   cleanup()
 
@@ -164,7 +164,7 @@ def start():
   try:
     configs = json.loads(flask.request.data)
   except Exception as e:
-    return createCrossOriginResponse(status=400, body=str(e))
+    return create_cross_origin_response(status=400, body=str(e))
 
   # Enforce quiet mode without needing it specified in every test.
   configs['pipeline_config']['quiet'] = True
@@ -201,29 +201,29 @@ def start():
         'field_type': e.field.get_type_name(),
         'message': str(e),
       })
-      return createCrossOriginResponse(
+      return create_cross_origin_response(
           status=418, mimetype='application/json', body=body)
     elif isinstance(e, RuntimeError):
       body = json.dumps({
         'error_type': 'RuntimeError',
         'message': str(e),
       })
-      return createCrossOriginResponse(
+      return create_cross_origin_response(
           status=418, mimetype='application/json', body=body)
     else:
       print('EXCEPTION', repr(e), traceback.format_exc(), flush=True)
-      return createCrossOriginResponse(status=500, body=str(e))
+      return create_cross_origin_response(status=500, body=str(e))
 
-  return createCrossOriginResponse()
+  return create_cross_origin_response()
 
 @app.route('/stop')
 def stop():
   global controller
-  resp = createCrossOriginResponse()
+  resp = create_cross_origin_response()
   if controller is not None:
     # Check status to see if one of the processes exited.
-    if controller.check_status() == node_base.ProcessStatus.Errored:
-      resp = createCrossOriginResponse(
+    if controller.check_status() == node_base.ProcessStatus.ERRORED:
+      resp = create_cross_origin_response(
           status=500, body='Some processes exited with non-zero exit codes')
 
   cleanup()
@@ -232,21 +232,21 @@ def stop():
 @app.route('/output_files/<path:filename>', methods = ['GET', 'OPTIONS'])
 def send_file(filename):
   if '..' in filename:
-    return createCrossOriginResponse(
+    return create_cross_origin_response(
         status=400, body='Bad request, attempted to break out of output path!')
 
   if not controller:
-    return createCrossOriginResponse(
+    return create_cross_origin_response(
         status=403, body='Instance already shut down!')
   elif controller.is_vod():
     # If streaming mode is vod, needs to wait until packager is completely
     # done packaging contents.
     while True:
       status = controller.check_status()
-      if status == node_base.ProcessStatus.Finished:
+      if status == node_base.ProcessStatus.FINISHED:
         break
-      elif status != node_base.ProcessStatus.Running:
-        return createCrossOriginResponse(
+      elif status != node_base.ProcessStatus.RUNNING:
+        return create_cross_origin_response(
             status=500, body='Some processes exited with non-zero exit codes')
 
       time.sleep(1)
@@ -254,10 +254,10 @@ def send_file(filename):
     # If streaming mode is live, needs to wait for specific content in
     # manifest until it can be loaded by the player.
     if filename.endswith('.mpd'):
-      while not dashStreamsReady(OUTPUT_DIR + filename):
+      while not dash_streams_ready(OUTPUT_DIR + filename):
         time.sleep(1)
     elif filename.endswith('.m3u8') and not filename.startswith('stream_'):
-      while not hlsStreamsReady(OUTPUT_DIR + filename):
+      while not hls_streams_ready(OUTPUT_DIR + filename):
         time.sleep(1)
 
   # Sending over requested files.

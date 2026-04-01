@@ -79,13 +79,13 @@ def resolve(exe):
   return exe
 
 
-real_Popen = subprocess.Popen
+RealPopen = subprocess.Popen
 
 
 # Important note: If any other component tries to wrap Popen (such as asyncio
 # on Windows), it is CRITICAL that this monkey-patch be a class, not a
 # function.
-class Popen(real_Popen):  # type: ignore
+class Popen(RealPopen):  # type: ignore
   """A patch to install over subprocess.Popen."""
 
   def __init__(self, args, *more_args, **kwargs):
@@ -104,4 +104,4 @@ if sys.platform == 'win32':
   subprocess.Popen = Popen # type: ignore
   # Copy the docstring from the real Popen into the patch, so that
   # help(subprocess.Popen) is still relatively sane with this patch installed.
-  Popen.__doc__ = real_Popen.__doc__
+  Popen.__doc__ = RealPopen.__doc__

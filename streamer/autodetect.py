@@ -32,7 +32,7 @@ TYPES_WE_CANT_PROBE = [
 # if the user chooses to use the shaka streamer bundled binaries.
 hermetic_ffprobe: Optional[str] = None
 
-def _probe(input: Input, field: str) -> Optional[str]:
+def _probe(media_input: Input, field: str) -> Optional[str]:
   """Autodetect some feature of the input, if possible, using ffprobe.
 
   Args:
@@ -43,22 +43,22 @@ def _probe(input: Input, field: str) -> Optional[str]:
     The requested field from ffprobe as a string, or None if this fails.
   """
 
-  if input.input_type in TYPES_WE_CANT_PROBE:
+  if media_input.input_type in TYPES_WE_CANT_PROBE:
     # Not supported for this type.
     return None
 
   args: List[str] = [
       # Probe this input file
       hermetic_ffprobe or 'ffprobe',
-      input.name,
+      media_input.name,
   ]
 
   # Add any required input arguments for this input type
-  args += input.get_input_args()
+  args += media_input.get_input_args()
 
   args += [
       # Specifically, this stream
-      '-select_streams', input.get_stream_specifier(),
+      '-select_streams', media_input.get_stream_specifier(),
       # Show the needed metadata only
       '-show_entries', field,
       # Print the metadata in a compact form, which is easier to parse
@@ -78,26 +78,26 @@ def _probe(input: Input, field: str) -> Optional[str]:
 
   # Webcams on Linux seem to behave badly if the device is rapidly opened and
   # closed.  Therefore, sleep for 1 second after a webcam probe.
-  if input.input_type == InputType.WEBCAM:
+  if media_input.input_type == InputType.WEBCAM:
     time.sleep(1)
 
   return probe_output
 
-def is_present(input: Input) -> bool:
+def is_present(media_input: Input) -> bool:
   """Returns true if the stream for this input is indeed found.
 
   If we can't probe this input type, assume it is present."""
 
-  return bool(_probe(input, 'stream=index') or
-              input.input_type in TYPES_WE_CANT_PROBE)
+  return bool(_probe(media_input, 'stream=index') or
+              media_input.input_type in TYPES_WE_CANT_PROBE)
 
-def get_language(input: Input) -> Optional[str]:
+def get_language(media_input: Input) -> Optional[str]:
   """Returns the autodetected the language of the input."""
-  return _probe(input, 'stream_tags=language')
+  return _probe(media_input, 'stream_tags=language')
 
-def get_interlaced(input: Input) -> bool:
+def get_interlaced(media_input: Input) -> bool:
   """Returns True if we detect that the input is interlaced."""
-  interlaced_string = _probe(input, 'stream=field_order')
+  interlaced_string = _probe(media_input, 'stream=field_order')
 
   # These constants represent the order of the fields (2 fields per frame) of
   # different types of interlaced video.  They can be found in
@@ -111,10 +111,10 @@ def get_interlaced(input: Input) -> bool:
     'bt',
   ]
 
-def get_frame_rate(input: Input) -> Optional[float]:
+def get_frame_rate(media_input: Input) -> Optional[float]:
   """Returns the autodetected frame rate of the input."""
 
-  frame_rate_string = _probe(input, 'stream=avg_frame_rate')
+  frame_rate_string = _probe(media_input, 'stream=avg_frame_rate')
   if frame_rate_string is None:
     return None
 
@@ -132,16 +132,16 @@ def get_frame_rate(input: Input) -> Optional[float]:
   # It's actually the field rate, where it takes two interlaced fields to make
   # a frame.  Because we have to know if it's interlaced already, we must
   # assert that is_interlaced has been set before now.
-  assert input.is_interlaced is not None
-  if input.is_interlaced:
+  assert media_input.is_interlaced is not None
+  if media_input.is_interlaced:
     frame_rate /= 2.0
 
   return frame_rate
 
-def get_resolution(input: Input) -> Optional[VideoResolutionName]:
+def get_resolution(media_input: Input) -> Optional[VideoResolutionName]:
   """Returns the autodetected resolution of the input."""
 
-  resolution_string = _probe(input, 'stream=width,height')
+  resolution_string = _probe(media_input, 'stream=width,height')
   if resolution_string is None:
     return None
 
@@ -155,15 +155,15 @@ def get_resolution(input: Input) -> Optional[VideoResolutionName]:
   for bucket in VideoResolution.sorted_values():
     # The first bucket this fits into is the one.
     if (width <= bucket.max_width and height <= bucket.max_height and
-        input.frame_rate <= bucket.max_frame_rate):
+        media_input.frame_rate <= bucket.max_frame_rate):
       return bucket.get_key()
 
   return None
 
-def get_channel_layout(input: Input) -> Optional[AudioChannelLayoutName]:
+def get_channel_layout(media_input: Input) -> Optional[AudioChannelLayoutName]:
   """Returns the autodetected channel count of the input."""
 
-  channel_count_string = _probe(input, 'stream=channels')
+  channel_count_string = _probe(media_input, 'stream=channels')
   if channel_count_string is None:
     return None
 
@@ -174,10 +174,10 @@ def get_channel_layout(input: Input) -> Optional[AudioChannelLayoutName]:
 
   return None
 
-def get_forced_subttitle(input: Input) -> bool:
+def get_forced_subttitle(media_input: Input) -> bool:
   """Returns the forced subtitle value of the input."""
 
-  forced_subttitle_string = _probe(input, 'disposition=forced')
+  forced_subttitle_string = _probe(media_input, 'disposition=forced')
 
   if forced_subttitle_string is None:
     return False

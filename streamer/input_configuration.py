@@ -24,10 +24,10 @@ from typing import List, Dict, Any
 class InputNotFound(configuration.ConfigError):
   """An error raised when an input stream is not found."""
 
-  def __init__(self, input):
-    super().__init__(input.__class__, 'track_num',
-                     getattr(input.__class__, 'track_num'))
-    self.input = input
+  def __init__(self, media_input):
+    super().__init__(media_input.__class__, 'track_num',
+                     getattr(media_input.__class__, 'track_num'))
+    self.input = media_input
 
   def __str__(self):
     return (f'In {self.class_name}, {self.input.media_type.value} track #{self.input.track_num} was'

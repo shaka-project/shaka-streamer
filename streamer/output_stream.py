@@ -24,16 +24,16 @@ class OutputStream(object):
   """Base class for output streams."""
 
   def __init__(self,
-               type: MediaType,
-               input: Input,
+               stream_type: MediaType,
+               media_input: Input,
                codec: Union[AudioCodec, VideoCodec, None],
                pipe_dir: str,
                skip_transcoding: bool = False,
                pipe_suffix: str = '') -> None:
 
-    self.type: MediaType = type
+    self.type: MediaType = stream_type
     self.skip_transcoding = skip_transcoding
-    self.input: Input = input
+    self.input: Input = media_input
     self.features: Dict[str, str] = {}
     self.codec: Union[AudioCodec, VideoCodec, None] = codec
 
@@ -62,57 +62,57 @@ class OutputStream(object):
     return False
 
   def get_init_seg_file(self) -> Pipe:
-    INIT_SEGMENT = {
+    init_segment = {
       MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_init.{format}',
       MediaType.TEXT: 'text_{language}_init.{format}',
     }
-    path_templ = INIT_SEGMENT[self.type].format(**self.features)
+    path_templ = init_segment[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_media_seg_file(self) -> Pipe:
-    MEDIA_SEGMENT = {
+    media_segment = {
       MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
       MediaType.TEXT: 'text_{language}_$Number$.{format}',
     }
-    path_templ = MEDIA_SEGMENT[self.type].format(**self.features)
+    path_templ = media_segment[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_single_seg_file(self) -> Pipe:
-    SINGLE_SEGMENT = {
+    single_segment = {
       MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}.{format}',
       MediaType.TEXT: 'text_{language}.{format}',
     }
-    path_templ = SINGLE_SEGMENT[self.type].format(**self.features)
+    path_templ = single_segment[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_identification(self) -> str:
-    SINGLE_SEGMENT = {
+    single_segment = {
       MediaType.AUDIO: '{language}_{channels}c_{bitrate}_{codec}_{format}',
       MediaType.VIDEO: '{resolution_name}_{bitrate}_{codec}_{format}',
       MediaType.TEXT: '{language}_{format}',
     }
-    return SINGLE_SEGMENT[self.type].format(**self.features)
+    return single_segment[self.type].format(**self.features)
 
 
 class AudioOutputStream(OutputStream):
 
   def __init__(self,
-               input: Input,
+               media_input: Input,
                pipe_dir: str,
                codec: AudioCodec,
                channel_layout: AudioChannelLayout) -> None:
 
-    super().__init__(MediaType.AUDIO, input, codec, pipe_dir)
+    super().__init__(MediaType.AUDIO, media_input, codec, pipe_dir)
     # Override the codec type and specify that it's an audio codec
     self.codec: AudioCodec = codec
     self.layout = channel_layout
 
     # The features that will be used to generate the output filename.
     self.features = {
-      'language': input.language,
+      'language': media_input.language,
       'channels': str(self.layout.max_channels),
       'bitrate': self.get_bitrate(),
       'format': self.codec.get_output_format(),
@@ -127,11 +127,11 @@ class AudioOutputStream(OutputStream):
 class VideoOutputStream(OutputStream):
 
   def __init__(self,
-               input: Input,
+               media_input: Input,
                pipe_dir: str,
                codec: VideoCodec,
                resolution: VideoResolution) -> None:
-    super().__init__(MediaType.VIDEO, input, codec, pipe_dir)
+    super().__init__(MediaType.VIDEO, media_input, codec, pipe_dir)
     # Override the codec type and specify that it's an audio codec
     self.codec: VideoCodec = codec
     self.resolution = resolution
@@ -152,7 +152,7 @@ class VideoOutputStream(OutputStream):
 class TextOutputStream(OutputStream):
 
   def __init__(self,
-               input: Input,
+               media_input: Input,
                pipe_dir: str,
                skip_transcoding: bool):
     # We don't have a codec per se for text, but we'd like to generically
@@ -160,11 +160,11 @@ class TextOutputStream(OutputStream):
     # set, so set it to None.
     codec = None
 
-    super().__init__(MediaType.TEXT, input, codec, pipe_dir,
+    super().__init__(MediaType.TEXT, media_input, codec, pipe_dir,
                      skip_transcoding, pipe_suffix='.vtt')
 
     # The features that will be used to generate the output filename.
     self.features = {
-      'language': input.language,
+      'language': media_input.language,
       'format': 'mp4',
     }

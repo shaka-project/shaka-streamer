@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=invalid-name
 #
 # Copyright 2019 Google LLC
 #
@@ -128,8 +129,8 @@ See docs: https://shaka-project.github.io/shaka-streamer/cloud_storage.html
       # Sleep so long as the pipeline is still running.
       while True:
         status = controller.check_status()
-        if status != streamer.node_base.ProcessStatus.Running:
-          return 0 if status == streamer.node_base.ProcessStatus.Finished else 1
+        if status != streamer.node_base.ProcessStatus.RUNNING:
+          return 0 if status == streamer.node_base.ProcessStatus.FINISHED else 1
 
         time.sleep(1)
   except (streamer.controller_node.VersionError,

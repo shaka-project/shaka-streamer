@@ -137,7 +137,7 @@ class RequestHandler(BaseHTTPRequestHandler):
       with self._pool.get_worker() as worker:
         worker.write_non_chunked(self.path, self.rfile.read(content_length))
 
-  def do_PUT(self) -> None:
+  def do_PUT(self) -> None:  # pylint: disable=invalid-name
     """Handle PUT requests coming from Shaka Packager."""
     suppress = self._rate_limiter.suppress(self.path)
 
@@ -159,7 +159,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     # "returned nothing".
     self.end_headers()
 
-  def do_DELETE(self) -> None:
+  def do_DELETE(self) -> None:  # pylint: disable=invalid-name
     """Handle DELETE requests coming from Shaka Packager."""
     try:
       with self._pool.get_worker() as worker:
@@ -232,7 +232,7 @@ class ProxyNode(ThreadedNodeBase):
   def check_status(self) -> ProcessStatus:
     # This makes sure this node will never prevent the shutdown of the whole
     # system.  It will be stopped explicitly when ControllerNode tears down.
-    return ProcessStatus.Finished
+    return ProcessStatus.FINISHED
 
   def _thread_single_pass(self) -> None:
     assert self._server is not None

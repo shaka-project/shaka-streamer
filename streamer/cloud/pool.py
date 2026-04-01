@@ -44,9 +44,9 @@ class MessageType(enum.Enum):
 
 class Message(object):
   """Message objects used for IPC from the main process to the pool."""
-  def __init__(self, type: MessageType, path: str = '',
+  def __init__(self, worker_type: MessageType, path: str = '',
                data: bytes = b'') -> None:
-    self.type: MessageType = type
+    self.type: MessageType = worker_type
     self.path: str = path
     self.data: bytes = data
 

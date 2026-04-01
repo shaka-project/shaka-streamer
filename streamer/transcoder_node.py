@@ -64,21 +64,21 @@ class TranscoderNode(PolitelyWaitOnFinish):
             '-vaapi_device', '/dev/dri/renderD128',
         ]
 
-    for input in self._inputs:
+    for media_input in self._inputs:
       # Get any required input arguments for this input.
       # These are like hard-coded extra_input_args for certain input types.
       # This means users don't have to know much about FFmpeg options to handle
       # these common cases.
-      args += input.get_input_args()
+      args += media_input.get_input_args()
 
       # The config file may specify additional args needed for this input.
       # This allows, for example, an external-command-type input to generate
       # almost anything ffmpeg could ingest.  The extra args need to be parsed
       # from a string into an argument array.  Note that shlex.split on an empty
       # string will produce an empty array.
-      args += shlex.split(input.extra_input_args)
+      args += shlex.split(media_input.extra_input_args)
 
-      if input.input_type == InputType.LOOPED_FILE:
+      if media_input.input_type == InputType.LOOPED_FILE:
         # These are handled here instead of in get_input_args() because these
         # arguments are specific to ffmpeg and are not understood by ffprobe.
         args += [
@@ -97,35 +97,35 @@ class TranscoderNode(PolitelyWaitOnFinish):
             '-thread_queue_size', '200',
         ]
 
-      if input.start_time:
+      if media_input.start_time:
         args += [
             # Encode from intended starting time of the input.
-            '-ss', input.start_time,
+            '-ss', media_input.start_time,
         ]
-      if input.end_time:
+      if media_input.end_time:
         args += [
             # Encode until intended ending time of the input.
-            '-to', input.end_time,
+            '-to', media_input.end_time,
         ]
 
       # The input name always comes after the applicable input arguments.
       args += [
           # The input itself.
-          '-i', input.name,
+          '-i', media_input.name,
       ]
 
-    for i, input in enumerate(self._inputs):
+    for i, media_input in enumerate(self._inputs):
       map_args = [
           # Map corresponding input stream to output file.
           # The format is "<INPUT FILE NUMBER>:<STREAM SPECIFIER>", so "i" here
-          # is the input file number, and "input.get_stream_specifier()" builds
+          # is the input file number, and "media_input.get_stream_specifier()" builds
           # the stream specifier for this input.  The output stream for this
           # input is implied by where we are in the ffmpeg argument list.
-          '-map', f'{i}:{input.get_stream_specifier()}',
+          '-map', f'{i}:{media_input.get_stream_specifier()}',
       ]
 
       for output_stream in self._outputs:
-        if output_stream.input != input:
+        if output_stream.input != media_input:
           # Skip outputs that don't match this exact input object.
           continue
         if output_stream.skip_transcoding:
@@ -135,15 +135,15 @@ class TranscoderNode(PolitelyWaitOnFinish):
         # Map arguments must be repeated for each output file.
         args += map_args
 
-        if input.media_type == MediaType.AUDIO:
+        if media_input.media_type == MediaType.AUDIO:
           assert isinstance(output_stream, AudioOutputStream)
-          args += self._encode_audio(output_stream, input)
-        elif input.media_type == MediaType.VIDEO:
+          args += self._encode_audio(output_stream, media_input)
+        elif media_input.media_type == MediaType.VIDEO:
           assert isinstance(output_stream, VideoOutputStream)
-          args += self._encode_video(output_stream, input)
+          args += self._encode_video(output_stream, media_input)
         else:
           assert isinstance(output_stream, TextOutputStream)
-          args += self._encode_text(output_stream, input)
+          args += self._encode_text(output_stream, media_input)
 
         args += [output_stream.ipc_pipe.write_end()]
 
@@ -156,7 +156,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
     self._process = self._create_process(args, env)
 
-  def _encode_audio(self, stream: AudioOutputStream, input: Input) -> List[str]:
+  def _encode_audio(self, stream: AudioOutputStream, media_input: Input) -> List[str]:
     filters: List[str] = []
     args: List[str] = [
         # No video encoding for audio.
@@ -173,7 +173,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
         'channelmap=channel_layout=5.1',
       ]
 
-    filters.extend(input.filters)
+    filters.extend(media_input.filters)
 
     hwaccel_api = self._pipeline_config.hwaccel_api
     args += [
@@ -199,18 +199,18 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
     return args
 
-  def _encode_video(self, stream: VideoOutputStream, input: Input) -> List[str]:
+  def _encode_video(self, stream: VideoOutputStream, media_input: Input) -> List[str]:
     filters: List[str] = []
     args: List[str] = []
 
-    if input.is_interlaced:
+    if media_input.is_interlaced:
       filters.append('pp=fd')
-      args.extend(['-r', str(input.frame_rate)])
+      args.extend(['-r', str(media_input.frame_rate)])
 
-    if stream.resolution.max_frame_rate < input.frame_rate:
+    if stream.resolution.max_frame_rate < media_input.frame_rate:
       args.extend(['-r', str(stream.resolution.max_frame_rate)])
 
-    filters.extend(input.filters)
+    filters.extend(media_input.filters)
 
     hwaccel_api = self._pipeline_config.hwaccel_api
 
@@ -303,7 +303,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
       ]
 
     keyframe_interval = int(self._pipeline_config.segment_size *
-                            input.frame_rate)
+                            media_input.frame_rate)
 
     args += [
         # No audio encoding for video.
@@ -327,7 +327,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
     ]
     return args
 
-  def _encode_text(self, stream: TextOutputStream, input: Input) -> List[str]:
+  def _encode_text(self, stream: TextOutputStream, media_input: Input) -> List[str]:
     return [
         # Output WebVTT.
         '-f', 'webvtt',

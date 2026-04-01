@@ -147,7 +147,7 @@ class HexString(ValidatingType, str):
 # A type parameter used by the Generic Field below.
 # For example, for a Field with type=str, FieldType would be a string type and
 # Type[FieldType] would be the function "str".
-FieldType = TypeVar('FieldType')
+FieldType = TypeVar('FieldType')  # pylint: disable=invalid-name
 
 class Field(Generic[FieldType]):
   # TODO: This class is populated with actual configuration
@@ -157,19 +157,19 @@ class Field(Generic[FieldType]):
   """A container for metadata about individual config fields."""
 
   def __init__(self,
-               type: Optional[Type[FieldType]],
+               field_type: Optional[Type[FieldType]],
                required: bool = False,
                default: Optional[FieldType] = None) -> None:
     """
     Args:
-        type (class or typing module hint): The required type for values of this
+        field_type (class or typing module hint): The required type for values of this
             field.
         required (bool): True if this field is required on input.
         default: The default value if the field is not specified.
     """
-    subtypes = Field.get_subtypes(type)  # keytype, subtype
+    subtypes = Field.get_subtypes(field_type)  # keytype, subtype
 
-    self.type: Optional[Type] = Field.get_underlying_type(type)
+    self.type: Optional[Type] = Field.get_underlying_type(field_type)
     self.keytype: Optional[Type] = subtypes[0]
     self.subtype: Optional[Type] = subtypes[1]
     self.required: bool = required
@@ -210,46 +210,46 @@ class Field(Generic[FieldType]):
     return cast(FieldType, self)
 
   @staticmethod
-  def get_underlying_type(type: Optional[Type]) -> Optional[Type]:
+  def get_underlying_type(field_type: Optional[Type]) -> Optional[Type]:
     """Get the underlying type from a typing module type hint."""
 
-    # In Python 3.8+, you can use typing.get_origin.  It returns None if "type"
+    # In Python 3.8+, you can use typing.get_origin.  It returns None if "field_type"
     # is something like "str" or "int" instead of "typing.List" or
-    # "typing.Dict", so fall back to type itself.
+    # "typing.Dict", so fall back to field_type itself.
     if hasattr(typing, 'get_origin'):
-      return typing.get_origin(type) or type  # type: ignore
+      return typing.get_origin(field_type) or field_type  # type: ignore
 
     # Before Python 3.8, you can use this undocumented attribute to get the
     # original type.  If this doesn't exist, you are probably dealing with a
     # basic type like "str" or "int".
-    if hasattr(type, '__origin__'):
-      return type.__origin__ or type  # type: ignore
+    if hasattr(field_type, '__origin__'):
+      return field_type.__origin__ or field_type  # type: ignore
 
-    return type
+    return field_type
 
   @staticmethod
   def get_subtypes(
-      type: Optional[Type]) -> Tuple[Optional[Type], Optional[Type]]:
+      field_type: Optional[Type]) -> Tuple[Optional[Type], Optional[Type]]:
     """For Dict hints, returns (keytype, valuetype).
 
     For List hints, returns (None, valuetype).
 
     For everything else, returns (None, None)."""
 
-    # In Python 3.8+, you can use typing.get_args.  It returns () if "type"
+    # In Python 3.8+, you can use typing.get_args.  It returns () if "field_type"
     # is something like "str" or "int" instead of "typing.List" or
     # "typing.Dict".
     if hasattr(typing, 'get_args'):
-      args = typing.get_args(type)
-    elif hasattr(type, '__args__'):
+      args = typing.get_args(field_type)
+    elif hasattr(field_type, '__args__'):
       # Before Python 3.8, you can use this undocumented attribute to get the
       # type parameters.  If this doesn't exist, you are probably dealing with a
       # basic type like "str" or "int".
-      args = getattr(type, '__args__')
+      args = getattr(field_type, '__args__')
     else:
       args = ()
 
-    underlying = Field.get_underlying_type(type)
+    underlying = Field.get_underlying_type(field_type)
     if underlying is dict:
       return cast(Tuple[Optional[Type], Optional[Type]], args)
     if underlying is list:
@@ -257,33 +257,33 @@ class Field(Generic[FieldType]):
     return (None, None)
 
   @staticmethod
-  def get_type_name_static(type: Optional[Type],
+  def get_type_name_static(field_type: Optional[Type],
                            keytype: Optional[Type],
                            subtype: Optional[Type]) -> str:
-    """Get a human-readable string for the name of type."""
+    """Get a human-readable string for the name of field_type."""
 
     # Make these special cases a little more readable.
-    if type is str:
+    if field_type is str:
       # Call it a string, not a "str".
       return 'string'
-    elif type is list:
+    elif field_type is list:
       # Mention the subtype.
       return f'list of {Field.get_type_name_static(subtype, None, None)}'
-    elif type is dict:
+    elif field_type is dict:
       # Mention the subtype.
       return f'dictionary of {Field.get_type_name_static(keytype, None, None)} to {Field.get_type_name_static(subtype, None, None)}'
-    elif type is None:
+    elif field_type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'
-    elif issubclass(type, enum.Enum):
+    elif issubclass(field_type, enum.Enum):
       # Get the list of valid options as quoted strings.
-      options = [repr(str(member.value)) for member in type]
-      return f'{type.__name__} (one of {", ".join(options)})'
-    elif issubclass(type, ValidatingType):
-      return type.name()
+      options = [repr(str(member.value)) for member in field_type]
+      return f'{field_type.__name__} (one of {", ".join(options)})'
+    elif issubclass(field_type, ValidatingType):
+      return field_type.name()
 
     # Otherwise, return the name of the type.
-    return type.__name__
+    return field_type.__name__
 
 
 class Base(object):
@@ -494,18 +494,18 @@ class RuntimeMap(Generic[RuntimeMapSubclass], Base):
 
   @classmethod
   def set_map(cls,
-              map: Dict[str, RuntimeMapSubclass]) -> None:
+              result_map: Dict[str, RuntimeMapSubclass]) -> None:
     """Set the map of valid values for this class."""
 
     assert cls != RuntimeMap, 'Do not use the base class directly!'
-    cls._map = map
+    cls._map = result_map
 
     # Synthesize a method on each value to allow the key to be recovered.
     # Use a default parameter in the lambda to effectively bind the parameter,
     # as described here: https://stackoverflow.com/a/19837683
     # Not doing this causes the lambda to always return the key from the final
     # iteration of the loop (a problem familiar to many JavaScript developers).
-    for key, value in map.items():
+    for key, value in result_map.items():
       setattr(value, 'get_key', lambda bound_key=key: bound_key)
 
   @classmethod

@@ -133,50 +133,50 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         stdout=stdout)
 
   def _setup_stream(self, stream: OutputStream) -> str:
-    dict = {
+    stream_dict = {
         'in': stream.ipc_pipe.read_end(),
         'stream': stream.type.value,
     }
 
     if stream.input.skip_encryption:
-      dict['skip_encryption'] = str(stream.input.skip_encryption)
+      stream_dict['skip_encryption'] = str(stream.input.skip_encryption)
 
     if stream.type == MediaType.AUDIO:
-      dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
+      stream_dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
 
     if stream.type == MediaType.VIDEO and self._pipeline_config.generate_iframe_playlist:
-      dict['iframe_playlist_name'] = 'iframe_' + stream.get_identification() + '.m3u8'
+      stream_dict['iframe_playlist_name'] = 'iframe_' + stream.get_identification() + '.m3u8'
 
     if stream.input.drm_label:
-      dict['drm_label'] = stream.input.drm_label
+      stream_dict['drm_label'] = stream.input.drm_label
 
     if stream.input.forced_subtitle:
-      dict['forced_subtitle'] = '1'
+      stream_dict['forced_subtitle'] = '1'
 
     # Note: Shaka Packager will not accept 'und' as a language, but Shaka
     # Player will fill that in if the language metadata is missing from the
     # manifest/playlist.
     if stream.input.language and stream.input.language != 'und':
-      dict['language'] = stream.input.language
+      stream_dict['language'] = stream.input.language
 
     if self._pipeline_config.segment_per_file:
-      dict['init_segment'] = build_path(
+      stream_dict['init_segment'] = build_path(
         self._segment_dir,
         stream.get_init_seg_file().write_end())
-      dict['segment_template'] = build_path(
+      stream_dict['segment_template'] = build_path(
         self._segment_dir,
         stream.get_media_seg_file().write_end())
     else:
-      dict['output'] = build_path(
+      stream_dict['output'] = build_path(
         self._segment_dir,
         stream.get_single_seg_file().write_end())
 
     if stream.is_dash_only():
-      dict['dash_only'] = '1'
+      stream_dict['dash_only'] = '1'
 
     # The format of this argument to Shaka Packager is a single string of
     # key=value pairs separated by commas.
-    return ','.join(key + '=' + value for key, value in dict.items())
+    return ','.join(key + '=' + value for key, value in stream_dict.items())
 
   def _setup_manifest_format(self) -> List[str]:
     args: List[str] = []

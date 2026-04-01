@@ -30,13 +30,13 @@ from typing import Any, Dict, IO, List, Optional, Union
 class ProcessStatus(enum.Enum):
   # Use number values so we can sort based on value.
 
-  Finished = 0
+  FINISHED = 0
   """The node has completed its task and shut down."""
 
-  Running = 1
+  RUNNING = 1
   """The node is still running."""
 
-  Errored = 2
+  ERRORED = 2
   """The node has failed."""
 
 
@@ -111,12 +111,12 @@ class NodeBase(object):
 
     self._process.poll()
     if self._process.returncode is None:
-      return ProcessStatus.Running
+      return ProcessStatus.RUNNING
 
     if self._process.returncode == 0:
-      return ProcessStatus.Finished
+      return ProcessStatus.FINISHED
     else:
-      return ProcessStatus.Errored
+      return ProcessStatus.ERRORED
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
     """Stop the subprocess if it's still running."""
@@ -124,11 +124,11 @@ class NodeBase(object):
       # Slightly more polite than kill.  Try this first.
       self._process.terminate()
 
-      if self.check_status() == ProcessStatus.Running:
+      if self.check_status() == ProcessStatus.RUNNING:
         # If it's not dead yet, wait 1 second.
         time.sleep(1)
 
-      if self.check_status() == ProcessStatus.Running:
+      if self.check_status() == ProcessStatus.RUNNING:
         # If it's still not dead, use kill.
         self._process.kill()
         # Wait for the process to die and read its exit code.  There is no way
@@ -144,7 +144,7 @@ class PolitelyWaitOnFinish(node_base.NodeBase):
   """
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
-    if self._process and status == ProcessStatus.Finished:
+    if self._process and status == ProcessStatus.FINISHED:
       try:
         print('Waiting for', self.__class__.__name__)
         self._process.wait(timeout=300)  # 5m timeout
@@ -164,7 +164,7 @@ class ThreadedNodeBase(NodeBase):
 
   def __init__(self, thread_name: str, continue_on_exception: bool, sleep_time: float):
     super().__init__()
-    self._status = ProcessStatus.Finished
+    self._status = ProcessStatus.FINISHED
     self._thread_name = thread_name
     self._thread = None
     self._continue_on_exception = continue_on_exception
@@ -172,7 +172,7 @@ class ThreadedNodeBase(NodeBase):
     self._sleep_waker_event = threading.Event()
 
   def _thread_main(self) -> None:
-    while self._status == ProcessStatus.Running:
+    while self._status == ProcessStatus.RUNNING:
       try:
         self._thread_single_pass()
       except:
@@ -182,7 +182,7 @@ class ThreadedNodeBase(NodeBase):
           print(self.__class__.__name__+": 'Continuing.'")
         else:
           print(self.__class__.__name__+": 'Quitting.'")
-          self._status = ProcessStatus.Errored
+          self._status = ProcessStatus.ERRORED
           return
 
       # Wait a little bit before performing the next pass.
@@ -202,12 +202,12 @@ class ThreadedNodeBase(NodeBase):
     pass
 
   def start(self) -> None:
-    self._status = ProcessStatus.Running
+    self._status = ProcessStatus.RUNNING
     self._thread = threading.Thread(target=self._thread_main, name=self._thread_name)
     self._thread.start()
 
   def stop(self, status: Optional[ProcessStatus]) -> None:
-    self._status = ProcessStatus.Finished
+    self._status = ProcessStatus.FINISHED
     # If the thread was sleeping, wake it up.
     self._sleep_waker_event.set()
     if self._thread:

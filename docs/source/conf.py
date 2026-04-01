@@ -49,7 +49,7 @@ import types  # pylint: disable=wrong-import-position
 # -- Project information -----------------------------------------------------
 
 project = 'Shaka Streamer'
-copyright = '2019, Google'
+copyright = '2019, Google'  # pylint: disable=redefined-builtin
 author = 'Google'
 
 # The short X.Y version
@@ -257,10 +257,10 @@ def process_signature(app, _, name, obj, *other_ignored_args):
   if isinstance(obj, streamer.configuration.Field):
     name_to_type_map[name] = obj
 
-def get_first_child(node, type):
-  """Return the first child of |node| that has type |type|."""
+def get_first_child(node, node_type):
+  """Return the first child of |node| that has type |node_type|."""
 
-  index = node.first_child_matching_class(type)
+  index = node.first_child_matching_class(node_type)
   return node[index]
 
 def process_doc_nodes(app, doctree, fromdocname):
