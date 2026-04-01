@@ -18,7 +18,7 @@ import platform
 from . import bitrate_configuration
 from . import configuration
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 
 class InputNotFound(configuration.ConfigError):
@@ -223,7 +223,7 @@ class Input(configuration.Base):
 
     # FIXME: A late import to avoid circular dependency issues between these two
     # modules.
-    from . import autodetect
+    from . import autodetect  # pylint: disable=import-outside-toplevel
 
     if not autodetect.is_present(self):
       raise InputNotFound(self)

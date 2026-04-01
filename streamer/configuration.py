@@ -18,7 +18,7 @@ import functools
 import re
 
 import typing
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type
 from typing import Generic, TypeVar, cast
 
 

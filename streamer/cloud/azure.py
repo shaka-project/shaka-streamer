@@ -14,7 +14,6 @@
 
 """Upload to Azure Blob Storage."""
 
-import io
 import urllib.parse
 from typing import Optional
 

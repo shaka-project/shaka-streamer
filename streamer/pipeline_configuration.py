@@ -16,7 +16,6 @@ import base64
 import enum
 import os
 import platform
-import shlex
 
 from . import bitrate_configuration
 from . import configuration

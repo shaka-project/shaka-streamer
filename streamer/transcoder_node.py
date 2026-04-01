@@ -16,12 +16,12 @@
 
 import shlex
 
-from streamer.bitrate_configuration import AudioCodec, VideoCodec
+from streamer.bitrate_configuration import VideoCodec
 from streamer.input_configuration import Input, InputType, MediaType
 from streamer.node_base import PolitelyWaitOnFinish
 from streamer.output_stream import AudioOutputStream, OutputStream, TextOutputStream, VideoOutputStream
 from streamer.pipeline_configuration import LimitResolutionMode, PipelineConfig, StreamingMode
-from typing import List, Union, Optional
+from typing import List, Optional
 
 class TranscoderNode(PolitelyWaitOnFinish):
 

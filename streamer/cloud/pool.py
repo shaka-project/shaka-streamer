@@ -19,7 +19,6 @@ import enum
 from setproctitle import setproctitle  # type: ignore
 from queue import Queue
 
-from typing import Optional
 from typing_extensions import Self
 
 import multiprocessing

@@ -45,7 +45,7 @@ class Pipe:
     pipe = Pipe()
 
     if sys.platform == 'win32':
-      import win32pipe # type: ignore
+      import win32pipe # type: ignore  # pylint: disable=import-outside-toplevel
       pipe_name = '-nt-shaka-' + unique_name
       # The read pipe is connected to a writer process.
       pipe._read_pipe_name = r'\\.\pipe\W' + pipe_name

@@ -28,7 +28,7 @@ import subprocess
 import sys
 import tempfile
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 from streamer import __version__
 from streamer import autodetect
 from streamer import min_versions
@@ -42,7 +42,7 @@ from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, Stre
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
 from streamer.proxy_node import ProxyNode
-import streamer.subprocessWindowsPatch  # side-effects only
+import streamer.subprocessWindowsPatch  # pylint: disable=unused-import
 from streamer.util import is_http_url, is_url
 from streamer.pipe import Pipe
 
@@ -86,7 +86,7 @@ class ControllerNode(object):
 
     if use_hermetic:
       try:
-        import streamer_binaries # type: ignore
+        import streamer_binaries # type: ignore  # pylint: disable=import-outside-toplevel
       except ImportError as ex:
         # If the package couldn't be imported.
         raise RuntimeError(

@@ -17,16 +17,15 @@
 import os
 import subprocess
 
-from . import input_configuration
 from . import node_base
 from . import pipeline_configuration
 
-from streamer.bitrate_configuration import AudioCodec, VideoCodec
+from streamer.bitrate_configuration import AudioCodec
 from streamer.input_configuration import MediaType
 from streamer.output_stream import OutputStream
 from streamer.pipeline_configuration import EncryptionMode, PipelineConfig
 from streamer.util import is_url
-from typing import List, Optional, Union, cast
+from typing import List, Optional, cast
 
 # Alias a few classes to avoid repeating namespaces later.
 ManifestFormat = pipeline_configuration.ManifestFormat

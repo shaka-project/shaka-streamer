@@ -39,11 +39,11 @@ sys.path.insert(0, os.path.abspath(ROOT))
 
 # This imports certain types we will use directly in the customization at the
 # bottom of the config file.
-import docutils.nodes
-import sphinx.addnodes
-import streamer
-from streamer import bitrate_configuration
-import types
+import docutils.nodes  # pylint: disable=wrong-import-position
+import sphinx.addnodes  # pylint: disable=wrong-import-position
+import streamer  # pylint: disable=wrong-import-position
+from streamer import bitrate_configuration  # pylint: disable=wrong-import-position
+import types  # pylint: disable=wrong-import-position
 
 
 # -- Project information -----------------------------------------------------
