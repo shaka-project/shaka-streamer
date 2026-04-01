@@ -77,7 +77,7 @@ class VideoCodec(enum.Enum):
 
   AV1 = 'av1'
   """AV1."""
-  
+
   HEVC = 'hevc'
   """HEVC, also known as h.265"""
 

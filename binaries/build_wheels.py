@@ -59,11 +59,10 @@ NON_DISTRO_BINARIES_DL = [
     FFMPEG_DL_PREFIX + '/ffprobe',
     PACKAGER_DL_PREFIX + '/packager',
 ]
-# Important: wrap map() in list(), because map returns an iterator, and we need
-# a real list.
-UBUNTU_SUFFIXES = list(map(
-    lambda version: '-ubuntu-{}'.format(version),
-    streamer_binaries._ubuntu_versions_with_hw_encoders))
+UBUNTU_SUFFIXES = [  # pylint: disable=protected-access
+    f'-ubuntu-{version}'
+    for version in streamer_binaries._ubuntu_versions_with_hw_encoders
+]
 
 BINARIES_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 

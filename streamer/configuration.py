@@ -77,14 +77,14 @@ class MalformedField(ConfigError):
 
 class ConflictingFields(ConfigError):
   """An error raised when multiple fields are given and only one of them is allowed at a time."""
-  
+
   def __init__(self, class_ref, field1_name, field2_name):
     self.field1_name = field1_name
     self.field1_type = class_ref.__dict__[field1_name].get_type_name()
     self.field2_name = field2_name
     self.field2_type = class_ref.__dict__[field2_name].get_type_name()
     super().__init__(class_ref, field1_name, class_ref.__dict__[field1_name])
-  
+
   def __str__(self):
     return """In {}, these fields are conflicting:
     {} a {}
@@ -92,17 +92,17 @@ class ConflictingFields(ConfigError):
     {} a {}\n  consider using only one of them.""".format(self.class_name,
                       self.field1_name, self.field1_type,
                       self.field2_name, self.field2_type)
-    
+
 class MissingRequiredExclusiveFields(ConfigError):
   """An error raised when one of an exclusively required fields is missing."""
-  
+
   def __init__(self, class_ref, field1_name, field2_name):
     self.field1_name = field1_name
     self.field1_type = class_ref.__dict__[field1_name].get_type_name()
     self.field2_name = field2_name
     self.field2_type = class_ref.__dict__[field2_name].get_type_name()
     super().__init__(class_ref, field1_name, class_ref.__dict__[field1_name])
-  
+
   def __str__(self):
     return """{} is missing a required field. Use exactly one of these fields:
     {} a {}
@@ -499,7 +499,7 @@ class RuntimeMap(Generic[RuntimeMapSubclass], Base):
     return self._sortable_properties() < other._sortable_properties()
 
   def __hash__(self) -> int:
-      return super().__hash__()
+    return super().__hash__()
 
   @classmethod
   def set_map(cls,

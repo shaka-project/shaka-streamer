@@ -120,7 +120,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.rfile.readline()  # Read the trailer
 
         if chunk_size == 0:
-           break  # EOF
+          break  # EOF
 
       # All done.
       if not suppress:
@@ -211,12 +211,9 @@ class ProxyNode(ThreadedNodeBase):
 
     self._pool = Pool(self._upload_location, self._pool_size)
 
-    handler_factory = (
-        lambda *args, **kwargs: self.create_handler(*args, **kwargs))
-
     # By specifying port 0, a random unused port will be chosen for the server.
     self._server = ThreadingHTTPServer(
-        ('localhost', 0), handler_factory)
+        ('localhost', 0), self.create_handler)
     self.server_location = (
         'http://' + self._server.server_name +
         ':' + str(self._server.server_port))

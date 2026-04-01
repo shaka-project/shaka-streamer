@@ -26,17 +26,17 @@ class Pipe:
 
   def __init__(self) -> None:
     """Initializes a non-functioning pipe."""
-    
+
     self._read_pipe_name = ''
     self._write_pipe_name = ''
     self._thread: Optional[Thread] = None
 
   @staticmethod
   def create_ipc_pipe(temp_dir: str, suffix: str = '') -> 'Pipe':
-    """A static method used to create a pipe between two processes. 
-    
+    """A static method used to create a pipe between two processes.
+
     On POSIX systems, it creates a named pipe using `os.mkfifo`.
-    
+
     On Windows platforms, it starts a backgroud thread that transfars data from the
     writer to the reader process it is connected to.
     """
@@ -108,11 +108,13 @@ class Pipe:
   def _win_thread_fn(read_side, write_side, buf_size):
     """This method serves as a server that connects a writer client
     to a reader client.
-    
+
     This methods will run as a thread, and will only be called on Windows platforms.
     """
 
-    import win32pipe, win32file, pywintypes # type: ignore
+    import win32pipe  # type: ignore  # pylint: disable=import-outside-toplevel
+    import win32file  # type: ignore  # pylint: disable=import-outside-toplevel
+    import pywintypes  # type: ignore  # pylint: disable=import-outside-toplevel
     try:
       # Connect to both ends of the pipe before starting the transfer.
       # This funciton is blocking. If no process is connected yet, it will wait

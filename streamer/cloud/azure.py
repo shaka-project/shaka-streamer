@@ -26,7 +26,7 @@ from streamer.cloud.base import CloudUploaderBase
 
 
 # Azure Append Blobs can accept chunks of any size, but we'll use a reasonable buffer size.
-APPEND_BLOB_BUFFER_SIZE = (4 << 20)  # 4MB
+APPEND_BLOB_BUFFER_SIZE = 4 << 20  # 4MB
 
 
 class AzureStorageUploader(CloudUploaderBase):

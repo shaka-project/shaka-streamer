@@ -25,7 +25,7 @@ from streamer.cloud.base import CloudUploaderBase
 
 
 # S3 has a minimum chunk size for multipart uploads.
-MIN_S3_CHUNK_SIZE = (5 << 20)  # 5MB
+MIN_S3_CHUNK_SIZE = 5 << 20  # 5MB
 
 
 class S3Uploader(CloudUploaderBase):

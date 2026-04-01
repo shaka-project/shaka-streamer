@@ -72,7 +72,7 @@ def _probe(input: Input, field: str) -> Optional[str]:
   output_string: str = output_bytes.decode('utf-8').strip()
   # With certain container formats, ffprobe returns a duplicate
   # output and some empty lines in between. Issue #119
-  output_string = output_string.split('\n')[0]
+  output_string = output_string.split('\n', maxsplit=1)[0]
   # After stripping the newline, we can fall back to None if it's empty.
   probe_output: Optional[str] = output_string or None
 
@@ -146,7 +146,7 @@ def get_resolution(input: Input) -> Optional[VideoResolutionName]:
     return None
 
   # This is the resolution of the video in the form of 'WIDTH|HEIGHT'.  For
-  # example, '1920|1080'.  Occasionally, there is a pipe after the resolution, 
+  # example, '1920|1080'.  Occasionally, there is a pipe after the resolution,
   # such as '1920|1080|'.  We have to split up width and height and match that
   # to a named resolution.
   width_string, height_string = resolution_string.rstrip('|').split('|')

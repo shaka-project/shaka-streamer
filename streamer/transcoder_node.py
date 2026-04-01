@@ -136,13 +136,13 @@ class TranscoderNode(PolitelyWaitOnFinish):
         args += map_args
 
         if input.media_type == MediaType.AUDIO:
-          assert(isinstance(output_stream, AudioOutputStream))
+          assert isinstance(output_stream, AudioOutputStream)
           args += self._encode_audio(output_stream, input)
         elif input.media_type == MediaType.VIDEO:
-          assert(isinstance(output_stream, VideoOutputStream))
+          assert isinstance(output_stream, VideoOutputStream)
           args += self._encode_video(output_stream, input)
         else:
-          assert(isinstance(output_stream, TextOutputStream))
+          assert isinstance(output_stream, TextOutputStream)
           args += self._encode_text(output_stream, input)
 
         args += [output_stream.ipc_pipe.write_end()]
@@ -191,7 +191,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
         '-strict', 'experimental',
       ]
 
-    if len(filters):
+    if filters:
       args += [
           # Set audio filters.
           '-af', ','.join(filters),
@@ -206,9 +206,9 @@ class TranscoderNode(PolitelyWaitOnFinish):
     if input.is_interlaced:
       filters.append('pp=fd')
       args.extend(['-r', str(input.frame_rate)])
-    
+
     if stream.resolution.max_frame_rate < input.frame_rate:
-       args.extend(['-r', str(stream.resolution.max_frame_rate)])
+      args.extend(['-r', str(stream.resolution.max_frame_rate)])
 
     filters.extend(input.filters)
 
@@ -238,7 +238,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
     # https://github.com/shaka-project/shaka-streamer/issues/36
     filters.append('setsar=1:1')
 
-    if (stream.codec in {VideoCodec.H264, VideoCodec.HEVC} 
+    if (stream.codec in {VideoCodec.H264, VideoCodec.HEVC}
         and not stream.is_hardware_accelerated()):
       # These presets are specifically recognized by the software encoder.
       if self._pipeline_config.streaming_mode == StreamingMode.LIVE:
@@ -269,14 +269,14 @@ class TranscoderNode(PolitelyWaitOnFinish):
           # is faster.
           '-profile:v', profile,
       ]
-      
+
     if stream.codec in {VideoCodec.H264, VideoCodec.HEVC}:
       args += [
           # The only format supported by QT/Apple.
           '-pix_fmt', 'yuv420p',
           # Require a closed GOP.  Some decoders don't support open GOPs.
           '-flags', '+cgop',
-         
+
       ]
 
     elif stream.codec == VideoCodec.VP9:
