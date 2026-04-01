@@ -42,7 +42,7 @@ from streamer.pipeline_configuration import ManifestFormat, PipelineConfig, Stre
 from streamer.transcoder_node import TranscoderNode
 from streamer.periodconcat_node import PeriodConcatNode
 from streamer.proxy_node import ProxyNode
-import streamer.subprocessWindowsPatch  # pylint: disable=unused-import
+import streamer.subprocessWindowsPatch  # side-effects only  # pylint: disable=unused-import
 from streamer.util import is_http_url, is_url
 from streamer.pipe import Pipe
 
