@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Configuration classes for codec and bitrate settings."""
+
 import enum
 import math
 import re
@@ -36,6 +38,8 @@ class BitrateString(configuration.ValidatingType, str):
 
 
 class AudioCodec(enum.Enum):
+  """Supported audio codecs for transcoding."""
+
   AAC = 'aac'
   OPUS = 'opus'
   AC3 = 'ac3'
@@ -67,6 +71,7 @@ class AudioCodec(enum.Enum):
 
 
 class VideoCodec(enum.Enum):
+  """Supported video codecs for transcoding."""
 
   H264 = 'h264'
   """H264, also known as AVC."""
@@ -115,6 +120,7 @@ class VideoCodec(enum.Enum):
 
 
 class AudioChannelLayout(configuration.RuntimeMap):
+  """A named audio channel layout with per-codec bitrate mappings."""
 
   max_channels = configuration.Field(field_type=int, required=True).cast()
   """The maximum number of channels in this layout.
@@ -179,6 +185,7 @@ class AudioChannelLayoutName(configuration.RuntimeMapKeyValidator):
 
 
 class VideoResolution(configuration.RuntimeMap):
+  """A named video resolution with per-codec bitrate mappings."""
 
   max_width = configuration.Field(field_type=int, required=True).cast()
   """The maximum width in pixels for this named resolution."""
@@ -384,6 +391,7 @@ DEFAULT_VIDEO_RESOLUTIONS = {
 
 
 class BitrateConfig(configuration.Base):
+  """Top-level bitrate configuration holding audio and video resolution maps."""
 
   audio_channel_layouts = configuration.Field(
       Dict[str, AudioChannelLayout],

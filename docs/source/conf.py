@@ -23,6 +23,7 @@
 # heavy lifting for us, and which needs the most customization, see:
 # http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 
+"""Sphinx configuration for Shaka Streamer documentation."""
 
 # -- Path setup --------------------------------------------------------------
 

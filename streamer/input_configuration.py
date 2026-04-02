@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Configuration classes for input sources."""
+
 import enum
 import platform
 
@@ -34,6 +36,8 @@ class InputNotFound(configuration.ConfigError):
             f' not found in "{self.input.name}"')
 
 class InputType(enum.Enum):
+  """The type of input source."""
+
   FILE = 'file'
   """A track from a file.  Usable only with VOD."""
 

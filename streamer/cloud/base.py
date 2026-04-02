@@ -20,6 +20,8 @@ import abc
 
 
 class CloudUploaderBase(object):
+  """Abstract base class for cloud storage upload implementations."""
+
   @abc.abstractmethod
   def write_non_chunked(self, path: str, data: bytes) -> None:
     """Write the non-chunked data to the destination."""

@@ -20,6 +20,7 @@ import subprocess
 from . import node_base
 
 class ExternalCommandNode(node_base.NodeBase):
+  """A pipeline node that runs an arbitrary user-supplied shell command."""
 
   def __init__(self, command: str, output_path: str):
     super().__init__()

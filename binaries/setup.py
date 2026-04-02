@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Package setup for shaka-streamer-binaries."""
 
 import sys
 import setuptools # type: ignore

@@ -24,6 +24,7 @@ from streamer.pipeline_configuration import LimitResolutionMode, PipelineConfig,
 from typing import List, Optional
 
 class TranscoderNode(PolitelyWaitOnFinish):
+  """A pipeline node that runs FFmpeg to transcode media streams."""
 
   def __init__(self,
                inputs: List[Input],

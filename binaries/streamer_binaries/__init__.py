@@ -1,3 +1,5 @@
+"""Binary package providing FFmpeg and Shaka Packager for shaka-streamer."""
+
 import os
 import platform
 

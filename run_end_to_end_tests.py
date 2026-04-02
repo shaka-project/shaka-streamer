@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""End-to-end test runner: starts a Flask server, runs Karma/Jasmine in a browser."""
+
 import argparse
 import flask
 import glob

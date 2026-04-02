@@ -98,6 +98,7 @@ class OutputStream(object):
 
 
 class AudioOutputStream(OutputStream):
+  """An output stream for a single audio track."""
 
   def __init__(self,
                media_input: Input,
@@ -125,6 +126,7 @@ class AudioOutputStream(OutputStream):
 
 
 class VideoOutputStream(OutputStream):
+  """An output stream for a single video track."""
 
   def __init__(self,
                media_input: Input,
@@ -150,6 +152,7 @@ class VideoOutputStream(OutputStream):
 
 
 class TextOutputStream(OutputStream):
+  """An output stream for a single text/subtitle track."""
 
   def __init__(self,
                media_input: Input,

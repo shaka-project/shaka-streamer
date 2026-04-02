@@ -56,6 +56,7 @@ def build_path(output_location, sub_path):
 
 
 class PackagerNode(node_base.PolitelyWaitOnFinish):
+  """A pipeline node that runs Shaka Packager to package and segment media."""
 
   def __init__(self,
                pipeline_config: PipelineConfig,
