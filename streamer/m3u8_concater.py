@@ -895,9 +895,8 @@ class MasterPlaylist:
     if all(not var_is_vid(var_pl) for var_pl in all_var_playlists):
       # When the playlist is audio only, each audio is referenced two times,
       # once in an #EXT-X-MEDIA tag and another time in an #EXT-X-STREAM-INF
-      # tag.  If the user has an audio-only content, the concatenation will go
-      # a little
-      # bit different to produce the desired output.
+      # tag.  If the user has audio-only content, the concatenation differs
+      # slightly to produce the desired output.
       master_hls.playlists.extend(
           MediaPlaylist.concat_aud_only(
             all_aud_playlists,
