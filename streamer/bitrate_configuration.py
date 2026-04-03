@@ -31,7 +31,7 @@ class BitrateString(configuration.ValidatingType, str):
 
   @staticmethod
   def validate(value: str) -> None:
-    if type(value) is not str:
+    if not isinstance(value, str):
       raise TypeError()
     if not re.match(r'^[\d\.]+(?:[kM])?$', value):
       raise ValueError('not a bitrate string (e.g. 500k or 7.5M)')
@@ -95,7 +95,7 @@ class VideoCodec(enum.Enum):
     if isinstance(value, str) and value.startswith('hw:'):
       obj = cls(value[3:])
       # Overwrite the _hw_acc variable for this codec.
-      obj._hw_acc = True
+      obj._hw_acc = True  # pylint: disable=protected-access
       return obj
     return super()._missing_(value)
 

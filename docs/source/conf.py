@@ -311,7 +311,7 @@ def skip_member(_app, _what, _name, obj, _skip, _options):
   # Though this may have been fixed in a later version of Sphinx, we can ignore
   # "what" and check the type of "obj" instead.  For our case, this is a
   # reference to the actual method.
-  if type(obj) is types.FunctionType and 'configuration' in obj.__module__:
+  if isinstance(obj, types.FunctionType) and 'configuration' in obj.__module__:
     return True
 
 

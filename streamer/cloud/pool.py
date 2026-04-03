@@ -194,10 +194,10 @@ class Pool(AbstractPool):
       self._available_processes.put(worker_process)
       self._all_processes.append(worker_process)
 
-  def _release(self, worker_process: WorkerProcess) -> None:
+  def _release(self, process: WorkerProcess) -> None:
     """Called by worker handles to release the worker back to the pool."""
 
-    self._available_processes.put(worker_process)
+    self._available_processes.put(process)
 
   def get_worker(self) -> WorkerHandle:
     """Get an available worker.  Blocks until one is available.

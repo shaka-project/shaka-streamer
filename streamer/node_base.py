@@ -63,7 +63,7 @@ class NodeBase(object):
 
   def _create_process(self,
                       args: Union[str, List[str]],
-                      env: Dict[str, str] = {},
+                      env: Optional[Dict[str, str]] = None,
                       merge_env: bool = True,
                       stdout: Union[int, IO[Any], None] = None,
                       stderr: Union[int, IO[Any], None] = None,
@@ -81,6 +81,8 @@ class NodeBase(object):
     Returns:
       The Popen object of the subprocess.
     """
+    if env is None:
+      env = {}
     if merge_env:
       child_env = os.environ.copy()
       child_env.update(env)
@@ -94,7 +96,7 @@ class NodeBase(object):
       assert isinstance(args, str)
       print('+ ' + args)
     else:
-      assert type(args) is list
+      assert isinstance(args, list)
       print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
 
 
@@ -143,8 +145,8 @@ class PolitelyWaitOnFinish(node_base.NodeBase):
   the subprocesses of a node to terminate.
   """
 
-  def stop(self, status: Optional[ProcessStatus]) -> None:
-    if self._process and status == ProcessStatus.FINISHED:
+  def stop(self, _status: Optional[ProcessStatus]) -> None:
+    if self._process and _status == ProcessStatus.FINISHED:
       try:
         print('Waiting for', self.__class__.__name__)
         self._process.wait(timeout=300)  # 5m timeout
@@ -152,7 +154,7 @@ class PolitelyWaitOnFinish(node_base.NodeBase):
         traceback.print_exc()  # print the exception
         # Fall through.
 
-    super().stop(status)
+    super().stop(_status)
 
 class ThreadedNodeBase(NodeBase):
   """A base class for nodes that run a thread.

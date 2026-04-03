@@ -40,6 +40,7 @@ class Pipe:
     On Windows platforms, it starts a background thread that transfers data
     from the writer to the reader process it is connected to.
     """
+    # pylint: disable=protected-access  # accessing own class's private attrs on sibling instance
 
     unique_name = str(uuid.uuid4()) + suffix
     pipe = Pipe()
@@ -94,6 +95,7 @@ class Pipe:
   @staticmethod
   def create_file_pipe(path: str, mode: str) -> 'Pipe':
     """Returns a Pipe object whose read or write end is a path to a file."""
+    # pylint: disable=protected-access  # accessing own class's private attrs on sibling instance
 
     pipe = Pipe()
     # A process will write on the read pipe(file).

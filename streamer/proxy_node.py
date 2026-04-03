@@ -222,14 +222,14 @@ class ProxyNode(ThreadedNodeBase):
 
     return super().start()
 
-  def stop(self, status: Optional[ProcessStatus]) -> None:
+  def stop(self, _status: Optional[ProcessStatus]) -> None:
     if self._server:
       self._server.shutdown()
       self._server = None
     if self._pool:
       self._pool.close()
       self._pool = None
-    return super().stop(status)
+    return super().stop(_status)
 
   def check_status(self) -> ProcessStatus:
     # This makes sure this node will never prevent the shutdown of the whole

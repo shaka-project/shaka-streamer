@@ -63,9 +63,9 @@ NON_DISTRO_BINARIES_DL = [
     FFMPEG_DL_PREFIX + '/ffprobe',
     PACKAGER_DL_PREFIX + '/packager',
 ]
-UBUNTU_SUFFIXES = [  # pylint: disable=protected-access
+UBUNTU_SUFFIXES = [
     f'-ubuntu-{version}'
-    for version in streamer_binaries._ubuntu_versions_with_hw_encoders
+    for version in streamer_binaries._ubuntu_versions_with_hw_encoders  # pylint: disable=protected-access
 ]
 
 BINARIES_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))

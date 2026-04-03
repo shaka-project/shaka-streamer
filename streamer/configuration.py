@@ -145,7 +145,7 @@ class HexString(ValidatingType, str):
 
   @staticmethod
   def validate(value):
-    if type(value) is not str:
+    if not isinstance(value, str):
       raise TypeError()
     if not re.match(r'^[a-fA-F0-9]+$', value):
       raise ValueError('not a hexadecimal string')
@@ -556,11 +556,11 @@ class RuntimeMapKeyValidator(ValidatingType, str):
     return f'{cls.map_class.__name__} name (one of {", ".join(options)})'
 
   @classmethod
-  def validate(cls, key):
-    if type(key) is not str:
+  def validate(cls, value):
+    if not isinstance(value, str):
       raise TypeError()
 
-    if key not in cls.map_class.keys():
+    if value not in cls.map_class.keys():
       raise ValueError(
-          f'{key} is not a valid {cls.name()}')
+          f'{value} is not a valid {cls.name()}')
 

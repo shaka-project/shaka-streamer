@@ -74,7 +74,7 @@ class ControllerNode(object):
   def start(self, output_location: str,
             input_config_dict: Dict[str, Any],
             pipeline_config_dict: Dict[str, Any],
-            bitrate_config_dict: Dict[Any, Any] = {},
+            bitrate_config_dict: Optional[Dict[Any, Any]] = None,
             check_deps: bool = True,
             use_hermetic: bool = True) -> 'ControllerNode':
     """Create and start all other nodes.
@@ -83,6 +83,9 @@ class ControllerNode(object):
     :raises: :class:`streamer.configuration.ConfigError` if the configuration is
              invalid.
     """
+
+    if bitrate_config_dict is None:
+      bitrate_config_dict = {}
 
     if use_hermetic:
       try:
@@ -125,10 +128,11 @@ class ControllerNode(object):
           # version of streamer itself.  This is much easier to do in nodejs
           # dependencies, because you can use a specifier like "1.2.x", but in
           # Python, you have to use a specifier like ">=1.2,<1.3".
-          pip_command = (
-              f"pip3 install 'shaka-streamer-binaries"
-              f">={streamer_short_version},"
-              f"<{next_short_version(__version__)}'")
+          pip_specifier = (
+              f'>={streamer_short_version},'
+              f'<{next_short_version(__version__)}')
+          pip_package = f'shaka-streamer-binaries{pip_specifier}'
+          pip_command = 'pip3 install ' + repr(pip_package)
 
           raise VersionError(
               'shaka-streamer-binaries', 'version does not match',
