@@ -167,7 +167,7 @@ def start():
   # Receives configs from the tests to start Shaka Streamer.
   try:
     configs = json.loads(flask.request.data)
-  except Exception as e:
+  except Exception as e:  # pylint: disable=broad-exception-caught
     return create_cross_origin_response(status=400, body=str(e))
 
   # Enforce quiet mode without needing it specified in every test.
@@ -190,7 +190,7 @@ def start():
                      configs['bitrate_config'],
                      check_deps=False,
                      use_hermetic=not use_system_binaries)
-  except Exception as e:
+  except Exception as e:  # pylint: disable=broad-exception-caught
     # If the controller throws an exception during startup, we want to call
     # stop() to shut down any external processes that have already been started.
     controller.stop()

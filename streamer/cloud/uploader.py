@@ -31,7 +31,7 @@ ALL_SUPPORTED_PROTOCOLS: list[str] = ['gs', 's3', 'azure']
 try:
   from streamer.cloud.gcs import GCSUploader
   SUPPORTED_PROTOCOLS.append('gs')
-except:
+except Exception:  # pylint: disable=broad-exception-caught
   pass
 
 
@@ -40,7 +40,7 @@ except:
 try:
   from streamer.cloud.s3 import S3Uploader
   SUPPORTED_PROTOCOLS.append('s3')
-except:
+except Exception:  # pylint: disable=broad-exception-caught
   pass
 
 
@@ -49,7 +49,7 @@ except:
 try:
   from streamer.cloud.azure import AzureStorageUploader
   SUPPORTED_PROTOCOLS.append('azure')
-except:
+except Exception:  # pylint: disable=broad-exception-caught
   pass
 
 

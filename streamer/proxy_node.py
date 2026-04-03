@@ -89,7 +89,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     """Override the request logging feature of the Python HTTP server."""
     try:
       code_int = int(code)
-    except:
+    except Exception:  # pylint: disable=broad-exception-caught
       code_int = 0
 
     if code_int >= 200 and code_int <= 299:
@@ -152,7 +152,7 @@ class RequestHandler(BaseHTTPRequestHandler):
       self.rfile.close()
       status = HTTP_STATUS_ACCEPTED if suppress else HTTP_STATUS_CREATED
       self.send_response(status)
-    except Exception as ex:
+    except Exception as ex:  # pylint: disable=broad-exception-caught
       print('Upload failure: ' + str(ex))
       traceback.print_exc()
       self.send_response(HTTP_STATUS_FAILED)
@@ -167,7 +167,7 @@ class RequestHandler(BaseHTTPRequestHandler):
       with self._pool.get_worker() as worker:
         worker.delete(self.path)
       self.send_response(HTTP_STATUS_NO_CONTENT)
-    except Exception as ex:
+    except Exception as ex:  # pylint: disable=broad-exception-caught
       print('Upload failure: ' + str(ex))
       traceback.print_exc()
       self.send_response(HTTP_STATUS_FAILED)

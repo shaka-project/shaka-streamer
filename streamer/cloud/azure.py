@@ -49,9 +49,9 @@ class AzureStorageUploader(CloudUploaderBase):
       credential = DefaultAzureCredential()
       self._blob_service_client = BlobServiceClient(
           account_url=account_url, credential=credential)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
       raise RuntimeError(
-          f'Failed to initialize Azure credentials for {account_url}: {e}')
+          f'Failed to initialize Azure credentials for {account_url}: {e}') from e
 
     # Extract container name and base path from the URL path
     # First part of path is container, everything after is base path

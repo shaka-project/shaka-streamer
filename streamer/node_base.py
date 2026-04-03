@@ -176,7 +176,7 @@ class ThreadedNodeBase(NodeBase):
     while self._status == ProcessStatus.RUNNING:
       try:
         self._thread_single_pass()
-      except:
+      except Exception:  # pylint: disable=broad-exception-caught
         print('Exception in', self._thread_name, '-', sys.exc_info())
 
         if self._continue_on_exception:
