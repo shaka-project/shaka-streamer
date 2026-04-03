@@ -331,7 +331,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
     return args
 
   def _encode_text(
-      self, stream: TextOutputStream, media_input: Input) -> List[str]:
+      self, _stream: TextOutputStream, _media_input: Input) -> List[str]:
     return [
         # Output WebVTT.
         '-f', 'webvtt',

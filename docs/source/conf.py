@@ -244,7 +244,7 @@ bitrate_configuration.AudioChannelLayout.set_map(
 # what type it accepts.
 name_to_type_map = {}
 
-def process_signature(app, _, name, obj, *other_ignored_args):
+def process_signature(_app, _, name, obj, *_other_ignored_args):
   """A callback for each signature in the docs.
 
   Here, we build a map of the various config field names to their Field objects
@@ -264,7 +264,7 @@ def get_first_child(node, node_type):
   index = node.first_child_matching_class(node_type)
   return node[index]
 
-def process_doc_nodes(app, doctree, fromdocname):
+def process_doc_nodes(_app, doctree, _fromdocname):
   """A callback invoked when the documentation is built.
 
   We use this opportunity to override the docs for config Field objects to
@@ -291,7 +291,7 @@ def process_doc_nodes(app, doctree, fromdocname):
       annotation.replace(text, docutils.nodes.Text(
           data=replacement_text, rawsource=replacement_text))
 
-def skip_member(app, what, name, obj, skip, options):
+def skip_member(_app, _what, _name, obj, _skip, _options):
   """A callback invoked on each member to decide if it should be skipped.
 
   Returns True to skip a member in the docs.  Any member which is skipped will

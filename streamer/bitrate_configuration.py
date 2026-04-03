@@ -50,7 +50,7 @@ class AudioCodec(enum.Enum):
     """Returns True if this codec is hardware accelerated."""
     return False
 
-  def get_ffmpeg_codec_string(self, hwaccel_api: str) -> str:
+  def get_ffmpeg_codec_string(self, _hwaccel_api: str) -> str:
     """Returns a codec string accepted by FFmpeg for this codec."""
     # FFmpeg warns:
     #   The encoder 'opus' is experimental but experimental codecs are not
@@ -86,7 +86,7 @@ class VideoCodec(enum.Enum):
   HEVC = 'hevc'
   """HEVC, also known as h.265"""
 
-  def __init__(self, value):
+  def __init__(self, _value):
     # Set all the codecs not to be hardware accelerated at the begining.
     self._hw_acc = False
 

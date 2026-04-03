@@ -525,9 +525,9 @@ class MediaPlaylist:
     division = MediaPlaylist.concat_aud_common(all_aud_playlists)
 
     concat_aud_playlists: List[MediaPlaylist] = []
-    for codec, lang_channel_div in division.items():
+    for _, lang_channel_div in division.items():
       for lang, channel_div in lang_channel_div.items():
-        for channel, aud_playlists in channel_div.items():
+        for _, aud_playlists in channel_div.items():
           stream_info = MediaPlaylist._similar_stream_info(
               aud_playlists)
           if lang != 'und':
@@ -570,9 +570,9 @@ class MediaPlaylist:
     division = MediaPlaylist.concat_aud_common(all_aud_playlists)
 
     concat_aud_only_playlists: List[MediaPlaylist] = []
-    for codec, lang_channel_div in division.items():
+    for _, lang_channel_div in division.items():
       for lang, channel_div in lang_channel_div.items():
-        for channel, aud_playlists in channel_div.items():
+        for _, aud_playlists in channel_div.items():
           # Get the variant playlists paired to the current audio playlists.
           var_playlists = [pair[aud_playlist] for aud_playlist in aud_playlists]
           stream_info = MediaPlaylist._similar_stream_info(

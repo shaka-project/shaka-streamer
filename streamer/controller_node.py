@@ -87,7 +87,7 @@ class ControllerNode(object):
     if use_hermetic:
       try:
         import streamer_binaries # type: ignore  # pylint: disable=import-outside-toplevel
-      except ImportError as ex:
+      except ImportError:
         # If the package couldn't be imported.
         raise RuntimeError(
             'shaka-streamer-binaries was not found.\n'

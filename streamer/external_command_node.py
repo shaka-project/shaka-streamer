@@ -40,6 +40,7 @@ class ExternalCommandNode(node_base.NodeBase):
     # newlines into spaces.
     command = self._command.replace('\n', ' ')
     # Create a new group for the spawned shell to easily shut it down.
+    new_group_flag = {}
     if os.name == 'posix':
       # A POSIX only argument.
       new_group_flag = {'start_new_session': True}
@@ -49,7 +50,7 @@ class ExternalCommandNode(node_base.NodeBase):
     self._process = self._create_process(command, shell=True,
                                          env=env, **new_group_flag)
 
-  def stop(self, status):
+  def stop(self, _status):
     # Since we created the external shell process in a new group, sending
     # a SIGTERM to the group will terminate the shell and its children.
     if self.check_status() == node_base.ProcessStatus.RUNNING:

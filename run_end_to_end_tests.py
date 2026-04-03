@@ -222,7 +222,6 @@ def start():
 
 @app.route('/stop')
 def stop():
-  global controller
   resp = create_cross_origin_response()
   if controller is not None:
     # Check status to see if one of the processes exited.
@@ -290,9 +289,9 @@ def fetch_cloud_assets():
   # Downloading all the assests for tests.
   for file in file_list:
     if not os.path.exists(TEST_DIR + file):
-      response = urllib.request.urlretrieve(CLOUD_TEST_ASSETS +
-                                            file,
-                                            TEST_DIR + file)
+      urllib.request.urlretrieve(CLOUD_TEST_ASSETS +
+                                 file,
+                                 TEST_DIR + file)
 
 
 def run_karma(extra_args):
@@ -391,7 +390,7 @@ def main():
   if args.test_widevine:
     test_args += [ '--testWidevine', 'true' ]
 
-  for i in range(trials):
+  for _ in range(trials):
     # If the exit code was not 0, the tests in karma failed or crashed.
     if run_karma(test_args) != 0:
       fails += 1

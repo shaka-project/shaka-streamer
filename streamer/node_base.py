@@ -118,7 +118,7 @@ class NodeBase(object):
     else:
       return ProcessStatus.ERRORED
 
-  def stop(self, status: Optional[ProcessStatus]) -> None:
+  def stop(self, _status: Optional[ProcessStatus]) -> None:
     """Stop the subprocess if it's still running."""
     if self._process:
       # Slightly more polite than kill.  Try this first.
@@ -208,7 +208,7 @@ class ThreadedNodeBase(NodeBase):
         target=self._thread_main, name=self._thread_name)
     self._thread.start()
 
-  def stop(self, status: Optional[ProcessStatus]) -> None:
+  def stop(self, _status: Optional[ProcessStatus]) -> None:
     self._status = ProcessStatus.FINISHED
     # If the thread was sleeping, wake it up.
     self._sleep_waker_event.set()

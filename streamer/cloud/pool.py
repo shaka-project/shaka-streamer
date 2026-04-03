@@ -185,7 +185,7 @@ class Pool(AbstractPool):
     self._all_processes: list[WorkerProcess] = []
     self._available_processes: Queue[WorkerProcess] = Queue()
 
-    for i in range(size):
+    for _ in range(size):
       reader, writer = multiprocessing.Pipe(duplex=False)
       process = multiprocessing.Process(target=worker_target,
                                         args=(upload_location, reader))

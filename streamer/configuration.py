@@ -546,8 +546,8 @@ class RuntimeMapKeyValidator(ValidatingType, str):
   The RuntimeMapKeyValidator subclass should have a "map_class" variable which
   points to the RuntimeMap subclass."""
 
-  """Must be provided by subclasses and point to the matching RuntimeMap
-  subclass."""
+  # Must be provided by subclasses and point to the matching RuntimeMap
+  # subclass.
   map_class: Type[RuntimeMap] = None  # type: ignore
 
   @classmethod
