@@ -125,7 +125,10 @@ class ControllerNode(object):
           # version of streamer itself.  This is much easier to do in nodejs
           # dependencies, because you can use a specifier like "1.2.x", but in
           # Python, you have to use a specifier like ">=1.2,<1.3".
-          pip_command = f"pip3 install 'shaka-streamer-binaries>={streamer_short_version},<{next_short_version(__version__)}'"
+          pip_command = (
+              f"pip3 install 'shaka-streamer-binaries"
+              f">={streamer_short_version},"
+              f"<{next_short_version(__version__)}'")
 
           raise VersionError(
               'shaka-streamer-binaries', 'version does not match',
@@ -178,7 +181,8 @@ class ControllerNode(object):
             ', '.join(url_prefixes))
 
       if not ProxyNode.is_supported(output_location):
-        raise RuntimeError('Missing libraries for cloud URL: ' + output_location)
+        raise RuntimeError(
+            'Missing libraries for cloud URL: ' + output_location)
 
       if not self._pipeline_config.segment_per_file:
         raise RuntimeError(
@@ -230,17 +234,21 @@ class ControllerNode(object):
       # InputConfig contains multiperiod_inputs_list only.
       if is_url(output_location):
         raise RuntimeError(
-            'Direct cloud/HTTP upload is incompatible with multiperiod support.')
+            'Direct cloud/HTTP upload is incompatible with '
+            'multiperiod support.')
 
       # Create one Transcoder node and one Packager node for each period.
-      for i, singleperiod in enumerate(self._input_config.multiperiod_inputs_list):
+      for i, singleperiod in enumerate(
+          self._input_config.multiperiod_inputs_list):
         sub_dir_name = 'period_' + str(i + 1)
         self._append_nodes_for_inputs_list(singleperiod.inputs,
                                            output_location,
                                            sub_dir_name, i + 1)
 
       if self._pipeline_config.streaming_mode == StreamingMode.VOD:
-        packager_nodes = [node for node in self._nodes if isinstance(node, PackagerNode)]
+        packager_nodes = [
+            node for node in self._nodes
+            if isinstance(node, PackagerNode)]
         self._nodes.append(PeriodConcatNode(
           self._pipeline_config,
           packager_nodes,
@@ -255,13 +263,15 @@ class ControllerNode(object):
                                     output_location: str,
                                     period_dir: Optional[str] = None,
                                     index: int = 0) -> None:
-    """A common method that creates Transcoder and Packager nodes for a list of Inputs passed to it.
+    """A common method that creates Transcoder and Packager nodes for a list
+    of Inputs passed to it.
 
     Args:
       inputs (List[Input]): A list of Input streams.
       output_location (str): A path were the packager will write outputs in.
-      period_dir (Optional[str]): A subdirectory name where a single period will be outputted to.
-      If passed, this indicates that inputs argument is one period in a list of periods.
+      period_dir (Optional[str]): A subdirectory name where a single period
+        will be outputted to. If passed, this indicates that inputs argument
+        is one period in a list of periods.
       index (int): The index of the current Transcoder/Packager nodes.
     """
 
@@ -282,7 +292,8 @@ class ControllerNode(object):
 
       if media_input.media_type == MediaType.AUDIO:
         for audio_codec in self._pipeline_config.audio_codecs:
-          for output_channel_layout in self._pipeline_config.get_channel_layouts():
+          for output_channel_layout in (
+              self._pipeline_config.get_channel_layouts()):
             # We won't upmix a lower channel count input to a higher one.
             # Skip channel counts greater than the input channel count.
             if media_input.get_channel_layout() < output_channel_layout:
@@ -307,7 +318,8 @@ class ControllerNode(object):
                                              output_resolution))
 
       elif media_input.media_type == MediaType.TEXT:
-        if media_input.name.endswith('.vtt') or media_input.name.endswith('.ttml'):
+        if (media_input.name.endswith('.vtt')
+            or media_input.name.endswith('.ttml')):
           # If the input is a VTT or TTML file, pass it directly to the packager
           # without any intermediate processing or any named pipe.
           # TODO: Test TTML inputs
@@ -328,8 +340,8 @@ class ControllerNode(object):
                                       index,
                                       self.hermetic_ffmpeg))
 
-    # If the inputs list was a period in multiperiod_inputs_list, create a nested directory
-    # and put that period in it.
+    # If the inputs list was a period in multiperiod_inputs_list, create a
+    # nested directory and put that period in it.
     if period_dir and not is_url(output_location):
       output_location = os.path.join(output_location, period_dir)
       os.mkdir(output_location)
@@ -343,8 +355,9 @@ class ControllerNode(object):
   def check_status(self) -> ProcessStatus:
     """Checks the status of all the nodes.
 
-    If one node is errored, this returns Errored; otherwise if one node is running,
-    this returns Running; this only returns Finished if all nodes are finished.
+    If one node is errored, this returns Errored; otherwise if one node is
+    running, this returns Running; this only returns Finished if all nodes
+    are finished.
     If there are no nodes, this returns Finished.
     """
     if not self._nodes:
@@ -390,7 +403,8 @@ class VersionError(Exception):
                exact_match: bool = False,
                addendum: str = ''):
     or_higher = '' if exact_match else ' or higher'
-    message = f'{name} {problem}! Please install version {required_version}{or_higher} of {name}.'
+    message = (f'{name} {problem}! Please install version '
+               f'{required_version}{or_higher} of {name}.')
     if addendum:
       message += '\n' + addendum
     super().__init__(message)

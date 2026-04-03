@@ -29,7 +29,8 @@ from streamer.m3u8_concater import HLSConcater
 
 class PeriodConcatNode(ThreadedNodeBase):
   """A node that concatenates multiple DASH manifests and/or HLS playlists
-  when the input is a multiperiod_inputs_list and the output is to the local the system.
+  when the input is a multiperiod_inputs_list and the output is to the local
+  system.
   """
 
   def __init__(self,
@@ -37,7 +38,8 @@ class PeriodConcatNode(ThreadedNodeBase):
                packager_nodes: List[PackagerNode],
                output_location: str) -> None:
     """Stores all relevant information needed for the period concatenation."""
-    super().__init__(thread_name='periodconcat', continue_on_exception=False, sleep_time=3)
+    super().__init__(
+        thread_name='periodconcat', continue_on_exception=False, sleep_time=3)
     self._pipeline_config = pipeline_config
     self._output_location = output_location
     self._packager_nodes: List[PackagerNode] = packager_nodes
@@ -65,19 +67,22 @@ class PeriodConcatNode(ThreadedNodeBase):
         aud1 = '' if has_aud else 'no '
         vid0 = '' if fp_has_vid else 'no '
         aud0 = '' if fp_has_aud else 'no '
-        print(f'Period#{i + 1} has {vid1}video and has {aud1}audio while Period#1 '
-              f'has {vid0}video and has {aud0}audio.')
-        print('\nHINT:\n\tBe sure that either all the periods have video or all do not,\n'
-              "\tand all the periods have audio or all do not, i.e. don't mix videoless\n"
+        print(f'Period#{i + 1} has {vid1}video and has {aud1}audio while '
+              f'Period#1 has {vid0}video and has {aud0}audio.')
+        print('\nHINT:\n\tBe sure that either all the periods have video or '
+              'all do not,\n'
+              "\tand all the periods have audio or all do not, i.e. don't "
+              'mix videoless\n'
               '\tperiods with other periods that have video.\n'
-              '\tThis is necessary for the concatenation to be performed successfully.\n')
+              '\tThis is necessary for the concatenation to be performed '
+              'successfully.\n')
         time.sleep(5)
         break
 
   def _thread_single_pass(self) -> None:
-    """Watches all the PackagerNode(s), if at least one of them is running it skips this
-    _thread_single_pass, if all of them are finished, it starts period concatenation, if one of
-    them is errored, it raises a RuntimeError.
+    """Watches all the PackagerNode(s), if at least one of them is running it
+    skips this _thread_single_pass, if all of them are finished, it starts
+    period concatenation, if one of them is errored, it raises a RuntimeError.
     """
 
     for i, packager_node in enumerate(self._packager_nodes):
@@ -100,18 +105,22 @@ class PeriodConcatNode(ThreadedNodeBase):
     self._status = ProcessStatus.FINISHED
 
   def _dash_concat(self) -> None:
-    """Concatenates multiple single-period DASH manifests into one multi-period DASH manifest."""
+    """Concatenates multiple single-period DASH manifests into one multi-period
+    DASH manifest."""
 
     def find(elem: ElementTree.Element, *args: str) -> ElementTree.Element:
       """A better interface for the Element.find() method.
-      Use it only if it is guaranteed that the element we are searching for is inside,
-      Otherwise it will raise an AssertionError."""
+      Use it only if it is guaranteed that the element we are searching for
+      is inside, otherwise it will raise an AssertionError."""
 
       full_path = '/'.join(['shaka-live:' + tag for tag in args])
-      child_elem =  elem.find(full_path, {'shaka-live': default_dash_namespace})
+      child_elem = elem.find(
+          full_path, {'shaka-live': default_dash_namespace})
 
       # elem.find() returns either an ElementTree.Element or None.
-      assert child_elem is not None, f'Unable to find: {full_path} using the namespace: {default_dash_namespace}'
+      assert child_elem is not None, (
+          f'Unable to find: {full_path} using the namespace: '
+          f'{default_dash_namespace}')
       return child_elem
 
     # Periods that are going to be collected from different MPD files.
@@ -125,7 +134,8 @@ class PeriodConcatNode(ThreadedNodeBase):
 
     # Get the default namespace.
     namespace_matches = re.search(r'\{([^}]*)\}', concat_mpd.tag)
-    assert namespace_matches is not None, 'Unable to find the default namespace.'
+    assert namespace_matches is not None, (
+        'Unable to find the default namespace.')
     default_dash_namespace = namespace_matches.group(1)
 
     # Remove the 'mediaPresentationDuration' attribute.
@@ -143,7 +153,8 @@ class PeriodConcatNode(ThreadedNodeBase):
 
       # A BaseURL that will have the relative path to media file.
       base_url = ElementTree.Element(f'{{{default_dash_namespace}}}BaseURL')
-      base_url.text = os.path.relpath(packager_node.output_location, self._output_location) + '/'
+      base_url.text = os.path.relpath(
+          packager_node.output_location, self._output_location) + '/'
       period.insert(0, base_url)
 
       periods.append(period)
@@ -152,17 +163,21 @@ class PeriodConcatNode(ThreadedNodeBase):
     concat_mpd.extend(periods)
 
     # Write the period concat to the output_location.
-    with open(os.path.join(
-        self._output_location,
-        self._pipeline_config.dash_output), 'w', encoding='utf-8') as master_dash:
+    master_dash_path = os.path.join(
+        self._output_location, self._pipeline_config.dash_output)
+    with open(master_dash_path, 'w', encoding='utf-8') as master_dash:
 
       contents = "<?xml version='1.0' encoding='UTF-8'?>\n"
       # TODO: Add Shaka-Packager version to this xml comment.
-      contents += '<!--Generated with https://github.com/shaka-project/shaka-packager -->\n'
-      contents += f'<!--Made Multi-Period with https://github.com/shaka-project/shaka-streamer version {__version__} -->\n'
+      contents += ('<!--Generated with '
+                   'https://github.com/shaka-project/shaka-packager -->\n')
+      contents += (f'<!--Made Multi-Period with '
+                   f'https://github.com/shaka-project/shaka-streamer '
+                   f'version {__version__} -->\n')
 
       # xml.ElementTree replaces the default namespace with 'ns0'.
-      # Register the DASH namespace back as the default namespace before converting to string.
+      # Register the DASH namespace back as the default namespace before
+      # converting to string.
       ElementTree.register_namespace('', default_dash_namespace)
 
       # xml.etree.ElementTree already has an ElementTree().write() method,
@@ -190,5 +205,7 @@ class PeriodConcatNode(ThreadedNodeBase):
     # passed to the HLSConcater at the construction time.
     hls_concater.concat_and_write(
         self._pipeline_config.hls_output,
-        f'Concatenated with https://github.com/shaka-project/shaka-streamer version {__version__}',
+        (f'Concatenated with '
+         f'https://github.com/shaka-project/shaka-streamer '
+         f'version {__version__}'),
       )

@@ -119,7 +119,7 @@ class TranscoderNode(PolitelyWaitOnFinish):
       map_args = [
           # Map corresponding input stream to output file.
           # The format is "<INPUT FILE NUMBER>:<STREAM SPECIFIER>", so "i" here
-          # is the input file number, and "media_input.get_stream_specifier()" builds
+          # is the input file number, and get_stream_specifier() builds
           # the stream specifier for this input.  The output stream for this
           # input is implied by where we are in the ffmpeg argument list.
           '-map', f'{i}:{media_input.get_stream_specifier()}',
@@ -157,7 +157,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
     self._process = self._create_process(args, env)
 
-  def _encode_audio(self, stream: AudioOutputStream, media_input: Input) -> List[str]:
+  def _encode_audio(
+      self, stream: AudioOutputStream, media_input: Input) -> List[str]:
     filters: List[str] = []
     args: List[str] = [
         # No video encoding for audio.
@@ -169,8 +170,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
     if stream.layout.max_channels == 6:
       filters += [
-        # Work around for https://github.com/shaka-project/shaka-packager/issues/598,
-        # as seen on https://trac.ffmpeg.org/ticket/6974
+        # Work around for shaka-packager/issues/598, as seen at:
+        # https://trac.ffmpeg.org/ticket/6974
         'channelmap=channel_layout=5.1',
       ]
 
@@ -200,7 +201,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
 
     return args
 
-  def _encode_video(self, stream: VideoOutputStream, media_input: Input) -> List[str]:
+  def _encode_video(
+      self, stream: VideoOutputStream, media_input: Input) -> List[str]:
     filters: List[str] = []
     args: List[str] = []
 
@@ -328,7 +330,8 @@ class TranscoderNode(PolitelyWaitOnFinish):
     ]
     return args
 
-  def _encode_text(self, stream: TextOutputStream, media_input: Input) -> List[str]:
+  def _encode_text(
+      self, stream: TextOutputStream, media_input: Input) -> List[str]:
     return [
         # Output WebVTT.
         '-f', 'webvtt',

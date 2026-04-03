@@ -63,8 +63,10 @@ class OutputStream(object):
 
   def get_init_seg_file(self) -> Pipe:
     init_segment = {
-      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_init.{format}',
-      MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_init.{format}',
+      MediaType.AUDIO: ('audio_{language}_{channels}c_{bitrate}'
+                        '_{codec}_init.{format}'),
+      MediaType.VIDEO: ('video_{resolution_name}_{bitrate}'
+                        '_{codec}_init.{format}'),
       MediaType.TEXT: 'text_{language}_init.{format}',
     }
     path_templ = init_segment[self.type].format(**self.features)
@@ -72,8 +74,10 @@ class OutputStream(object):
 
   def get_media_seg_file(self) -> Pipe:
     media_segment = {
-      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}_$Number$.{format}',
-      MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}_$Number$.{format}',
+      MediaType.AUDIO: ('audio_{language}_{channels}c_{bitrate}'
+                        '_{codec}_$Number$.{format}'),
+      MediaType.VIDEO: ('video_{resolution_name}_{bitrate}'
+                        '_{codec}_$Number$.{format}'),
       MediaType.TEXT: 'text_{language}_$Number$.{format}',
     }
     path_templ = media_segment[self.type].format(**self.features)
@@ -81,7 +85,8 @@ class OutputStream(object):
 
   def get_single_seg_file(self) -> Pipe:
     single_segment = {
-      MediaType.AUDIO: 'audio_{language}_{channels}c_{bitrate}_{codec}.{format}',
+      MediaType.AUDIO: ('audio_{language}_{channels}c_{bitrate}'
+                        '_{codec}.{format}'),
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}.{format}',
       MediaType.TEXT: 'text_{language}.{format}',
     }

@@ -64,7 +64,8 @@ class AudioCodec(enum.Enum):
   def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
     # TODO(#31): add support for configurable output format per-codec
-    if self in {AudioCodec.OPUS, AudioCodec.AAC, AudioCodec.AC3, AudioCodec.EAC3, AudioCodec.FLAC}:
+    if self in {AudioCodec.OPUS, AudioCodec.AAC, AudioCodec.AC3,
+                AudioCodec.EAC3, AudioCodec.FLAC}:
       return 'mp4'
     else:
       assert False, f'No mapping for output format for codec {self.value}'
@@ -112,8 +113,10 @@ class VideoCodec(enum.Enum):
 
   def get_output_format(self) -> str:
     """Returns an FFmpeg output format suitable for this codec."""
-    # TODO(#31): add support for configurable output format per-codec (mp4 or webm)
-    if self in {VideoCodec.H264, VideoCodec.VP9, VideoCodec.HEVC, VideoCodec.AV1}:
+    # TODO(#31): add support for configurable output format per-codec
+    # (mp4 or webm)
+    if self in {VideoCodec.H264, VideoCodec.VP9, VideoCodec.HEVC,
+                VideoCodec.AV1}:
       return 'mp4'
     else:
       assert False, f'No mapping for output format for codec {self.value}'
@@ -193,7 +196,8 @@ class VideoResolution(configuration.RuntimeMap):
   max_height = configuration.Field(field_type=int, required=True).cast()
   """The maximum height in pixels for this named resolution."""
 
-  max_frame_rate = configuration.Field(field_type=float, default=math.inf).cast()
+  max_frame_rate = configuration.Field(
+      field_type=float, default=math.inf).cast()
   """The maximum frame rate in frames per second for this named resolution.
 
   By default, the max frame rate is unlimited.

@@ -145,8 +145,10 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     if stream.type == MediaType.AUDIO:
       stream_dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
 
-    if stream.type == MediaType.VIDEO and self._pipeline_config.generate_iframe_playlist:
-      stream_dict['iframe_playlist_name'] = 'iframe_' + stream.get_identification() + '.m3u8'
+    if (stream.type == MediaType.VIDEO
+        and self._pipeline_config.generate_iframe_playlist):
+      stream_dict['iframe_playlist_name'] = (
+          'iframe_' + stream.get_identification() + '.m3u8')
 
     if stream.input.drm_label:
       stream_dict['drm_label'] = stream.input.drm_label
@@ -186,8 +188,9 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       if self._pipeline_config.utc_timings:
         args += [
             '--utc_timings',
-            ','.join(timing.scheme_id_uri + '=' +
-                     timing.value for timing in self._pipeline_config.utc_timings)
+            ','.join(
+                timing.scheme_id_uri + '=' + timing.value
+                for timing in self._pipeline_config.utc_timings)
         ]
 
       if self._pipeline_config.low_latency_dash_mode:

@@ -30,7 +30,8 @@ setuptools.setup(
   name='shaka-streamer-binaries',
   version=streamer_binaries.__version__,
   author='Google',
-  description='A package containing FFmpeg, FFprobe, and Shaka Packager static builds.',
+  description=('A package containing FFmpeg, FFprobe, and Shaka Packager '
+               'static builds.'),
   long_description=long_description,
   long_description_content_type='text/markdown',
   url='https://github.com/shaka-project/shaka-streamer/tree/main/binaries',

@@ -24,7 +24,8 @@ from azure.identity import DefaultAzureCredential  # type: ignore
 from streamer.cloud.base import CloudUploaderBase
 
 
-# Azure Append Blobs can accept chunks of any size, but we'll use a reasonable buffer size.
+# Azure Append Blobs can accept chunks of any size, but we'll use a reasonable
+# buffer size.
 APPEND_BLOB_BUFFER_SIZE = 4 << 20  # 4MB
 
 
@@ -33,7 +34,8 @@ class AzureStorageUploader(CloudUploaderBase):
 
   def __init__(self, upload_location: str) -> None:
     # Parse the upload location (URL).
-    # Expected format: azure://storageaccount.blob.core.windows.net/container/path
+    # Expected format:
+    # azure://storageaccount.blob.core.windows.net/container/path
     url = urllib.parse.urlparse(upload_location)
     if not url.netloc:
       raise ValueError(f'Invalid Azure storage URL format: {upload_location}')
@@ -45,9 +47,11 @@ class AzureStorageUploader(CloudUploaderBase):
     # Initialize the BlobServiceClient with DefaultAzureCredential
     try:
       credential = DefaultAzureCredential()
-      self._blob_service_client = BlobServiceClient(account_url=account_url, credential=credential)
+      self._blob_service_client = BlobServiceClient(
+          account_url=account_url, credential=credential)
     except Exception as e:
-      raise RuntimeError(f'Failed to initialize Azure credentials for {account_url}: {e}')
+      raise RuntimeError(
+          f'Failed to initialize Azure credentials for {account_url}: {e}')
 
     # Extract container name and base path from the URL path
     # First part of path is container, everything after is base path

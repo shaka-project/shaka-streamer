@@ -55,13 +55,15 @@ class WrongType(ConfigError):
   """An error raised when a field in the input has the wrong type."""
 
   def __str__(self):
-    return f'In {self.class_name}, {self.field_name} field requires a {self.field.get_type_name()}'
+    return (f'In {self.class_name}, {self.field_name} field requires a '
+            f'{self.field.get_type_name()}')
 
 class MissingRequiredField(ConfigError):
   """An error raised when a required field is missing from the input."""
 
   def __str__(self):
-    return f'{self.class_name} is missing a required field: {self.field_name}, a {self.field.get_type_name()}'
+    return (f'{self.class_name} is missing a required field: '
+            f'{self.field_name}, a {self.field.get_type_name()}')
 
 class MalformedField(ConfigError):
   """An error raised when a field is malformed."""
@@ -71,10 +73,12 @@ class MalformedField(ConfigError):
     self.reason = reason
 
   def __str__(self):
-    return f'In {self.class_name}, {self.field_name} field is malformed: {self.reason}'
+    return (f'In {self.class_name}, {self.field_name} field is malformed: '
+            f'{self.reason}')
 
 class ConflictingFields(ConfigError):
-  """An error raised when multiple fields are given and only one of them is allowed at a time."""
+  """An error raised when multiple fields are given and only one of them is
+  allowed at a time."""
 
   def __init__(self, class_ref, field1_name, field2_name):
     self.field1_name = field1_name
@@ -101,7 +105,8 @@ class MissingRequiredExclusiveFields(ConfigError):
     super().__init__(class_ref, field1_name, class_ref.__dict__[field1_name])
 
   def __str__(self):
-    return (f'{self.class_name} is missing a required field. Use exactly one of these fields:\n'
+    return (f'{self.class_name} is missing a required field. '
+            f'Use exactly one of these fields:\n'
             f'    {self.field1_name} a {self.field1_type}\n'
             f'    or\n'
             f'    {self.field2_name} a {self.field2_type}')
@@ -164,8 +169,8 @@ class Field(Generic[FieldType]):
                default: Optional[FieldType] = None) -> None:
     """
     Args:
-        field_type (class or typing module hint): The required type for values of this
-            field.
+        field_type (class or typing module hint): The required type for values
+            of this field.
         required (bool): True if this field is required on input.
         default: The default value if the field is not specified.
     """
@@ -215,9 +220,9 @@ class Field(Generic[FieldType]):
   def get_underlying_type(field_type: Optional[Type]) -> Optional[Type]:
     """Get the underlying type from a typing module type hint."""
 
-    # In Python 3.8+, you can use typing.get_origin.  It returns None if "field_type"
-    # is something like "str" or "int" instead of "typing.List" or
-    # "typing.Dict", so fall back to field_type itself.
+    # In Python 3.8+, you can use typing.get_origin.  It returns None if
+    # "field_type" is something like "str" or "int" instead of "typing.List"
+    # or "typing.Dict", so fall back to field_type itself.
     if hasattr(typing, 'get_origin'):
       return typing.get_origin(field_type) or field_type  # type: ignore
 
@@ -238,9 +243,9 @@ class Field(Generic[FieldType]):
 
     For everything else, returns (None, None)."""
 
-    # In Python 3.8+, you can use typing.get_args.  It returns () if "field_type"
-    # is something like "str" or "int" instead of "typing.List" or
-    # "typing.Dict".
+    # In Python 3.8+, you can use typing.get_args.  It returns () if
+    # "field_type" is something like "str" or "int" instead of "typing.List"
+    # or "typing.Dict".
     if hasattr(typing, 'get_args'):
       args = typing.get_args(field_type)
     elif hasattr(field_type, '__args__'):
@@ -273,7 +278,9 @@ class Field(Generic[FieldType]):
       return f'list of {Field.get_type_name_static(subtype, None, None)}'
     elif field_type is dict:
       # Mention the subtype.
-      return f'dictionary of {Field.get_type_name_static(keytype, None, None)} to {Field.get_type_name_static(subtype, None, None)}'
+      return (f'dictionary of '
+              f'{Field.get_type_name_static(keytype, None, None)} to '
+              f'{Field.get_type_name_static(subtype, None, None)}')
     elif field_type is None:
       # This is only here to allow generic handling of UnrecognizedField errors.
       return 'None'

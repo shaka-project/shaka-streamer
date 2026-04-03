@@ -84,7 +84,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
   # NOTE: The default values here for log_request are taken from the base
   # class, and not a design decision of ours.
-  def log_request(self, code: Union[int, str] = '-', size: Union[int, str] = '-') -> None:
+  def log_request(self, code: Union[int, str] = '-',
+                  size: Union[int, str] = '-') -> None:
     """Override the request logging feature of the Python HTTP server."""
     try:
       code_int = int(code)
@@ -149,7 +150,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
       # Close the input and respond.
       self.rfile.close()
-      self.send_response(HTTP_STATUS_ACCEPTED if suppress else HTTP_STATUS_CREATED)
+      status = HTTP_STATUS_ACCEPTED if suppress else HTTP_STATUS_CREATED
+      self.send_response(status)
     except Exception as ex:
       print('Upload failure: ' + str(ex))
       traceback.print_exc()

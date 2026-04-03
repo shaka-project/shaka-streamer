@@ -162,7 +162,8 @@ class ThreadedNodeBase(NodeBase):
 
   _thread: Optional[threading.Thread]
 
-  def __init__(self, thread_name: str, continue_on_exception: bool, sleep_time: float):
+  def __init__(self, thread_name: str, continue_on_exception: bool,
+               sleep_time: float):
     super().__init__()
     self._status = ProcessStatus.FINISHED
     self._thread_name = thread_name
@@ -203,7 +204,8 @@ class ThreadedNodeBase(NodeBase):
 
   def start(self) -> None:
     self._status = ProcessStatus.RUNNING
-    self._thread = threading.Thread(target=self._thread_main, name=self._thread_name)
+    self._thread = threading.Thread(
+        target=self._thread_main, name=self._thread_name)
     self._thread.start()
 
   def stop(self, status: Optional[ProcessStatus]) -> None:

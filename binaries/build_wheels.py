@@ -45,8 +45,12 @@ PLATFORM_SUFFIXES = {
     'win_amd64': '-win-x64.exe',
 }
 
-FFMPEG_DL_PREFIX = 'https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/' + FFMPEG_VERSION
-PACKAGER_DL_PREFIX = 'https://github.com/shaka-project/shaka-packager/releases/download/' + PACKAGER_VERSION
+FFMPEG_DL_PREFIX = (
+    'https://github.com/shaka-project/static-ffmpeg-binaries'
+    '/releases/download/' + FFMPEG_VERSION)
+PACKAGER_DL_PREFIX = (
+    'https://github.com/shaka-project/shaka-packager'
+    '/releases/download/' + PACKAGER_VERSION)
 
 # The download links to each binary.  These download links aren't complete.
 # They are missing the platfrom-specific suffix and optional distro-specific

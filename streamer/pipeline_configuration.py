@@ -33,7 +33,8 @@ UAT_SERVER = 'https://license.uat.widevine.com/cenc/getcontentkey/widevine_test'
 
 # Credentials for the Widevine test account.
 WIDEVINE_TEST_ACCOUNT = 'widevine_test'
-WIDEVINE_TEST_SIGNING_KEY = '1ae8ccd0e7985cc0b6203a55855a1034afc252980e970ca90e5202689f947ab9'
+WIDEVINE_TEST_SIGNING_KEY = ('1ae8ccd0e7985cc0b6203a55855a1034'
+                             'afc252980e970ca90e5202689f947ab9')
 WIDEVINE_TEST_SIGNING_IV = 'd58ce954203b7c9a9a9d467f59839249'
 
 # The default hardware acceleration API to use, per platform.
@@ -214,7 +215,8 @@ class EncryptionConfig(configuration.Base):
       for field_name in field_names:
         if getattr(self, field_name):
           field = getattr(self.__class__, field_name)
-          reason = f'cannot be set when encryption_mode is "{self.encryption_mode}"'
+          reason = (f'cannot be set when encryption_mode is '
+                    f'"{self.encryption_mode}"')
           raise configuration.MalformedField(
             self.__class__, field_name, field, reason)
     elif self.encryption_mode == EncryptionMode.RAW:
@@ -231,7 +233,9 @@ class PipelineConfig(configuration.Base):
   streaming_mode = configuration.Field(StreamingMode, required=True).cast()
   """The streaming mode, which can be either 'vod' or 'live'."""
 
-  limit_resolution_by = configuration.Field(LimitResolutionMode, default=LimitResolutionMode.HEIGHT).cast()
+  limit_resolution_by = configuration.Field(
+      LimitResolutionMode,
+      default=LimitResolutionMode.HEIGHT).cast()
   """Should the resolution be limited by height or width?
 
   (Default is height.)
@@ -339,7 +343,8 @@ class PipelineConfig(configuration.Base):
                                    default=EncryptionConfig({})).cast()
   """Encryption settings."""
 
-  # TODO: Generalize this to low_latency_mode once LL-HLS is supported by Packager
+  # TODO: Generalize this to low_latency_mode once LL-HLS is supported by
+  # Packager
   low_latency_dash_mode = configuration.Field(bool, default=False).cast()
   """If true, stream in low latency mode for DASH."""
 
@@ -357,8 +362,9 @@ class PipelineConfig(configuration.Base):
 
     # Set the default values of the resolutions and channel_layouts
     # to the values we have in the bitrate configuration.
-    # We need the 'type: ignore' here because mypy thinks these variables are lists
-    # of VideoResolutionName and AudioChannelLayoutName and not Field variables.
+    # We need the 'type: ignore' here because mypy thinks these variables are
+    # lists of VideoResolutionName and AudioChannelLayoutName and not Field
+    # variables.
     self.__class__.resolutions.default = list(  # type: ignore
       bitrate_configuration.VideoResolution.keys())
     self.__class__.channel_layouts.default = list(  # type: ignore
@@ -376,6 +382,7 @@ class PipelineConfig(configuration.Base):
     VideoResolution = bitrate_configuration.VideoResolution  # alias
     return [VideoResolution.get_value(name) for name in self.resolutions]
 
-  def get_channel_layouts(self) -> List[bitrate_configuration.AudioChannelLayout]:
+  def get_channel_layouts(
+      self) -> List[bitrate_configuration.AudioChannelLayout]:
     AudioChannelLayout = bitrate_configuration.AudioChannelLayout # alias
     return [AudioChannelLayout.get_value(name) for name in self.channel_layouts]

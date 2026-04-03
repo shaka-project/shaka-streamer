@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A module that encapsulates all the platform-specific logic related to creating
-named pipes."""
+"""A module that encapsulates all the platform-specific logic related to
+creating named pipes."""
 
 import os
 import sys
@@ -37,8 +37,8 @@ class Pipe:
 
     On POSIX systems, it creates a named pipe using `os.mkfifo`.
 
-    On Windows platforms, it starts a backgroud thread that transfars data from the
-    writer to the reader process it is connected to.
+    On Windows platforms, it starts a background thread that transfers data
+    from the writer to the reader process it is connected to.
     """
 
     unique_name = str(uuid.uuid4()) + suffix
@@ -56,7 +56,8 @@ class Pipe:
       read_side = win32pipe.CreateNamedPipe(
           pipe._read_pipe_name,
           win32pipe.PIPE_ACCESS_INBOUND,
-          win32pipe.PIPE_WAIT | win32pipe.PIPE_TYPE_BYTE | win32pipe.PIPE_READMODE_BYTE,
+          (win32pipe.PIPE_WAIT | win32pipe.PIPE_TYPE_BYTE |
+           win32pipe.PIPE_READMODE_BYTE),
           1,
           buf_size,
           buf_size,
@@ -66,7 +67,8 @@ class Pipe:
       write_side = win32pipe.CreateNamedPipe(
           pipe._write_pipe_name,
           win32pipe.PIPE_ACCESS_OUTBOUND,
-          win32pipe.PIPE_WAIT | win32pipe.PIPE_TYPE_BYTE | win32pipe.PIPE_READMODE_BYTE,
+          (win32pipe.PIPE_WAIT | win32pipe.PIPE_TYPE_BYTE |
+           win32pipe.PIPE_READMODE_BYTE),
           1,
           buf_size,
           buf_size,
@@ -109,7 +111,8 @@ class Pipe:
     """This method serves as a server that connects a writer client
     to a reader client.
 
-    This methods will run as a thread, and will only be called on Windows platforms.
+    This method will run as a thread, and will only be called on Windows
+    platforms.
     """
 
     import win32pipe  # type: ignore  # pylint: disable=import-outside-toplevel
@@ -129,7 +132,7 @@ class Pipe:
       # Remove the pipes from the system.
       win32file.CloseHandle(read_side)
       win32file.CloseHandle(write_side)
-      # If the error was due to one of the processes shutting down, just exit normally.
+      # If the error was due to a process shutting down, exit normally.
       if isinstance(ex, pywintypes.error) and ex.args[0] in [109, 232]:
         return 0
       # Otherwise, raise that error.

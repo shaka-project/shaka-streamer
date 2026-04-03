@@ -18,8 +18,9 @@ import shlex
 import subprocess
 import time
 
-from streamer.bitrate_configuration import (AudioChannelLayout, AudioChannelLayoutName,
-                                            VideoResolution, VideoResolutionName)
+from streamer.bitrate_configuration import (
+    AudioChannelLayout, AudioChannelLayoutName,
+    VideoResolution, VideoResolutionName)
 from streamer.input_configuration import Input, InputType
 from typing import Optional, List
 

@@ -32,8 +32,8 @@ class InputNotFound(configuration.ConfigError):
     self.input = media_input
 
   def __str__(self):
-    return (f'In {self.class_name}, {self.input.media_type.value} track #{self.input.track_num} was'
-            f' not found in "{self.input.name}"')
+    return (f'In {self.class_name}, {self.input.media_type.value} track '
+            f'#{self.input.track_num} was not found in "{self.input.name}"')
 
 class InputType(enum.Enum):
   """The type of input source."""
@@ -268,7 +268,8 @@ class Input(configuration.Base):
         self.language = autodetect.get_language(self) or 'und'
       # Text streams are only supported in plain file inputs.
       if self.input_type != InputType.FILE:
-        reason = f'text streams are not supported in input_type "{self.input_type.value}"'
+        reason = (f'text streams are not supported in input_type '
+                  f'"{self.input_type.value}"')
         disallow_field('input_type', reason)
       if self.forced_subtitle is None:
         self.forced_subtitle = autodetect.get_forced_subttitle(self)
@@ -331,8 +332,8 @@ class Input(configuration.Base):
                 '-f', 'video4linux2',
             ],
             'Darwin': [
-                # Webcams on macOS use FFmpeg's avfoundation input format.  With
-                # this, you also have to specify an input framerate, unfortunately.
+                # Webcams on macOS use FFmpeg's avfoundation input format.
+                # You also have to specify an input framerate, unfortunately.
                 '-f', 'avfoundation',
                 '-framerate', '30',
             ],
@@ -371,7 +372,8 @@ class Input(configuration.Base):
     return bitrate_configuration.VideoResolution.get_value(self.resolution)
 
   def get_channel_layout(self) -> bitrate_configuration.AudioChannelLayout:
-    return bitrate_configuration.AudioChannelLayout.get_value(self.channel_layout)
+    return bitrate_configuration.AudioChannelLayout.get_value(
+        self.channel_layout)
 
 class SinglePeriod(configuration.Base):
   """An object representing a single period in a multiperiod inputs list."""
@@ -388,11 +390,13 @@ class InputConfig(configuration.Base):
   """A list of Input objects"""
 
   def __init__(self, dictionary: Dict[str, Any]):
-    """A constructor to check that either inputs or mutliperiod_inputs_list is provided,
-    and produce a helpful error message in case both or none are provided.
+    """A constructor to check that either inputs or multiperiod_inputs_list is
+    provided, and produce a helpful error message in case both or none are
+    provided.
 
-    We need these checks before passing the input dictionary to the configuration.Base constructor,
-    because it does not check for this 'exclusive or-ing' relationship between fields.
+    We need these checks before passing the input dictionary to the
+    configuration.Base constructor, because it does not check for this
+    'exclusive or-ing' relationship between fields.
     """
 
     assert isinstance(dictionary, dict), """Malformed Input Config File,
@@ -406,7 +410,8 @@ class InputConfig(configuration.Base):
 
     # Because these fields are not marked as required at the class level
     # , we need to check ourselves that one of them is provided.
-    if not dictionary.get('inputs') and not dictionary.get('multiperiod_inputs_list'):
+    if (not dictionary.get('inputs')
+        and not dictionary.get('multiperiod_inputs_list')):
       raise configuration.MissingRequiredExclusiveFields(
         InputConfig, 'inputs', 'multiperiod_inputs_list')
 

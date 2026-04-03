@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""End-to-end test runner: starts a Flask server, runs Karma/Jasmine in a browser."""
+"""End-to-end test runner: starts a Flask server, runs Karma/Jasmine in a
+browser."""
 
 import argparse
 import flask
@@ -55,8 +56,9 @@ use_system_binaries = False
 do_cleanup = True
 do_debug = False
 
-# Flask was unable to autofind the root_path correctly after an os.chdir() from another directory
-# Dunno why,refer to https://stackoverflow.com/questions/35864584/error-no-such-file-or-directory-when-using-os-chdir-in-flask
+# Flask was unable to autofind the root_path correctly after an os.chdir()
+# from another directory. Refer to:
+# https://stackoverflow.com/questions/35864584/error-no-such-file-or-directory-when-using-os-chdir-in-flask
 app = flask.Flask(__name__, root_path=BASE_DIR)
 # Stops browser from caching files to prevent cross-test contamination.
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
