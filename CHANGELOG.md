@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/shaka-project/shaka-streamer/compare/v1.4.1...v1.4.2) (2026-04-23)
+
+
+### Documentation
+
+* add AGENTS.md for AI coding agents ([#266](https://github.com/shaka-project/shaka-streamer/issues/266)) ([4edb48a](https://github.com/shaka-project/shaka-streamer/commit/4edb48abafc3b545ccb6e53bbc438703a1a43011))
+
 ## [1.4.1](https://github.com/shaka-project/shaka-streamer/compare/v1.4.0...v1.4.1) (2026-03-12)
 
 
