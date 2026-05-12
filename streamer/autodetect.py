@@ -182,4 +182,4 @@ def get_forced_subttitle(input: Input) -> bool:
   if forced_subttitle_string is None:
     return False
 
-  return bool(forced_subttitle_string)
+  return forced_subttitle_string == '1'
