@@ -174,12 +174,12 @@ def get_channel_layout(input: Input) -> Optional[AudioChannelLayoutName]:
 
   return None
 
-def get_forced_subttitle(input: Input) -> bool:
+def get_forced_subtitle(input: Input) -> bool:
   """Returns the forced subtitle value of the input."""
 
-  forced_subttitle_string = _probe(input, 'disposition=forced')
+  forced_subtitle_string = _probe(input, 'disposition=forced')
 
-  if forced_subttitle_string is None:
+  if forced_subtitle_string is None:
     return False
 
   # ffprobe reports disposition flags in compact format (p=0:nk=1) as
@@ -188,4 +188,4 @@ def get_forced_subttitle(input: Input) -> bool:
   # The "forced" disposition field is output as the plain string "1" when
   # forced, and "0" otherwise. We must check for exactly "1" rather than
   # using bool(), which would return True for any non-empty string.
-  return forced_subttitle_string == '1'
+  return forced_subtitle_string == '1'
