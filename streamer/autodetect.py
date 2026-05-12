@@ -182,4 +182,10 @@ def get_forced_subttitle(input: Input) -> bool:
   if forced_subttitle_string is None:
     return False
 
+  # ffprobe reports disposition flags in compact format (p=0:nk=1) as
+  # pipe-separated values without keys, e.g. for a forced subtitle stream:
+  #   subtitle|2|0|0|0|0|0|0|0|1|0|...
+  # The "forced" disposition field is output as the plain string "1" when
+  # forced, and "0" otherwise. We must check for exactly "1" rather than
+  # using bool(), which would return True for any non-empty string.
   return forced_subttitle_string == '1'
