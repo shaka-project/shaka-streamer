@@ -14,6 +14,7 @@
 
 """A module to contain auto-detection logic; based on ffprobe."""
 
+import json
 import shlex
 import subprocess
 import time
@@ -21,7 +22,7 @@ import time
 from streamer.bitrate_configuration import (AudioChannelLayout, AudioChannelLayoutName,
                                             VideoResolution, VideoResolutionName)
 from streamer.input_configuration import Input, InputType
-from typing import Optional, List
+from typing import Optional, List, Tuple, Dict
 
 # These cannot be probed by ffprobe.
 TYPES_WE_CANT_PROBE = [
@@ -189,3 +190,65 @@ def get_forced_subtitle(input: Input) -> bool:
   # forced, and "0" otherwise. We must check for exactly "1" rather than
   # using bool(), which would return True for any non-empty string.
   return forced_subtitle_string == '1'
+
+def get_tracks(filename: str) -> List[Tuple[str, int]]:
+  """Probes *filename* with ffprobe and returns one (media_type_value, track_num)
+  tuple per detectable stream.
+
+  Args:
+    filename: Path to the media file.
+
+  Returns:
+    List of (media_type_value, track_num) where media_type_value is the
+    string value of the MediaType enum ('audio', 'video', or 'text') and
+    track_num is a zero-based index that counts only within that type.
+    Streams of unknown codec_type ('data', 'attachment', …) are skipped.
+  """
+
+  # Map ffprobe codec_type strings → MediaType enum string values.
+  # We return string values (not MediaType instances) so _expand_autodetect_inputs
+  # can put them straight into the raw dict without importing MediaType here.
+  CODEC_TYPE_TO_VALUE: Dict[str, str] = {
+    'audio':    'audio',
+    'video':    'video',
+    'subtitle': 'text',
+  }
+
+  args: List[str] = [
+    hermetic_ffprobe or 'ffprobe',
+    '-show_entries',
+    'stream=codec_type:stream_disposition=attached_pic',
+    '-of',
+    'json',
+    filename,
+  ]
+
+  print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
+
+  try:
+      output_bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
+      data = json.loads(output_bytes)
+  except (subprocess.CalledProcessError, json.JSONDecodeError):
+      return []
+
+  type_counts: Dict[str, int] = {'audio': 0, 'video': 0, 'text': 0}
+  tracks: List[Tuple[str, int]] = []
+
+  for stream in data.get('streams', []):
+    codec_type = stream.get('codec_type')
+    disposition = stream.get('disposition', {})
+
+    if disposition.get('attached_pic') == 1:
+      continue
+
+    media_type_value = CODEC_TYPE_TO_VALUE.get(codec_type)
+
+    if media_type_value is None:
+      continue
+
+    track_num = type_counts[media_type_value]
+    type_counts[media_type_value] += 1
+
+    tracks.append((media_type_value, track_num))
+
+  return tracks

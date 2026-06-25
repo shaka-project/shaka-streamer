@@ -82,6 +82,7 @@ class MediaType(enum.Enum):
   AUDIO = 'audio'
   VIDEO = 'video'
   TEXT = 'text'
+  AUTODETECT = 'autodetect'
 
 
 class Input(configuration.Base):
@@ -220,6 +221,16 @@ class Input(configuration.Base):
 
   def __init__(self, *args) -> None:
     super().__init__(*args)
+
+    # Guard: media_type='autodetect' must be expanded by InputConfig before
+    # reaching individual Input objects.  If it arrives here, it means the
+    # expansion step was skipped, which is a programming error.
+    if self.media_type == MediaType.AUTODETECT:
+      raise configuration.MalformedField(
+          self.__class__, 'media_type',
+          self.__class__.media_type,
+          '"autodetect" must be used at the InputConfig level; '
+          'it cannot be used on an Input that has already been constructed.')
 
     # FIXME: A late import to avoid circular dependency issues between these two
     # modules.
@@ -387,6 +398,72 @@ class InputConfig(configuration.Base):
   inputs = configuration.Field(List[Input]).cast()
   """A list of Input objects"""
 
+  @staticmethod
+  def _expand_autodetect_inputs(
+      inputs_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Expands inputs with media_type='autodetect' into one Input per track.
+
+    For each entry whose 'media_type' is 'autodetect', probes the file with
+    ffprobe and replaces the entry with one dict per detected track.
+    All other fields (name, language, filters, drm_label…) are inherited.
+    Only 'media_type' and 'track_num' are overwritten.
+
+    Raises ValueError for unsupported input types or files with no tracks.
+    """
+    from . import autodetect   # late import – avoids circular dependency
+
+    UNPROBABLE_INPUT_TYPES = {
+      InputType.WEBCAM.value,
+      InputType.MICROPHONE.value,
+      InputType.EXTERNAL_COMMAND.value,
+    }
+
+    CODEC_TYPE_TO_MEDIA_TYPE_VALUE = {
+      # We use .value so the expanded dicts stay as plain strings,
+      # exactly as the user would write them manually.
+      'audio':    MediaType.AUDIO.value,    # 'audio'
+      'video':    MediaType.VIDEO.value,    # 'video'
+      'subtitle': MediaType.TEXT.value,     # 'text'
+    }
+
+    expanded: List[Dict[str, Any]] = []
+
+    for inp in inputs_list:
+      # Defensive: leave non-dict entries untouched.
+      if not isinstance(inp, dict):
+        expanded.append(inp)
+        continue
+
+      if inp.get('media_type') != MediaType.AUTODETECT.value:
+        expanded.append(inp)
+        continue
+
+      # ── autodetect path ────────────────────────────────────────────────
+      input_type = inp.get('input_type', InputType.FILE.value)
+      if input_type in UNPROBABLE_INPUT_TYPES:
+        raise ValueError(
+            'media_type "autodetect" is not supported for '
+            'input_type "{}". Specify the media_type explicitly.'
+            .format(input_type))
+
+      filename = inp.get('name', '')
+      tracks = autodetect.get_tracks(filename)
+
+      if not tracks:
+        raise ValueError(
+            'media_type "autodetect" found no recognizable tracks '
+            '(audio / video / subtitle) in "{}".'.format(filename))
+
+      for media_type_value, track_num in tracks:
+        new_inp = dict(inp)                        # inherit all user fields
+        new_inp['media_type'] = media_type_value   # overwrite with real type
+        new_inp['track_num']  = track_num          # zero-based, per-type
+        # Crucially: do NOT add any extra keys like 'autodetect': True.
+        # Base.__init__ rejects any key that isn't a declared Field.
+        expanded.append(new_inp)
+
+    return expanded
+
   def __init__(self, dictionary: Dict[str, Any]):
     """A constructor to check that either inputs or mutliperiod_inputs_list is provided,
     and produce a helpful error message in case both or none are provided.
@@ -410,5 +487,24 @@ class InputConfig(configuration.Base):
       raise configuration.MissingRequiredExclusiveFields(
         InputConfig, 'inputs', 'multiperiod_inputs_list')
 
-    super().__init__(dictionary)
+    # Shallow-copy so we never mutate the caller's original dict.
+    dictionary = dict(dictionary)
 
+    # Expand media_type='autodetect' BEFORE super().__init__() constructs
+    # Input objects.  Once super() runs, every dict in 'inputs' must already
+    # have a concrete media_type value that MediaType enum can accept.
+    if dictionary.get('inputs'):
+      dictionary['inputs'] = InputConfig._expand_autodetect_inputs(
+          dictionary['inputs'])
+
+    if dictionary.get('multiperiod_inputs_list'):
+      expanded_periods = []
+      for period in dictionary['multiperiod_inputs_list']:
+        if isinstance(period, dict) and period.get('inputs'):
+          period = dict(period)
+          period['inputs'] = InputConfig._expand_autodetect_inputs(
+              period['inputs'])
+        expanded_periods.append(period)
+      dictionary['multiperiod_inputs_list'] = expanded_periods
+
+    super().__init__(dictionary)
