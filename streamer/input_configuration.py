@@ -282,7 +282,7 @@ class Input(configuration.Base):
             self.input_type.value)
         disallow_field('input_type', reason)
       if self.forced_subtitle is None:
-        self.forced_subtitle = autodetect.get_forced_subttitle(self)
+        self.forced_subtitle = autodetect.get_forced_subtitle(self)
 
       # These fields are not supported with text, because we don't process or
       # transcode it.

@@ -175,15 +175,21 @@ def get_channel_layout(input: Input) -> Optional[AudioChannelLayoutName]:
 
   return None
 
-def get_forced_subttitle(input: Input) -> bool:
+def get_forced_subtitle(input: Input) -> bool:
   """Returns the forced subtitle value of the input."""
 
-  forced_subttitle_string = _probe(input, 'disposition=forced')
+  forced_subtitle_string = _probe(input, 'disposition=forced')
 
-  if forced_subttitle_string is None:
+  if forced_subtitle_string is None:
     return False
 
-  return bool(forced_subttitle_string)
+  # ffprobe reports disposition flags in compact format (p=0:nk=1) as
+  # pipe-separated values without keys, e.g. for a forced subtitle stream:
+  #   subtitle|2|0|0|0|0|0|0|0|1|0|...
+  # The "forced" disposition field is output as the plain string "1" when
+  # forced, and "0" otherwise. We must check for exactly "1" rather than
+  # using bool(), which would return True for any non-empty string.
+  return forced_subtitle_string == '1'
 
 def get_tracks(filename: str) -> List[Tuple[str, int]]:
   """Probes *filename* with ffprobe and returns one (media_type_value, track_num)
