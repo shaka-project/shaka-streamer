@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.0](https://github.com/shaka-project/shaka-streamer/compare/v1.4.1...v1.5.0) (2026-06-30)
+
+
+### Features
+
+* Add autodetect support for MKV tracks ([#273](https://github.com/shaka-project/shaka-streamer/issues/273)) ([68eda13](https://github.com/shaka-project/shaka-streamer/commit/68eda13d2302e1a500e4b76a17b49685fa3ba616))
+* Bump to ffmpeg n8.1.2 and Shaka Packager v3.8.0 ([#277](https://github.com/shaka-project/shaka-streamer/issues/277)) ([1b24818](https://github.com/shaka-project/shaka-streamer/commit/1b248181a9f084457b07a4cf8698fa74dba72c60))
+* Improve HLS track naming and fix forced subtitles collision ([#274](https://github.com/shaka-project/shaka-streamer/issues/274)) ([1fef668](https://github.com/shaka-project/shaka-streamer/commit/1fef6681e0ec0e0cddba966dc7979c7e9cd1c7e8))
+
+
+### Bug Fixes
+
+* Fix detection of forced subtitles ([#272](https://github.com/shaka-project/shaka-streamer/issues/272)) ([4d06425](https://github.com/shaka-project/shaka-streamer/commit/4d0642526cf6f9e0c815cc99db573feba09f507b))
+
+
+### Documentation
+
+* add AGENTS.md for AI coding agents ([#266](https://github.com/shaka-project/shaka-streamer/issues/266)) ([4edb48a](https://github.com/shaka-project/shaka-streamer/commit/4edb48abafc3b545ccb6e53bbc438703a1a43011))
+
 ## [1.4.1](https://github.com/shaka-project/shaka-streamer/compare/v1.4.0...v1.4.1) (2026-03-12)
 
 
