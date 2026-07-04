@@ -287,7 +287,8 @@ class Field(Generic[FieldType]):
     elif issubclass(field_type, enum.Enum):
       # Get the list of valid options as quoted strings.
       options = [repr(str(member.value)) for member in field_type]
-      return f'{field_type.__name__} (one of {", ".join(options)})'
+      options_str = ', '.join(options)
+      return f'{field_type.__name__} (one of {options_str})'
     elif issubclass(field_type, ValidatingType):
       return field_type.name()
 
@@ -553,7 +554,8 @@ class RuntimeMapKeyValidator(ValidatingType, str):
   @classmethod
   def name(cls) -> str:
     options = [repr(str(key)) for key in cls.map_class.keys()]
-    return f'{cls.map_class.__name__} name (one of {", ".join(options)})'
+    options_str = ', '.join(options)
+    return f'{cls.map_class.__name__} name (one of {options_str})'
 
   @classmethod
   def validate(cls, value):
