@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "lint": "python3 -m mypy streamer/ shaka-streamer",
+    "mypy": "python3 -m mypy streamer/ shaka-streamer",
+    "pylint": "python3 -m pylint *.py shaka-streamer streamer/ binaries/ docs/",
+    "lint": "npm run mypy && npm run pylint",
     "test": "python3 run_end_to_end_tests.py"
   },
   "devDependencies": {

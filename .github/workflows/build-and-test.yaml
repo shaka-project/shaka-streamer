@@ -221,5 +221,4 @@ jobs:
         run: python3 -m pip install -r optional_requirements.txt
 
       - name: Lint
-        run: |
-          pylint *.py shaka-streamer streamer/ binaries/ docs/
+        run: npm run lint
