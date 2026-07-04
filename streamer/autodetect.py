@@ -193,8 +193,7 @@ def get_forced_subtitle(media_input: Input) -> bool:
   return forced_subtitle_string == '1'
 
 def get_tracks(filename: str) -> List[Tuple[str, int]]:
-  """Probes *filename* with ffprobe and returns one (media_type_value, track_num)
-  tuple per detectable stream.
+  """Probes *filename* and returns one tuple per detectable stream.
 
   Args:
     filename: Path to the media file.
@@ -207,9 +206,10 @@ def get_tracks(filename: str) -> List[Tuple[str, int]]:
   """
 
   # Map ffprobe codec_type strings → MediaType enum string values.
-  # We return string values (not MediaType instances) so _expand_autodetect_inputs
-  # can put them straight into the raw dict without importing MediaType here.
-  CODEC_TYPE_TO_VALUE: Dict[str, str] = {
+  # We return string values (not MediaType instances) so
+  # _expand_autodetect_inputs can put them straight into the raw dict
+  # without importing MediaType here.
+  codec_type_to_value: Dict[str, str] = {
     'audio':    'audio',
     'video':    'video',
     'subtitle': 'text',
@@ -227,10 +227,10 @@ def get_tracks(filename: str) -> List[Tuple[str, int]]:
   print('+ ' + ' '.join([shlex.quote(arg) for arg in args]))
 
   try:
-      output_bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
-      data = json.loads(output_bytes)
+    output_bytes = subprocess.check_output(args, stderr=subprocess.DEVNULL)
+    data = json.loads(output_bytes)
   except (subprocess.CalledProcessError, json.JSONDecodeError):
-      return []
+    return []
 
   type_counts: Dict[str, int] = {'audio': 0, 'video': 0, 'text': 0}
   tracks: List[Tuple[str, int]] = []
@@ -242,7 +242,7 @@ def get_tracks(filename: str) -> List[Tuple[str, int]]:
     if disposition.get('attached_pic') == 1:
       continue
 
-    media_type_value = CODEC_TYPE_TO_VALUE.get(codec_type)
+    media_type_value = codec_type_to_value.get(codec_type)
 
     if media_type_value is None:
       continue

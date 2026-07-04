@@ -412,20 +412,13 @@ class InputConfig(configuration.Base):
 
     Raises ValueError for unsupported input types or files with no tracks.
     """
-    from . import autodetect   # late import – avoids circular dependency
+    # Late import avoids a circular dependency.
+    from . import autodetect  # pylint: disable=import-outside-toplevel
 
-    UNPROBABLE_INPUT_TYPES = {
+    unprobable_input_types = {
       InputType.WEBCAM.value,
       InputType.MICROPHONE.value,
       InputType.EXTERNAL_COMMAND.value,
-    }
-
-    CODEC_TYPE_TO_MEDIA_TYPE_VALUE = {
-      # We use .value so the expanded dicts stay as plain strings,
-      # exactly as the user would write them manually.
-      'audio':    MediaType.AUDIO.value,    # 'audio'
-      'video':    MediaType.VIDEO.value,    # 'video'
-      'subtitle': MediaType.TEXT.value,     # 'text'
     }
 
     expanded: List[Dict[str, Any]] = []
@@ -442,11 +435,10 @@ class InputConfig(configuration.Base):
 
       # ── autodetect path ────────────────────────────────────────────────
       input_type = inp.get('input_type', InputType.FILE.value)
-      if input_type in UNPROBABLE_INPUT_TYPES:
+      if input_type in unprobable_input_types:
         raise ValueError(
             'media_type "autodetect" is not supported for '
-            'input_type "{}". Specify the media_type explicitly.'
-            .format(input_type))
+            f'input_type "{input_type}". Specify the media_type explicitly.')
 
       filename = inp.get('name', '')
       tracks = autodetect.get_tracks(filename)
@@ -454,7 +446,7 @@ class InputConfig(configuration.Base):
       if not tracks:
         raise ValueError(
             'media_type "autodetect" found no recognizable tracks '
-            '(audio / video / subtitle) in "{}".'.format(filename))
+            f'(audio / video / subtitle) in "{filename}".')
 
       for media_type_value, track_num in tracks:
         new_inp = dict(inp)                        # inherit all user fields

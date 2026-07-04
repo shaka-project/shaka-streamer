@@ -139,15 +139,15 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         'stream': stream.type.value,
     }
 
-    suffix = ""
-    friendly_name = stream.input.language if stream.input.language else "und"
+    suffix = ''
+    friendly_name = stream.input.language if stream.input.language else 'und'
 
     if stream.input.skip_encryption:
       stream_dict['skip_encryption'] = str(stream.input.skip_encryption)
 
     if stream.type == MediaType.AUDIO:
       stream_dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
-      stream_dict['hls_name'] = f"{friendly_name}"
+      stream_dict['hls_name'] = f'{friendly_name}'
 
     if (stream.type == MediaType.VIDEO
         and self._pipeline_config.generate_iframe_playlist):
@@ -157,8 +157,8 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     if stream.type == MediaType.TEXT:
       if stream.input.forced_subtitle:
         stream_dict['forced_subtitle'] = '1'
-        stream_dict['hls_name'] = f"{friendly_name} (Forced)"
-        suffix = "_forced"
+        stream_dict['hls_name'] = f'{friendly_name} (Forced)'
+        suffix = '_forced'
       else:
         stream_dict['hls_name'] = friendly_name
 
@@ -175,14 +175,16 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       init_base = stream.get_init_seg_file().write_end()
       media_base = stream.get_media_seg_file().write_end()
       if suffix:
-        init_base = init_base.replace("_init.mp4", f"{suffix}_init.mp4")
-        media_base = media_base.replace("_$Number$.mp4", f"{suffix}_$Number$.mp4")
+        init_base = init_base.replace('_init.mp4', f'{suffix}_init.mp4')
+        media_base = media_base.replace(
+            '_$Number$.mp4', f'{suffix}_$Number$.mp4')
       stream_dict['init_segment'] = build_path(self._segment_dir, init_base)
-      stream_dict['segment_template'] = build_path(self._segment_dir, media_base)
+      stream_dict['segment_template'] = build_path(
+          self._segment_dir, media_base)
     else:
       output_base = stream.get_single_seg_file().write_end()
       if suffix:
-        output_base = output_base.replace(".mp4", f"{suffix}.mp4")
+        output_base = output_base.replace('.mp4', f'{suffix}.mp4')
       stream_dict['output'] = build_path(self._segment_dir, output_base)
 
     if stream.is_dash_only():
