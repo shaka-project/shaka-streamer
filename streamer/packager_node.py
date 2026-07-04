@@ -139,22 +139,31 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
         'stream': stream.type.value,
     }
 
+    suffix = ""
+    friendly_name = stream.input.language if stream.input.language else "und"
+
     if stream.input.skip_encryption:
       stream_dict['skip_encryption'] = str(stream.input.skip_encryption)
 
     if stream.type == MediaType.AUDIO:
       stream_dict['hls_group_id'] = str(cast(AudioCodec, stream.codec).value)
+      stream_dict['hls_name'] = f"{friendly_name}"
 
     if (stream.type == MediaType.VIDEO
         and self._pipeline_config.generate_iframe_playlist):
       stream_dict['iframe_playlist_name'] = (
           'iframe_' + stream.get_identification() + '.m3u8')
 
+    if stream.type == MediaType.TEXT:
+      if stream.input.forced_subtitle:
+        stream_dict['forced_subtitle'] = '1'
+        stream_dict['hls_name'] = f"{friendly_name} (Forced)"
+        suffix = "_forced"
+      else:
+        stream_dict['hls_name'] = friendly_name
+
     if stream.input.drm_label:
       stream_dict['drm_label'] = stream.input.drm_label
-
-    if stream.input.forced_subtitle:
-      stream_dict['forced_subtitle'] = '1'
 
     # Note: Shaka Packager will not accept 'und' as a language, but Shaka
     # Player will fill that in if the language metadata is missing from the
@@ -163,16 +172,18 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       stream_dict['language'] = stream.input.language
 
     if self._pipeline_config.segment_per_file:
-      stream_dict['init_segment'] = build_path(
-        self._segment_dir,
-        stream.get_init_seg_file().write_end())
-      stream_dict['segment_template'] = build_path(
-        self._segment_dir,
-        stream.get_media_seg_file().write_end())
+      init_base = stream.get_init_seg_file().write_end()
+      media_base = stream.get_media_seg_file().write_end()
+      if suffix:
+        init_base = init_base.replace("_init.mp4", f"{suffix}_init.mp4")
+        media_base = media_base.replace("_$Number$.mp4", f"{suffix}_$Number$.mp4")
+      stream_dict['init_segment'] = build_path(self._segment_dir, init_base)
+      stream_dict['segment_template'] = build_path(self._segment_dir, media_base)
     else:
-      stream_dict['output'] = build_path(
-        self._segment_dir,
-        stream.get_single_seg_file().write_end())
+      output_base = stream.get_single_seg_file().write_end()
+      if suffix:
+        output_base = output_base.replace(".mp4", f"{suffix}.mp4")
+      stream_dict['output'] = build_path(self._segment_dir, output_base)
 
     if stream.is_dash_only():
       stream_dict['dash_only'] = '1'

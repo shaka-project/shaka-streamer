@@ -1,28 +1,37 @@
 # How to Contribute
 
-We'd love to accept your patches and contributions to this project. There are
-just a few small guidelines you need to follow.
+We'd love to accept your patches and contributions to this project. There are just a few guidelines to follow.
 
-## Contributor License Agreement
 
-Contributions to this project must be accompanied by a Contributor License
-Agreement. You (or your employer) retain the copyright to your contribution;
-this simply gives us permission to use and redistribute your contributions as
-part of the project. Head over to <https://cla.developers.google.com/> to see
-your current agreements on file or to sign a new one.
+## Filing Issues
 
-You generally only need to submit a CLA once, so if you've already submitted one
-(even if it was for a different project), you probably don't need to do it
-again.
+Before starting work on a significant change, we recommend filing or finding an issue first. This lets us discuss the approach and avoid duplicated effort. For small bug fixes, jumping straight to a PR is fine.
 
-## Code reviews
 
-All submissions, including submissions by project members, require review. We
-use GitHub pull requests for this purpose. Consult
-[GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
-information on using pull requests.
+## Submitting a Pull Request
 
-## Community Guidelines
+All submissions, including submissions by project members, require review via GitHub pull request.
 
-This project follows [Google's Open Source Community
-Guidelines](https://opensource.google.com/conduct/).
+
+## Commit Messages
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/). Commit messages and PR titles should use a type prefix such as `fix:`, `feat:`, `chore:`, etc. These feed directly into automated changelog generation and semantic versioning, so the message should describe the user-visible impact, not the implementation detail.
+
+Because the PR title generates the changelog entry, your PR title should reflect what a user needs to know about the change.  So we would prefer `fix: Avoid uncaught exceptions when loading encrypted content` (says what was wrong from a user perspective) over `fix: Refactor internal error handling in FooLoader` (describes the internal changes, not the observable changes).
+
+
+## Code Style and Tests
+
+Before submitting a pull request, make sure your changes pass the project's linter and test suite. Details on how to run these can be found in the project's README, `AGENTS.md`, or via standard commands like `npm run lint` and `npm test`.
+
+
+## AI-Assisted Contributions
+
+Contributions written or assisted by AI coding agents are welcome. Any commit that involved AI assistance must include attribution in the commit message. See [`AGENT-ATTRIBUTION.md`](AGENT-ATTRIBUTION.md) for the required format.
+
+**Why this matters:** Attribution helps reviewers calibrate their review effort, gives the project an honest record of how the code was produced, and ensures the human submitting the PR has reviewed and takes responsibility for the changes.
+
+
+## Code of Conduct
+
+This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold it.
