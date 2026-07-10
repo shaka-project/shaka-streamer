@@ -23,6 +23,9 @@ module.exports = function(config) {
       seed: config.seed,
       debug: !!config.debug,
       testWidevine: !!config.testWidevine,
+      // The port the Flask test server is listening on, chosen dynamically by
+      // run_end_to_end_tests.py and passed in via --flaskPort.
+      flaskPort: config.flaskPort,
     },
     frameworks: ['jasmine'],
     files: [

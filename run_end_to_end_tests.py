@@ -19,6 +19,7 @@ browser."""
 
 import argparse
 import flask
+from werkzeug.serving import make_server
 import glob
 import json
 import logging
@@ -356,11 +357,26 @@ def main():
 
   fetch_cloud_assets()
 
-  # Start up flask server on a thread.
-  # Daemon is set to True so that this thread automatically gets
-  # killed when exiting main.  Flask does not have any clean alternatives
-  # to be killed.
-  threading.Thread(target=app.run, daemon=True).start()
+  # Start up the Flask server on a thread.
+  #
+  # Bind to an OS-assigned free port (port 0) on 127.0.0.1 rather than Flask's
+  # default port of 5000.  On macOS, the ControlCenter/AirPlay Receiver service
+  # also listens on port 5000, and using 5000 was correlated with an
+  # intermittent, macOS-only failure of the first end-to-end test with
+  # "TypeError: Failed to fetch" (see issue #261).  We never fully confirmed the
+  # exact interaction on the CI runners, but moving off port 5000 empirically
+  # stops the flake, and a free port also avoids any future collision with an
+  # unrelated service.
+  # See https://github.com/shaka-project/shaka-streamer/issues/261
+  #
+  # We use make_server() (instead of app.run) so we can read back the actual
+  # port before serving, with no window for another process to steal it.
+  server = make_server('127.0.0.1', 0, app, threaded=True)
+  flask_port = server.server_port
+
+  # Daemon is set to True so that this thread automatically gets killed when
+  # exiting main.  Flask does not have any clean alternatives to be killed.
+  threading.Thread(target=server.serve_forever, daemon=True).start()
 
   fails = 0
   trials = args.runs
@@ -381,6 +397,8 @@ def main():
     test_args += [ '--debug', 'true' ]
   if args.test_widevine:
     test_args += [ '--testWidevine', 'true' ]
+  # Tell the browser tests which port the Flask server is listening on.
+  test_args += [ '--flaskPort', str(flask_port) ]
 
   for _ in range(trials):
     # If the exit code was not 0, the tests in karma failed or crashed.

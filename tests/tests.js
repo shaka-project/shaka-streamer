@@ -12,7 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const flaskServerUrl = 'http://localhost:5000/';
+// The Flask test server binds an OS-assigned free port, which is passed to us
+// through the Karma config.  Do NOT go back to a fixed port like Flask's
+// default of 5000: on macOS, the ControlCenter/AirPlay Receiver service also
+// listens on port 5000, and using 5000 was correlated with an intermittent,
+// macOS-only "TypeError: Failed to fetch" on the first test.  The exact
+// interaction on the CI runners was never fully confirmed, but moving off port
+// 5000 empirically stops the flake.
+// See https://github.com/shaka-project/shaka-streamer/issues/261
+const flaskServerUrl = 'http://127.0.0.1:' + __karma__.config.flaskPort + '/';
 const dashManifestUrl = flaskServerUrl + 'output_files/dash.mpd';
 const hlsManifestUrl = flaskServerUrl + 'output_files/hls.m3u8';
 const OUTPUT_DIR = 'output_files/'
