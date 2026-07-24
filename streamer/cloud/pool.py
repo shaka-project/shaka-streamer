@@ -16,6 +16,8 @@
 
 import abc
 import enum
+import threading
+import traceback
 from setproctitle import setproctitle  # type: ignore
 from queue import Queue
 
@@ -116,6 +118,24 @@ def worker_target(upload_location: str, reader: _ConnectionBase):
     except EOFError:
       # Quit the process when the other end of the pipe is closed.
       return
+    except Exception:  # pylint: disable=broad-exception-caught
+      # Anything else is almost always a transient failure from the cloud
+      # storage provider: a timeout, a dropped connection, a DNS failure, or a
+      # 5xx response.  These must not kill the worker.  A live stream runs for
+      # weeks or months, so a worker that dies on the first network hiccup
+      # takes capacity out of the pool for the entire life of the stream.
+      #
+      # Log it and carry on.  The main process sees the failed upload as an
+      # HTTP 500 from the proxy, which Packager can be told to tolerate with
+      # --ignore_http_output_failures.
+      traceback.print_exc()
+
+      # Whatever we were in the middle of is no longer valid, so drop any
+      # partial chunked-transfer state before handling the next message.
+      try:
+        uploader.reset()
+      except Exception:  # pylint: disable=broad-exception-caught
+        traceback.print_exc()
 
 
 class WorkerProcess(object):
@@ -154,8 +174,19 @@ class WorkerHandle(CloudUploaderBase):
     """Reset the subprocess's uploader and release the subprocess back to the
     pool."""
 
-    self._process.writer.send(Message.reset())
-    self._pool._release(self._process)
+    try:
+      self._process.writer.send(Message.reset())
+    except OSError:
+      # The worker process has died, so the pipe to it is broken.  The pool
+      # will replace it when this worker is next taken from the queue.  Don't
+      # let this mask an exception from the body of the "with" statement, which
+      # is what actually explains the failure.
+      pass
+    finally:
+      # This must happen no matter what.  If we fail to release the worker, it
+      # is gone from the pool forever, and the pool will eventually be empty
+      # and deadlock in get_worker().
+      self._pool._release(self._process)
 
   def write_non_chunked(self, path: str, data: bytes) -> None:
     self._process.writer.send(Message.write_non_chunked(path, data))
@@ -182,17 +213,41 @@ class Pool(AbstractPool):
   """A pool of worker subprocesses that handle cloud upload actions."""
 
   def __init__(self, upload_location: str, size: int) -> None:
+    self._upload_location: str = upload_location
     self._all_processes: list[WorkerProcess] = []
     self._available_processes: Queue[WorkerProcess] = Queue()
+    # Guards _all_processes, which is touched by every thread of the proxy's
+    # ThreadingHTTPServer.  The Queue has its own locking and needs none.
+    self._lock = threading.Lock()
 
     for _ in range(size):
-      reader, writer = multiprocessing.Pipe(duplex=False)
-      process = multiprocessing.Process(target=worker_target,
-                                        args=(upload_location, reader))
-      process.start()
-      worker_process = WorkerProcess(process, writer)
-      self._available_processes.put(worker_process)
+      worker_process = self._spawn()
       self._all_processes.append(worker_process)
+      self._available_processes.put(worker_process)
+
+  def _spawn(self) -> WorkerProcess:
+    """Start a new worker subprocess and return a handle to it."""
+
+    reader, writer = multiprocessing.Pipe(duplex=False)
+    process = multiprocessing.Process(target=worker_target,
+                                      args=(self._upload_location, reader))
+    process.start()
+    return WorkerProcess(process, writer)
+
+  def _replace(self, dead: WorkerProcess) -> WorkerProcess:
+    """Replace a dead worker with a fresh one, keeping the pool size fixed."""
+
+    # Reap the dead process, so that it doesn't linger as a zombie.
+    dead.writer.close()
+    dead.process.join()
+
+    replacement = self._spawn()
+
+    with self._lock:
+      # Swap in place, so that close() still sees exactly one entry per slot.
+      self._all_processes[self._all_processes.index(dead)] = replacement
+
+    return replacement
 
   def _release(self, process: WorkerProcess) -> None:
     """Called by worker handles to release the worker back to the pool."""
@@ -206,11 +261,33 @@ class Pool(AbstractPool):
     statements) so that it will be automatically released."""
 
     worker_process = self._available_processes.get(block=True)
+
+    # A worker can still die on us: killed by the OOM killer, or crashed in a
+    # native extension of a cloud storage library.  Replace it here rather than
+    # handing out a worker whose pipe is already broken.  Without this, the
+    # pool would shrink over the life of a long-running live stream until it
+    # was empty, at which point get_worker() would block forever and wedge the
+    # whole pipeline.
+    if not worker_process.process.is_alive():
+      worker_process = self._replace(worker_process)
+
     return WorkerHandle(self, worker_process)
 
   def close(self) -> None:
     """Close all worker processes."""
 
-    for process in self._all_processes:
-      process.writer.close()
+    with self._lock:
+      all_processes = list(self._all_processes)
+
+    # Signal shutdown with an explicit SIGTERM rather than by closing the write
+    # end of each pipe.  Because the workers are forked, every worker inherits a
+    # copy of every other worker's pipe write fd, so closing our own copy does
+    # not deliver EOF to the reader and the worker would block in recv()
+    # forever.  A worker has no shutdown work that must complete, so SIGTERM is
+    # safe.
+    for process in all_processes:
+      process.process.terminate()
+
+    for process in all_processes:
       process.process.join()
+      process.writer.close()

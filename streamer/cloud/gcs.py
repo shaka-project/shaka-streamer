@@ -88,5 +88,12 @@ class GCSUploader(CloudUploaderBase):
 
   def reset(self) -> None:
     if self._chunked_output:
-      self._chunked_output.close()
-      self._chunked_output = None
+      try:
+        # Note that this flushes the last of the data to the network, so it can
+        # fail like any other upload call.
+        self._chunked_output.close()
+      finally:
+        # Clear the state even if close() failed.  Otherwise this uploader is
+        # stuck referring to a dead output forever, and every later attempt to
+        # reset it fails the same way.
+        self._chunked_output = None
