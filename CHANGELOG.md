@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/shaka-project/shaka-streamer/compare/v1.5.0...v1.5.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* Fix cloud upload pool exhaustion after transient failures ([#283](https://github.com/shaka-project/shaka-streamer/issues/283)) ([82f8a21](https://github.com/shaka-project/shaka-streamer/commit/82f8a2107e8fd4b09ba6f08092d537f6175e0b45))
+
 ## [1.5.0](https://github.com/shaka-project/shaka-streamer/compare/v1.4.1...v1.5.0) (2026-06-30)
 
 
