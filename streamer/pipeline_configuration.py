@@ -22,7 +22,7 @@ import platform
 from . import bitrate_configuration
 from . import configuration
 
-from typing import List
+from typing import Dict, List
 
 
 # A randomly-chosen content ID in hex.
@@ -317,6 +317,17 @@ class PipelineConfig(configuration.Base):
 
   segment_folder = configuration.Field(str, default='').cast()
   """Sub-folder for segment output (or blank for none)."""
+
+  segment_template = configuration.Field(
+      Dict[str, str], default={}).cast()
+  """Optional per-media segment filename templates.
+
+  Keys may be ``audio``, ``video``, and ``text``.  Templates use the same
+  feature names as the built-in filenames (for example ``language``,
+  ``bitrate``, ``codec``, and ``format``).  ``$Number$`` is replaced with the
+  segment number placeholder for per-file output and with ``init`` for the
+  initialization segment.  Omitting a media type keeps its existing default.
+  """
 
   segment_size = configuration.Field(float, default=4).cast()
   """The length of each segment in seconds."""
