@@ -14,6 +14,7 @@
 
 """Contains information about each output stream."""
 
+import os
 from streamer.bitrate_configuration import AudioCodec, AudioChannelLayout, VideoCodec, VideoResolution
 from streamer.input_configuration import Input, MediaType
 from streamer.pipe import Pipe
@@ -61,7 +62,20 @@ class OutputStream(object):
       return self.codec.get_output_format() == 'webm'
     return False
 
-  def get_init_seg_file(self) -> Pipe:
+  def _format_custom_template(self, template: str,
+                              number_value: str = '') -> str:
+    """Formats a configured template for one output-file variant."""
+    path_templ = template.format(**self.features)
+    if '$Number$' in path_templ:
+      if not number_value:
+        path_templ = path_templ.replace('_$Number$', '')
+      return path_templ.replace('$Number$', number_value)
+    if number_value:
+      root, extension = os.path.splitext(path_templ)
+      return root + number_value + extension
+    return path_templ
+
+  def get_init_seg_file(self, template: str = '') -> Pipe:
     init_segment = {
       MediaType.AUDIO: ('audio_{language}_{channels}c_{bitrate}'
                         '_{codec}_init.{format}'),
@@ -69,10 +83,13 @@ class OutputStream(object):
                         '_{codec}_init.{format}'),
       MediaType.TEXT: 'text_{language}_init.{format}',
     }
-    path_templ = init_segment[self.type].format(**self.features)
+    if template:
+      path_templ = self._format_custom_template(template, '_init')
+    else:
+      path_templ = init_segment[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
-  def get_media_seg_file(self) -> Pipe:
+  def get_media_seg_file(self, template: str = '') -> Pipe:
     media_segment = {
       MediaType.AUDIO: ('audio_{language}_{channels}c_{bitrate}'
                         '_{codec}_$Number$.{format}'),
@@ -80,17 +97,23 @@ class OutputStream(object):
                         '_{codec}_$Number$.{format}'),
       MediaType.TEXT: 'text_{language}_$Number$.{format}',
     }
-    path_templ = media_segment[self.type].format(**self.features)
+    if template:
+      path_templ = self._format_custom_template(template, '$Number$')
+    else:
+      path_templ = media_segment[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
-  def get_single_seg_file(self) -> Pipe:
+  def get_single_seg_file(self, template: str = '') -> Pipe:
     single_segment = {
       MediaType.AUDIO: ('audio_{language}_{channels}c_{bitrate}'
                         '_{codec}.{format}'),
       MediaType.VIDEO: 'video_{resolution_name}_{bitrate}_{codec}.{format}',
       MediaType.TEXT: 'text_{language}.{format}',
     }
-    path_templ = single_segment[self.type].format(**self.features)
+    if template:
+      path_templ = self._format_custom_template(template)
+    else:
+      path_templ = single_segment[self.type].format(**self.features)
     return Pipe.create_file_pipe(path_templ, mode='w')
 
   def get_identification(self) -> str:
