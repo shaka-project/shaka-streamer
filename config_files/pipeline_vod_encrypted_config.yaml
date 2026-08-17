@@ -59,6 +59,12 @@ encryption:
   signing_key: 1ae8ccd0e7985cc0b6203a55855a1034afc252980e970ca90e5202689f947ab9
   # AES signing iv in hex string.
   signing_iv: d58ce954203b7c9a9a9d467f59839249
+  # Optional protection systems to signal in the output.  These are generated
+  # from the keys fetched above, so a single Widevine key server request can
+  # package the content for several DRM systems at once.
+  protection_systems:
+    - Widevine
+    - PlayReady
   # Protection scheme (cenc or cbcs)
   # These are different methods of using a block cipher to encrypt media.
   protection_scheme: cenc

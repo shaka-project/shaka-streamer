@@ -625,6 +625,56 @@ function drmTests(manifestUrl, format) {
     await player.load(manifestUrl);
   });
 
+  it('can signal multiple protection systems from Widevine keys ' + format,
+      async () => {
+    if (!testWidevine) {
+      pending('Skipped due to command line flag');
+    }
+
+    const inputConfigDict = {
+      'inputs': [
+        {
+          'name': TEST_DIR + 'BigBuckBunny.1080p.mp4',
+          'media_type': 'video',
+          // Keep this test short by only encoding 1s of content.
+          'end_time': '0:01',
+        },
+      ]
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': ['144p'],
+      'encryption': {
+        // Enables encryption.
+        'enable': true,
+        // The keys still come from the Widevine key server, but the PSSH
+        // generators are independent of the key source, so PlayReady can be
+        // signalled too without any manually-supplied keys.
+        'protection_systems': ['Widevine', 'PlayReady'],
+        'clear_lead': 0,
+      },
+    };
+
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
+
+    // We can't play PlayReady content in the test browser, so check the
+    // manifest for the signalling of both systems instead.
+    const response = await fetchRetry(manifestUrl);
+    const manifestText = await response.text();
+
+    if (manifestUrl.includes('hls.m3u8')) {
+      expect(manifestText).toContain(
+          'KEYFORMAT="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"');
+      expect(manifestText).toContain('KEYFORMAT="com.microsoft.playready"');
+    } else {
+      expect(manifestText).toContain(
+          'schemeIdUri="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"');
+      expect(manifestText).toContain(
+          'schemeIdUri="urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95"');
+    }
+  });
+
   it('has raw key encryption enabled ' + format, async () => {
     const inputConfigDict = {
       'inputs': [
