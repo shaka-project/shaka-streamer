@@ -305,6 +305,17 @@ class TranscoderNode(PolitelyWaitOnFinish):
           '-row-mt', '1',
       ]
 
+    if not self._pipeline_config.scene_detection:
+      # Without this, the encoder inserts an extra keyframe at each scene
+      # change, which restarts its GOP counter and drifts the later keyframes
+      # off the grid implied by segment_size.  PipelineConfig has already
+      # rejected the codecs that have no way to turn this off.
+      if stream.codec == VideoCodec.HEVC:
+        # libx265 ignores -sc_threshold and needs its own private option.
+        args += ['-x265-params', 'scenecut=0']
+      else:
+        args += ['-sc_threshold', '0']
+
     keyframe_interval = int(self._pipeline_config.segment_size *
                             media_input.frame_rate)
 
