@@ -306,6 +306,21 @@ class PipelineConfig(configuration.Base):
   used.
   """
 
+  scene_detection = configuration.Field(bool, default=True).cast()
+  """If true, the video encoder may insert an extra keyframe wherever it
+  detects a scene change.
+
+  A scene-change keyframe restarts the encoder's GOP counter, so subsequent
+  keyframes drift off the fixed grid implied by segment_size.  Shaka Packager
+  can only begin a segment on a keyframe, so the segments it writes end up
+  uneven.  Set this to false to keep every keyframe on the grid and get
+  segments of a uniform length, at some cost in compression efficiency.
+
+  Only supported for software h264 and hevc encoding.  The other encoders
+  don't expose a way to turn scene detection off, so this must be left true
+  for them.
+  """
+
   manifest_format = configuration.Field(List[ManifestFormat],
                                         default=[
                                             ManifestFormat.DASH,
@@ -384,6 +399,23 @@ class PipelineConfig(configuration.Base):
       reason = 'must be true when streaming_mode is "live"'
       raise configuration.MalformedField(
           self.__class__, 'segment_per_file', field, reason)
+
+    if not self.scene_detection:
+      # Rather than silently ignore the setting, reject the codecs we have no
+      # way to turn scene detection off for.
+      software_codecs = {bitrate_configuration.VideoCodec.H264,
+                         bitrate_configuration.VideoCodec.HEVC}
+      unsupported = [
+          ('hw:' if codec.is_hardware_accelerated() else '') + codec.value
+          for codec in self.video_codecs
+          if codec.is_hardware_accelerated() or codec not in software_codecs
+      ]
+      if unsupported:
+        field = self.__class__.scene_detection
+        reason = ('can only be false for software h264 and hevc encoding, but '
+                  'video_codecs contains ' + ', '.join(unsupported))
+        raise configuration.MalformedField(
+            self.__class__, 'scene_detection', field, reason)
 
   def get_resolutions(self) -> List[bitrate_configuration.VideoResolution]:
     VideoResolution = bitrate_configuration.VideoResolution  # alias

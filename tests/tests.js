@@ -204,6 +204,10 @@ describe('Shaka Streamer', () => {
   durationTests(hlsManifestUrl, '(hls)');
   durationTests(dashManifestUrl, '(dash)');
 
+  // Only the DASH manifest lists the duration of each individual segment, so
+  // only test this in DASH.
+  sceneDetectionTests(dashManifestUrl, '(dash)');
+
   mapTests(hlsManifestUrl, '(hls)');
   mapTests(dashManifestUrl, '(dash)');
 
@@ -380,6 +384,23 @@ function errorTests() {
         .toBeRejectedWith(jasmine.objectContaining({
           error_type: 'MalformedField',
           field_name: 'segment_per_file',
+        }));
+  });
+
+  it('fails when scene_detection is off for an unsupported codec', async () => {
+    const inputConfig = getBasicInputConfig();
+    const pipelineConfig = {
+      streaming_mode: 'vod',
+      resolutions: ['144p'],
+      // Only the software h264 and hevc encoders can turn scene detection off.
+      video_codecs: ['vp9'],
+      scene_detection: false,
+    };
+
+    await expectAsync(startStreamer(inputConfig, pipelineConfig))
+        .toBeRejectedWith(jasmine.objectContaining({
+          error_type: 'MalformedField',
+          field_name: 'scene_detection',
         }));
   });
 
@@ -1310,6 +1331,63 @@ function durationTests(manifestUrl, format) {
 
     // We took from 2-5, so the output should be about 3 seconds long.
     expect(video.duration).toBeCloseTo(3, 1 /* decimal points to check */);
+  });
+}
+
+function sceneDetectionTests(manifestUrl, format) {
+  const SEGMENT_SIZE = 2;
+
+  it('produces uniform segments with scene detection off ' + format,
+      async() => {
+    const inputConfigDict = {
+      'inputs': [
+        {
+          // This clip is 10 seconds long and has scene changes in it, so with
+          // scene detection left on, the segments come out uneven.
+          'name': TEST_DIR + 'Sintel.2010.720p.Small.mkv',
+          'media_type': 'video',
+        },
+      ],
+    };
+    const pipelineConfigDict = {
+      'streaming_mode': 'vod',
+      'resolutions': ['144p'],
+      'video_codecs': ['h264'],
+      'segment_size': SEGMENT_SIZE,
+      'scene_detection': false,
+    };
+
+    await startStreamer(inputConfigDict, pipelineConfigDict);
+    await debugManifest(manifestUrl);
+
+    const response = await fetchRetry(manifestUrl);
+    const mpd = new DOMParser().parseFromString(
+        await response.text(), 'application/xml');
+
+    const videoSet = Array.from(mpd.getElementsByTagName('AdaptationSet'))
+        .find((set) => set.getAttribute('contentType') == 'video');
+    const template = videoSet.getElementsByTagName('SegmentTemplate')[0];
+    const timescale = parseInt(template.getAttribute('timescale'), 10);
+
+    const durations = [];
+    for (const s of template.getElementsByTagName('S')) {
+      const d = parseInt(s.getAttribute('d'), 10);
+      // "r" is the number of _additional_ repeats, and defaults to 0.
+      const repeats = parseInt(s.getAttribute('r') || '0', 10);
+      for (let i = 0; i <= repeats; i++) {
+        durations.push(d);
+      }
+    }
+
+    // Make sure we got enough segments for this to mean anything.
+    expect(durations.length).toBeGreaterThan(3);
+
+    // The first segment absorbs any timestamp offset in the input, and the
+    // last one is whatever is left over, so neither is expected to be a full
+    // segment.  Everything in between should be exact.
+    for (const duration of durations.slice(1, -1)) {
+      expect(duration).toBe(SEGMENT_SIZE * timescale);
+    }
   });
 }
 
