@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0](https://github.com/shaka-project/shaka-streamer/compare/v1.5.1...v1.6.0) (2026-08-20)
+
+
+### Features
+
+* Add scene_detection option for uniform segment sizes ([#290](https://github.com/shaka-project/shaka-streamer/issues/290)) ([e70bb66](https://github.com/shaka-project/shaka-streamer/commit/e70bb666760be62ed1095a9e798e65bbda0672ce))
+
+
+### Documentation
+
+* Document multi-DRM with a Widevine key server ([#289](https://github.com/shaka-project/shaka-streamer/issues/289)) ([7f682e2](https://github.com/shaka-project/shaka-streamer/commit/7f682e248a647f8bcffcb7de403bcae4fe4d53de))
+
 ## [1.5.1](https://github.com/shaka-project/shaka-streamer/compare/v1.5.0...v1.5.1) (2026-07-24)
 
 
