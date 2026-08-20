@@ -125,8 +125,15 @@ class EncryptionConfig(configuration.Base):
   to raw."""
 
   protection_systems = configuration.Field(List[ProtectionSystem]).cast()
-  """Protection Systems to be generated. Supported protection systems include
-  Widevine, PlayReady, FairPlay, Marin and CommonSystem.
+  """Protection systems to be generated. Supported protection systems include
+  Widevine, PlayReady, FairPlay, Marlin and CommonSystem.
+
+  Applies to both encryption modes.  The protection systems signalled in the
+  output are independent of where the keys came from, so in 'widevine'
+  encryption_mode you can list several systems here and a single fetch from
+  the Widevine key server will produce PSSH boxes for all of them.  For
+  example, listing Widevine and PlayReady packages the content for both
+  without any manually-supplied keys.
   """
 
   pssh = configuration.Field(configuration.HexString).cast()
