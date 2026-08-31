@@ -171,9 +171,11 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
     if stream.input.language and stream.input.language != 'und':
       stream_dict['language'] = stream.input.language
 
+    segment_template = self._pipeline_config.segment_template.get(
+        stream.type.value, '')
     if self._pipeline_config.segment_per_file:
-      init_base = stream.get_init_seg_file().write_end()
-      media_base = stream.get_media_seg_file().write_end()
+      init_base = stream.get_init_seg_file(segment_template).write_end()
+      media_base = stream.get_media_seg_file(segment_template).write_end()
       if suffix:
         init_base = init_base.replace('_init.mp4', f'{suffix}_init.mp4')
         media_base = media_base.replace(
@@ -182,7 +184,7 @@ class PackagerNode(node_base.PolitelyWaitOnFinish):
       stream_dict['segment_template'] = build_path(
           self._segment_dir, media_base)
     else:
-      output_base = stream.get_single_seg_file().write_end()
+      output_base = stream.get_single_seg_file(segment_template).write_end()
       if suffix:
         output_base = output_base.replace('.mp4', f'{suffix}.mp4')
       stream_dict['output'] = build_path(self._segment_dir, output_base)
