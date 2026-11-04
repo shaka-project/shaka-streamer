@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.0](https://github.com/shaka-project/shaka-streamer/compare/v1.5.1...v2.0.0) (2026-11-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* Python 3.9 is no longer supported. Shaka Streamer now requires Python 3.10 or newer.
+
+### Features
+
+* Add scene_detection option for uniform segment sizes ([#290](https://github.com/shaka-project/shaka-streamer/issues/290)) ([e70bb66](https://github.com/shaka-project/shaka-streamer/commit/e70bb666760be62ed1095a9e798e65bbda0672ce))
+* Support Python 3.15 and drop EOL Python 3.9 ([#297](https://github.com/shaka-project/shaka-streamer/issues/297)) ([6ea7700](https://github.com/shaka-project/shaka-streamer/commit/6ea7700fc874570737b1167709086d4a4ae2af78))
+
+
+### Documentation
+
+* Document multi-DRM with a Widevine key server ([#289](https://github.com/shaka-project/shaka-streamer/issues/289)) ([7f682e2](https://github.com/shaka-project/shaka-streamer/commit/7f682e248a647f8bcffcb7de403bcae4fe4d53de))
+
 ## [1.5.1](https://github.com/shaka-project/shaka-streamer/compare/v1.5.0...v1.5.1) (2026-07-24)
 
 
