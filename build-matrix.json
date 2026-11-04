@@ -1,9 +1,9 @@
 {
-  "comment0": "The minimum supported version of Python is currently 3.9.",
+  "comment0": "The minimum supported version of Python is currently 3.10.",
   "pythonVersions": [
-    "3.9",
-    "3.12",
-    "3.13"
+    "3.10",
+    "3.14",
+    "3.15"
   ],
 
   "comment1": "runners hosted by GitHub, always enabled",

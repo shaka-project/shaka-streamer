@@ -35,8 +35,12 @@ persistent=no
 # usually to register additional checkers.
 load-plugins=
 
-# Use multiple processes to speed up Pylint.
-jobs=4
+# Run in a single process.  Parallel jobs (jobs > 1) make pylint serialize its
+# internal state with dill, which is fragile across Python releases (e.g.
+# dill 0.4.1 crashes on Python 3.15, see
+# https://github.com/pylint-dev/pylint/issues/11528).  For a codebase this
+# size, the speedup from parallelism is under a second.
+jobs=1
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.

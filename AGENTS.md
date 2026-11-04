@@ -31,7 +31,7 @@ shaka-streamer         CLI entry point script
 
 ## Environment Setup
 
-Requires Python 3.9+. On Linux, also install system deps first:
+Requires Python 3.10+. On Linux, also install system deps first:
 
 ```sh
 sudo apt install libva2 libva-drm2 nodejs npm xvfb
