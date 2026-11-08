@@ -9,6 +9,16 @@
   "comment1": "runners hosted by GitHub, always enabled",
   "hosted": [
     {
+      "os": "ubuntu-26.04",
+      "os_name": "linux",
+      "target_arch": "x64"
+    },
+    {
+      "os": "ubuntu-26.04-arm",
+      "os_name": "linux",
+      "target_arch": "arm64"
+    },
+    {
       "os": "ubuntu-24.04",
       "os_name": "linux",
       "target_arch": "x64"
