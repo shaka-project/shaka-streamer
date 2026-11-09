@@ -28,6 +28,7 @@ _cpu = {
 _ubuntu_versions_with_hw_encoders = (
   '22.04',
   '24.04',
+  '26.04',
 )
 
 # Module level variables.
