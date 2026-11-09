@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/shaka-project/shaka-streamer/compare/v2.0.0...v2.1.0) (2026-11-09)
+
+
+### Features
+
+* Bump ffmpeg binary for Ubuntu 26.04 support ([#298](https://github.com/shaka-project/shaka-streamer/issues/298)) ([e76c252](https://github.com/shaka-project/shaka-streamer/commit/e76c25217097fbb89f85b62029a282b236c071d9))
+
 ## [2.0.0](https://github.com/shaka-project/shaka-streamer/compare/v1.5.1...v2.0.0) (2026-11-04)
 
 
