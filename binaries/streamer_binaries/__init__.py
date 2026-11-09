@@ -3,7 +3,7 @@
 import os
 import platform
 
-__version__ = '2.0.0'  # x-release-please-version
+__version__ = '2.1.0'  # x-release-please-version
 
 
 # Get the directory path where this __init__.py file resides.
